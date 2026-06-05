@@ -53,3 +53,4 @@ Append-only. ADRs capture *why*; code shows *what*. New entries at the bottom; s
 **Decision**: Separate `users` table (Google accounts + roles) from `players` table (name roster). No foreign key between them.
 
 **Consequence**: A scorer who is also a player appears in both tables independently. Simple and correct for this use case.
+

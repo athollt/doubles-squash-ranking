@@ -57,7 +57,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 
 | # | Step | Status | Depends On |
 |---|------|--------|------------|
-| 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | pending | — |
+| 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | complete | — |
 | 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | pending | 01 |
 | 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | pending | 02 |
 | 04 | [Authentication & authorisation](steps/step-04-auth.md) | pending | 02 |
@@ -85,6 +85,7 @@ npm run build && npm run test
 
 ## Reference Documents
 
+- **Agent notes**: [../AGENT-NOTES.md](../AGENT-NOTES.md) — project-specific agent information
 - **PRD**: [PRD-doubles-squash-ladder.md](PRD-doubles-squash-ladder.md)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **Decisions**: [DECISIONS.md](DECISIONS.md)
