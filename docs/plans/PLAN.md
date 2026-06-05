@@ -79,7 +79,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 10 | [Public session history](steps/step-10-session-history.md) | complete | 07 |
 | 11 | [Public player rating trend](steps/step-11-player-trend.md) | complete | 07 |
 | 12 | [User management (admin)](steps/step-12-user-management.md) | complete | 04 |
-| 13 | [PWA & branding](steps/step-13-pwa-branding.md) | pending | 09 |
+| 13 | [PWA & branding](steps/step-13-pwa-branding.md) | complete | 09 |
 | 14 | [Deployment setup](steps/step-14-deployment.md) | pending | all prior |
 | 15 | [Update documentation](steps/step-15-update-docs.md) | pending | all prior |
 

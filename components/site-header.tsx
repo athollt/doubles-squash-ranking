@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { navLinksFor, type Role } from "@/lib/nav";
@@ -13,7 +14,14 @@ export async function SiteHeader() {
   return (
     <header className="border-b">
       <nav className="mx-auto flex w-full max-w-5xl items-center gap-4 p-4">
-        <Link href="/" className="font-semibold">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Image
+            src="/icon.svg"
+            alt=""
+            width={28}
+            height={28}
+            className="rounded-md"
+          />
           Doubles Squash @ BSC
         </Link>
         <div className="flex items-center gap-3">

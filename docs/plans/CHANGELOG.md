@@ -534,3 +534,48 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 37/37 Playwright specs pass (+5 user-management); teardown leaves zero `[e2e]` users/players
 
 ---
+
+## Step 13 — PWA & branding
+
+**Date**: 2026-06-06
+
+### Delivered
+
+**Branding assets (all in `/public`):**
+- `icon.svg` — square app-icon master: a blue squash racket + yellow-dot ball on a charcoal rounded badge. `logo.svg` — horizontal mark+wordmark lockup (the wordmark uses `currentColor` so it adapts to light/dark). `og.svg` — 1200×630 OG master.
+- Rasterised from the SVG masters (via `sharp`): `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180), `favicon-32x32.png`, `favicon-16x16.png`, `og.png` (1200×630). `app/favicon.ico` regenerated as a 2-image (16+32) PNG-in-ICO, replacing the Next scaffold default.
+- **Palette (charcoal + electric blue)** defined as CSS theme variables in `app/globals.css` (Tailwind v4 has no `tailwind.config.ts` — see deviation): `--primary` charcoal `#1A1A1A`, `--accent`/`--ring`/`--chart-1` electric blue `#2D7FF9`, dark-mode `--background` `#0E0E10`. The manifest `theme_color`/`background_color` mirror these.
+
+**PWA configuration:**
+- `@serwist/next@9.5.11` + `serwist@9.5.11` (dev) installed.
+- `app/sw.ts` — minimal Serwist service worker: precaches the build manifest, `defaultCache` runtime caching, and an offline document fallback to `/~offline`. `app/~offline/page.tsx` is the branded offline page.
+- `public/manifest.json` — `name` "BSC Squash Ladder", `short_name` "Squash", `start_url` "/", `display` "standalone", theme/background from the palette, 192 + 512 icons (`purpose: "any maskable"`).
+- `next.config.ts` wraps the config with Serwist **for the production (webpack) build only** (see deviation).
+- `app/layout.tsx` — Next Metadata API now emits the manifest link, `apple-touch-icon`, `icons`, OpenGraph (with `/og.png`), `appleWebApp`, a `viewport.themeColor`, and a `metadataBase` (from `AUTH_URL`, fallback `https://squash.tomlinson.co.za`) so OG/icon URLs resolve absolutely.
+
+**UI polish:**
+- `components/site-header.tsx` — the app mark (`icon.svg`, 28px, via `next/image`) now sits beside the wordmark in the global header.
+- Palette applied app-wide via the theme variables (accent/ring/charts) — no per-page colour changes needed.
+
+**Tests:**
+- `public/manifest.test.ts` (2): manifest required fields + 192/512 PNG icons (behaviour 1, unit).
+- `e2e/pwa.spec.ts` (2): `/manifest.json` served with correct fields (behaviour 1); ladder page links the manifest, apple-touch-icon, and OG image in `<head>` (behaviours 4, 5).
+
+### Deviations from spec
+
+- **Palette lives in `app/globals.css`, not `tailwind.config.ts`.** The project is Tailwind v4 (no JS config file; CHANGELOG step 01) — the v4-correct place for theme colours is the `@theme`/`:root` CSS variables. Functionally equivalent to the step's intent.
+- **Serwist wraps the production build only, gated on `NODE_ENV`.** Next 16 dev defaults to Turbopack, which **errors** when a webpack config is present without a turbopack one; Serwist 9.5.x is a webpack plugin. The wrapper is therefore applied only when `NODE_ENV !== "development"`, leaving dev a clean Turbopack config. `package.json` `build` is now `next build --webpack` so the SW is actually emitted (Turbopack would skip the plugin). The SW is a build artifact, so dev never needs it.
+- **`public/sw.js` is gitignored** (generated on every build), alongside `public/sw.js.map`. Added to `.gitignore` and to ESLint `globalIgnores` (the minified bundle otherwise floods lint).
+- **Behaviours 2, 3, 6 (SW registers, favicon in tab, installable) are manual/browser checks** per the step's own "manual verification" note — not automatable in the headless serial E2E. Behaviours 1, 4, 5, 7 are covered (unit + E2E + the green build).
+- **Pre-existing Next scaffold SVGs left in place** (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`) — unreferenced, but not made unused by this step (AGENTS.md §4); flagged here, not deleted.
+
+### Validation
+
+- `npm run test` — ✅ 95 unit tests pass (+2 manifest)
+- `npm run build` — ✅ zero errors/warnings; Serwist bundles `/sw.js`; no `metadataBase` warning; `/~offline` route present (behaviour 7)
+- `npm run lint` — ✅ clean (generated `sw.js` ignored)
+- `npm run test:e2e` — ✅ 39/39 Playwright specs pass (+2 pwa); teardown leaves zero `[e2e]` leftovers
+- Manual head check (dev render): `theme-color #1a1a1a`, manifest link, absolute `og:image`, `apple-touch-icon` all present; `/icon.svg` served 200
+- Installability (Chrome DevTools → Application → Manifest) remains the documented manual check
+
+---
