@@ -77,7 +77,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 09 | [Public ladder page](steps/step-09-public-ladder.md) | complete | 07 |
 | 09.1 | [Sample data seed (full-system test data)](steps/step-09.1-sample-data.md) | complete | 09 |
 | 10 | [Public session history](steps/step-10-session-history.md) | complete | 07 |
-| 11 | [Public player rating trend](steps/step-11-player-trend.md) | pending | 07 |
+| 11 | [Public player rating trend](steps/step-11-player-trend.md) | complete | 07 |
 | 12 | [User management (admin)](steps/step-12-user-management.md) | pending | 04 |
 | 13 | [PWA & branding](steps/step-13-pwa-branding.md) | pending | 09 |
 | 14 | [Deployment setup](steps/step-14-deployment.md) | pending | all prior |

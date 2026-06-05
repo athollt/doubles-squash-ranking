@@ -475,3 +475,32 @@ configured to write into `components`/`lib`.
 - `npx playwright test session-history` — ✅ 3/3 pass
 
 ---
+
+## Step 11 — Public player rating trend
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/player-trend.ts`: pure `buildTrendPoints(rows)` (oldest → newest `{date, rating}` for the chart) and `buildTrendRows(rows)` (newest → oldest `{date, before, change, after}` for the table), both rounding ratings to 1dp. `lib/player-trend.test.ts` (3): ordering, rounding, empty input.
+- `components/rating-trend-chart.tsx`: client component — a responsive recharts `LineChart` (monotone line, dots) of rating-after over session dates.
+- `app/players/[id]/page.tsx`: public `/players/[id]` (Server Component, `force-dynamic`, no auth). `notFound()` → 404 for an unknown id. Shows name (+ "Removed" badge when removed), current rating, Active/Inactive status, sessions played (total + last-90-days) from the engine's `currentRatings`; the trend chart; and a colour-coded before/change/after table. Empty state when the player has zero sessions. Back link to the ladder.
+- `app/page.tsx`: ladder player names (both the desktop table and the mobile card list) now link to `/players/[id]` (step 11 navigation).
+- `recharts@3` added (the step's recommended chart lib).
+- `e2e/player-trend.spec.ts` (2): unknown id 404s (behaviour 4); a played player is reachable from the ladder link, the page is public, and shows name + current rating + sessions played + the trend table (behaviours 1, 2, 3).
+
+### Deviations / notes
+
+- **Current rating / sessions-played come from the live engine** (`recalculate(...).currentRatings`), the same source as the ladder — not re-derived — so the player page and ladder never disagree. The RatingsLog is queried only for the per-session trend (before/change/after + dates).
+- **The chart is the only client component**; the page stays a Server Component and passes the already-shaped points in. recharts renders the line/dots after hydration (responsive sizing needs the browser); the trend *table* renders server-side so the data is present without JS.
+- **Behaviours 5 (zero sessions) and 6 (removed player still accessible)** are conditional branches not present in the sample seed, so they were verified manually against a live dev render with throwaway `[verify]` players (both 200; empty-state and "Removed" badge respectively), then the players were deleted. Not added to the serial E2E suite (would need bespoke fixtures); matches the step-09/10 stance on hard-to-fixture branches.
+- **Removed players appear in `currentRatings`** (the engine only excludes them from the *ladder*), so their historical page works unchanged — no special-casing needed.
+
+### Validation
+
+- `npm run test` — ✅ 82 unit tests pass (+3 player-trend)
+- `npm run build` — ✅ zero errors/warnings; `/players/[id]` dynamic (`ƒ`)
+- `npm run test:e2e` — ✅ 32/32 Playwright specs pass (+3 session-history, +2 player-trend); ladder name-links cause no regression; teardown leaves zero `[e2e]` leftovers
+- Manual render: unknown id → 404; zero-session player → empty state (200); removed player → accessible with "Removed" badge (200); recharts chart + trend table render for a player with history
+
+---

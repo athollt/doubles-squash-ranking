@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate, type LadderEntry, type Movement } from "@/lib/rating-engine";
@@ -58,7 +59,9 @@ function LadderRows({ entries }: { entries: LadderEntry[] }) {
         <TableRow key={e.playerId}>
           <TableCell className="tabular-nums">{e.rank}</TableCell>
           <TableCell>
-            {e.name}
+            <Link href={`/players/${e.playerId}`} className="hover:underline">
+              {e.name}
+            </Link>
             <StatusBadge entry={e} />
           </TableCell>
           <TableCell className="text-right">
@@ -80,7 +83,9 @@ function LadderCards({ entries }: { entries: LadderEntry[] }) {
         >
           <span className="flex items-center">
             <span className="tabular-nums text-zinc-500">{e.rank}.</span>
-            <span className="ml-2">{e.name}</span>
+            <Link href={`/players/${e.playerId}`} className="ml-2 hover:underline">
+              {e.name}
+            </Link>
             <StatusBadge entry={e} />
           </span>
           <MovementIndicator movement={e.movement} />
