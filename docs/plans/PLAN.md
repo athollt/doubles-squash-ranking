@@ -85,6 +85,7 @@ npm run build && npm run test
 
 ## Reference Documents
 
+- **Agent notes**: [../AGENT-NOTES.md](../AGENT-NOTES.md) — project-specific agent information
 - **PRD**: [PRD-doubles-squash-ladder.md](PRD-doubles-squash-ladder.md)
 - **Changelog**: [CHANGELOG.md](CHANGELOG.md)
 - **Decisions**: [DECISIONS.md](DECISIONS.md)
