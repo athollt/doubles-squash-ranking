@@ -38,3 +38,31 @@ Append-only log. Each entry: what was delivered, deviations from spec, validatio
 - `docker compose down` — ✅ clean teardown
 
 ---
+
+## Step 02 — Database schema & Prisma setup
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `prisma/schema.prisma`: all 8 models (`User`, `Player`, `Setting`, `Session`, `SessionPlayer`, `RatingsLog`, `LadderSnapshot`) plus `Role` and `PlayerStatus` enums. Per spec: `SessionPlayer` unique on (sessionId, playerId); `SessionPlayer` and `RatingsLog` cascade-delete with their `Session`; `Player.createdById` nullable FK to `User`.
+- Initial migration `prisma/migrations/<ts>_init` created and applied.
+- `prisma/seed.ts`: seeds the 15 default settings (SPEC §4.2) and the first admin user `atholl@tomlinson.co.za` (role ADMIN). Idempotent via `upsert`.
+- `lib/prisma.ts`: shared `PrismaClient` singleton constructed with the `@prisma/adapter-pg` driver adapter (required by Prisma 7).
+- `lib/prisma.test.ts`: integration test querying all 7 queryable models and asserting the seeded admin + 15 settings.
+
+### Deviations from spec
+
+- **Prisma 7 requires a driver adapter.** The generated client no longer reads `DATABASE_URL` implicitly at runtime; it must be constructed with `new PrismaClient({ adapter: new PrismaPg(...) })`. Added `@prisma/adapter-pg` and a shared `lib/prisma.ts`.
+- **Seed runner.** Prisma 7 runs the seed via `migrations.seed` in `prisma.config.ts`. Added `tsx` (dev dep) and set `seed: "tsx prisma/seed.ts"`. The seed imports the client by relative path (tsx does not resolve the `@/` alias).
+- Added `import "dotenv/config"` to `vitest.config.ts` so the integration test gets `DATABASE_URL`.
+- Admin email is `atholl@tomlinson.co.za` per the step spec (PRD/SPEC reference `atholl@different.co.za` is the dev account, not the seeded admin).
+
+### Validation
+
+- `npx prisma migrate dev --name init` — ✅ migration created and applied
+- `npx prisma db seed` — ✅ 15 settings + admin user inserted (verified via psql)
+- `npm run test` — ✅ 2 tests pass (integration test, node env)
+- `npm run build` — ✅ zero errors, TypeScript clean
+
+---

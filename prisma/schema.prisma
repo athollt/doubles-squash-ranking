@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../app/generated/prisma"
@@ -10,4 +8,97 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  SCORER
+}
+
+enum PlayerStatus {
+  ACTIVE
+  REMOVED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  role      Role
+  createdAt DateTime @default(now())
+
+  players  Player[]
+  sessions Session[]
+}
+
+model Player {
+  id          String       @id @default(uuid())
+  name        String
+  status      PlayerStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  createdById String?
+  createdBy   User?        @relation(fields: [createdById], references: [id])
+
+  sessionPlayers SessionPlayer[]
+  ratingsLogs    RatingsLog[]
+}
+
+model Setting {
+  id          String  @id @default(uuid())
+  key         String  @unique
+  value       Float
+  description String?
+}
+
+model Session {
+  id              String   @id @default(uuid())
+  timestamp       DateTime
+  submittedById   String
+  submittedBy     User     @relation(fields: [submittedById], references: [id])
+  notes           String?
+  totalPlayerWins Int
+  inferredGames   Int
+  playerCount     Int
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessionPlayers SessionPlayer[]
+  ratingsLogs    RatingsLog[]
+}
+
+model SessionPlayer {
+  id        String  @id @default(uuid())
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player  @relation(fields: [playerId], references: [id])
+  wins      Int
+
+  @@unique([sessionId, playerId])
+}
+
+model RatingsLog {
+  id                    String  @id @default(uuid())
+  sessionId             String
+  session               Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  playerId              String
+  player                Player  @relation(fields: [playerId], references: [id])
+  ratingBefore          Float
+  strengthWeight        Float
+  sessionStrengthTotal  Float
+  expectedShare         Float
+  actualShare           Float
+  sessionWeight         Float
+  multiplier            Float
+  ratingChange          Float
+  ratingAfter           Float
+  wins                  Int
+  inferredGames         Int
+  isNewOrReturningBoost Boolean
+}
+
+model LadderSnapshot {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  rankings  Json
 }
