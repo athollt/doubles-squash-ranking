@@ -4,9 +4,16 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { submitSessionAction, type SubmitSlot } from "./actions";
 
-type Player = { id: string; name: string };
+export type Player = { id: string; name: string };
+
+export interface FormSlot {
+  playerId?: string;
+  newName?: string;
+  wins: number;
+}
+
+export type SessionFormResult = { ok: true } | { ok: false; error: string };
 
 const NEW = "__new__";
 
@@ -18,12 +25,30 @@ interface SlotState {
 
 const emptySlot = (): SlotState => ({ playerId: "", newName: "", wins: "0" });
 
-export function SubmitClient({ players }: { players: Player[] }) {
+interface Props {
+  players: Player[];
+  // Pre-populated slots/notes for edit; defaults to 4 empty slots for submit.
+  initialSlots?: SlotState[];
+  initialNotes?: string;
+  submitLabel: string;
+  onSubmit: (slots: FormSlot[], notes: string) => Promise<SessionFormResult>;
+  // Optional delete (edit mode). Receives nothing; parent binds the id.
+  onDelete?: () => Promise<SessionFormResult>;
+}
+
+export function SessionForm({
+  players,
+  initialSlots,
+  initialNotes = "",
+  submitLabel,
+  onSubmit,
+  onDelete,
+}: Props) {
   const router = useRouter();
-  const [slots, setSlots] = useState<SlotState[]>(() =>
-    Array.from({ length: 4 }, emptySlot),
+  const [slots, setSlots] = useState<SlotState[]>(
+    () => initialSlots ?? Array.from({ length: 4 }, emptySlot),
   );
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -31,18 +56,30 @@ export function SubmitClient({ players }: { players: Player[] }) {
     setSlots((s) => s.map((slot, idx) => (idx === i ? { ...slot, ...patch } : slot)));
   }
 
-  function handleSubmit() {
-    setError(null);
-    const payloadSlots: SubmitSlot[] = slots
+  function toPayload(): FormSlot[] {
+    return slots
       .filter((s) => s.playerId !== "" || s.newName.trim() !== "")
       .map((s) => ({
         playerId: s.playerId === NEW ? undefined : s.playerId || undefined,
         newName: s.playerId === NEW ? s.newName : undefined,
         wins: Number(s.wins),
       }));
+  }
 
+  function handleSubmit() {
+    setError(null);
     startTransition(async () => {
-      const result = await submitSessionAction({ slots: payloadSlots, notes });
+      const result = await onSubmit(toPayload(), notes);
+      if (result.ok) router.push("/");
+      else setError(result.error);
+    });
+  }
+
+  function handleDelete() {
+    if (!onDelete) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await onDelete();
       if (result.ok) router.push("/");
       else setError(result.error);
     });
@@ -107,9 +144,21 @@ export function SubmitClient({ players }: { players: Player[] }) {
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
-      <Button onClick={handleSubmit} disabled={pending}>
-        Submit session
-      </Button>
+      <div className="flex gap-3">
+        <Button onClick={handleSubmit} disabled={pending}>
+          {submitLabel}
+        </Button>
+        {onDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={pending}
+            onClick={handleDelete}
+          >
+            Delete
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

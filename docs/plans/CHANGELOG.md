@@ -359,3 +359,32 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 21/21 Playwright specs pass (+3 submit); teardown leaves zero `[e2e]` players and sessions
 
 ---
+
+## Step 08 — Session edit & delete
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/session-authz.ts`: pure `canMutateSession({userId, role, submittedById})` — admin may mutate any session; a scorer only their own (PRD #12, #13, #16).
+- `app/sessions/[id]/edit/actions.ts`: `updateSessionAction` (re-validates via step-07's `validateSession`, replaces `SessionPlayer` rows in a transaction, recalculates) and `deleteSessionAction` (cascade-deletes Session → SessionPlayer + RatingsLog, recalculates). Both gated by `canMutateSession` after a user/session lookup.
+- `app/sessions/[id]/edit/page.tsx`: server component — loads the session, **redirects a non-owner scorer to `/unauthorised`** (behaviour 2), pre-populates the shared form, binds update + delete server actions.
+- `app/admin/sessions/page.tsx`: admin-only list of all sessions (date, submitter, players, total wins) with an Edit link per row.
+- `components/session-form.tsx`: extracted the submit form into a reusable component (player slots, add-new-player, wins, notes) parameterised by `submitLabel`/`onSubmit`/optional `onDelete`. `app/submit` now uses it; `app/submit/submit-client.tsx` removed.
+- `lib/session-authz.test.ts` (3) + `e2e/session-edit.spec.ts` (4).
+
+### Deviations / notes
+
+- **Refactor (approved by the feature need)**: the step-07 `SubmitClient` became the shared `SessionForm` so edit and submit share one form. The step-07 submit E2E still pass unchanged, confirming behaviour preserved.
+- The ownership check exists in **two places by design**: the edit *page* redirects non-owners to `/unauthorised` (UX), and the *actions* re-check (defence-in-depth — a scorer can't mutate via a forged action call).
+- No public/own session list exists yet (step 10), so the edit E2E discover a session's id via the admin list, then act as the relevant user. This is an E2E-only convenience, not a product path.
+- `/admin/sessions` Edit uses `buttonVariants` on a `Link` (the project's Button has no `asChild`). Delete is on the edit page (with the form), per the spec's "Delete button (with confirmation)" — confirmation UI kept minimal (no modal yet; polish at step 13 if wanted).
+
+### Validation
+
+- `npm run test` — ✅ 67 unit tests pass (+3 session-authz)
+- `npm run build` — ✅ zero errors/warnings; `/sessions/[id]/edit` and `/admin/sessions` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 25/25 Playwright specs pass (+4 session-edit); teardown leaves zero `[e2e]` players and sessions
+
+---

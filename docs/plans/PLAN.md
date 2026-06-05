@@ -73,7 +73,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 05.3 | [App shell — global nav & auth control](steps/step-05.3-app-shell.md) | complete | 05.1 |
 | 06 | [Settings management (admin)](steps/step-06-settings-management.md) | complete | 04 |
 | 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | complete | 03, 05, 06 |
-| 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |
+| 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | complete | 07 |
 | 09 | [Public ladder page](steps/step-09-public-ladder.md) | pending | 07 |
 | 10 | [Public session history](steps/step-10-session-history.md) | pending | 07 |
 | 11 | [Public player rating trend](steps/step-11-player-trend.md) | pending | 07 |
