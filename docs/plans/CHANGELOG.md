@@ -39,6 +39,47 @@ Append-only log. Each entry: what was delivered, deviations from spec, validatio
 
 ---
 
+## Step 01.1 — Fix Turbopack dev server vs out-of-repo symlinks
+
+**Date**: 2026-06-05
+
+### Problem
+
+`next dev` (Turbopack, the default) crashed with HTTP 500 and a panic:
+`FileSystemPath("").join("../diffdev/agent-tools/.claude") leaves the filesystem root`.
+Tailwind v4's automatic content detection walks the repo root and follows the
+`.claude` / `.devin` symlinks, which point outside the project (ADR-005). Turbopack
+refuses to resolve files outside the root and panics on the underflowing path while
+processing `app/globals.css`. `next build` was unaffected (different resolver), so
+step 01/02 validated clean.
+
+### Delivered
+
+- `app/globals.css`: switched to `@import "tailwindcss" source(none)` and declared
+  explicit `@source "./"`, `@source "../components"`, `@source "../lib"`. This stops
+  Tailwind walking the root, so the symlinks are never enumerated. (`@source not` was
+  tried first and did **not** work — Tailwind enumerates a path before excluding it,
+  and the enumeration is what crashes Turbopack.)
+- `package.json`: `dev` now runs on port 3001 (port 3000 is held by an unrelated
+  local container).
+
+### Maintenance note
+
+Because automatic detection is disabled, class-bearing files in a **new top-level
+dir** (e.g. a future `hooks/`) need their own `@source` line or their classes won't
+generate. Current source dirs (`app`, `components`, `lib`) are all covered; shadcn is
+configured to write into `components`/`lib`.
+
+### Validation
+
+- `next dev` (Turbopack) — ✅ HTTP 200, page styled, no panic
+- Tailwind class detection through `components/` — ✅ verified `shrink-0` (only in
+  `components/ui/button.tsx`) appears in the compiled CSS when the Button renders
+- `npm run build` — ✅ zero errors
+- `npm run test` — ✅ 2/2 pass
+
+---
+
 ## Step 02 — Database schema & Prisma setup
 
 **Date**: 2026-06-05

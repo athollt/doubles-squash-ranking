@@ -1,6 +1,14 @@
-@import "tailwindcss";
+/* source(none) disables Tailwind's automatic content detection, which otherwise
+   walks the repo root and follows the .claude/.devin symlinks (they point outside
+   the project at ../diffdev/agent-tools) — that out-of-root path makes Turbopack
+   panic ("leaves the filesystem root"). Instead, declare the real source dirs. */
+@import "tailwindcss" source(none);
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+
+@source "./";
+@source "../components";
+@source "../lib";
 
 @custom-variant dark (&:is(.dark *));
 
