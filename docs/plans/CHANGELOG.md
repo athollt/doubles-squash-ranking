@@ -388,3 +388,30 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 25/25 Playwright specs pass (+4 session-edit); teardown leaves zero `[e2e]` players and sessions
 
 ---
+
+## Step 09 — Public ladder page
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `app/page.tsx`: the public ladder at `/` (Server Component, `force-dynamic`, no auth). Loads settings/players/sessions via `prismaRecalcStore`, runs the pure engine (step 03), and renders the ladder — active players first (by ladder score), inactive players below under an "Inactive" sub-heading (by last-played desc). Per-row: rank, name, an `Inactive` and/or `(P)` provisional badge, and a movement indicator (↑N green / ↓N red / NEW blue / — grey). "Last updated: <date>" footer from the most recent session. No rating points shown. Empty state when there are no sessions. Mobile = card list (`sm:hidden`), wider screens = `Table` (`hidden sm:block`).
+- `lib/public-ladder.ts`: pure `previousRankingsFromSnapshot(rankings)` → `Map<playerId, rank>` and `lastUpdatedFrom(sessions)` → latest timestamp | null. `lib/public-ladder.test.ts` (3) covers both.
+- `e2e/ladder.spec.ts` (2): public page is reachable with the title (behaviour 1); after a scorer submits a session the players appear on the ladder ranked, with `(P)` + `NEW` on a first-timer, and the 3-win winner outranks the 1-win loser (behaviours 2, 3, 6, 7).
+
+### Deviations / notes
+
+- **Movement basis (decision)**: the step says "load the most recent snapshot", but each recalc writes a fresh snapshot of the *current* state — comparing the live ladder to it yields "same" for everyone. Movement is instead measured against the **2nd-most-recent** snapshot (the previous state); the page loads the two latest snapshots and feeds the prior one's rankings to the engine as `previousRankings`. The recalc orchestrator is unchanged (its stored snapshots still carry movement="new", which the page does not read).
+- **Behaviours 2–7 are already engine-level** and covered by `lib/rating-engine.test.ts` (active-above-inactive, sorting, removed-excluded, provisional flag, movement). Step 09 adds the *page* that surfaces them, unit-tests the new snapshot/last-updated glue, and E2E-verifies the rendered journey rather than re-testing the engine.
+- **Behaviour 8 (empty state)**: rendered via the `ladder.length === 0` branch. Not asserted in E2E because the suite runs serially against a shared DB that already holds seeded/submitted data; the populated path is the meaningful E2E and the empty branch is a simple conditional.
+- **No Badge dependency**: status/provisional badges and movement are plain spans with Tailwind classes (no shadcn `badge` added) — consistent with the "no visual polish until step 13" stance.
+- The existing `e2e/public.spec.ts` heading assertion was updated from "Doubles Squash @ BSC" to the spec's "BSC Doubles Squash Ladder" (the new H1); the old placeholder home page is replaced.
+
+### Validation
+
+- `npm run test` — ✅ 70 unit tests pass (+3 public-ladder)
+- `npm run build` — ✅ zero errors/warnings; `/` now dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 27/27 Playwright specs pass (+2 ladder); teardown leaves zero `[e2e]` players and sessions
+
+---
