@@ -449,3 +449,29 @@ configured to write into `components`/`lib`.
 - `npx playwright test` — ✅ 27/27 pass (exit 0) against the populated DB; sample roster intact, zero `[e2e]` leftovers
 
 ---
+
+## Step 10 — Public session history
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/session-history.ts`: pure `formatSessionDate(date)` → "D Mon YYYY" (e.g. "5 Jun 2026") in UTC, per the PRD's "formatted nicely" requirement. `lib/session-history.test.ts` (2): format + locale/UTC stability.
+- `app/sessions/page.tsx`: public `/sessions` (Server Component, `force-dynamic`, no auth). Lists sessions most recent first; each row is a native `<details>` summarising date + "N players · M games" (`inferredGames`), expanding to player names with games won, plus a "View full detail →" link. Empty state when there are no sessions.
+- `app/sessions/[id]/page.tsx`: public `/sessions/[id]` detail — date, "Submitted by <name>", a players-with-wins table (desc), total player-wins + inferred games, and notes (when present). `notFound()` → 404 for an unknown id. Back link to `/sessions`.
+- `e2e/session-history.spec.ts` (3): list page is public (behaviour 1); unknown id 404s (behaviour 5); a submitted session is listed with player count/games and reachable on its own detail page (behaviours 2, 3, 4).
+
+### Deviations / notes
+
+- **Date format is a deliberate deviation** from the ISO `slice(0,10)` used on the ladder/admin pages — the step spec explicitly asks for "5 Jun 2026". Isolated to the public history pages via the pure helper.
+- **Expandable detail uses native `<details>`/`<summary>`** rather than a JS toggle — keeps both pages pure Server Components (no client bundle), accessible by default. The detail link sits inside the expanded content (a `<Link>` in the `<summary>` would need a client-side `stopPropagation` to avoid also toggling).
+- **Behaviour 6 (empty state)** is the `sessions.length === 0` branch; not asserted in E2E because the serial suite runs against a populated shared DB (matches the step-09 empty-state rationale).
+- `/sessions` and `/sessions/<id>` were already public in `lib/auth-rules.ts` (step 04) and forward-linked from the nav (step 05.3); no auth/nav change needed. `/sessions/[id]/edit` is unaffected (nested route).
+
+### Validation
+
+- `npm run test` — ✅ 79 unit tests pass (+2 session-history)
+- `npm run build` — ✅ zero errors/warnings; `/sessions` and `/sessions/[id]` dynamic (`ƒ`)
+- `npx playwright test session-history` — ✅ 3/3 pass
+
+---
