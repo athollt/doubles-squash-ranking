@@ -57,7 +57,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 
 | # | Step | Status | Depends On |
 |---|------|--------|------------|
-| 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | pending | — |
+| 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | complete | — |
 | 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | pending | 01 |
 | 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | pending | 02 |
 | 04 | [Authentication & authorisation](steps/step-04-auth.md) | pending | 02 |

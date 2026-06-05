@@ -42,3 +42,13 @@ next-env.d.ts
 
 # temp output
 zTemp
+
+/app/generated/prisma
+
+# Docker local postgres data volume
+/postgres-data
+
+# Playwright
+/test-results
+/playwright-report
+/playwright/.cache

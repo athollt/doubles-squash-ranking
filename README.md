@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Doubles Squash @ BSC
 
-## Getting Started
+A mobile-first web app for the BSC doubles squash ladder. Publicly displays player rankings and session history. Admins and scorers log in with Google to submit and manage sessions.
 
-First, run the development server:
+Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, Prisma, and PostgreSQL.
+
+---
+
+## Running locally
+
+### Prerequisites
+
+- Node.js 20+
+- Docker (for local Postgres)
+
+### Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env        # fill in NEXTAUTH_SECRET and Google OAuth credentials
+npm install
+docker compose up -d postgres
+npx prisma db push          # apply schema to local DB (no tables yet in step 01)
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+# Unit / integration tests (Vitest)
+npm run test
 
-## Learn More
+# Watch mode
+npm run test:watch
 
-To learn more about Next.js, take a look at the following resources:
+# E2E tests (Playwright) — requires dev server running
+npm run test:e2e
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Build
 
-## Deploy on Vercel
+```bash
+npm run build
+npm run start
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 16 (App Router) |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 + shadcn/ui |
+| ORM | Prisma 7 |
+| Database | PostgreSQL 16 |
+| Auth | Auth.js v5 (NextAuth) + Google OAuth |
+| Unit tests | Vitest + Testing Library |
+| E2E tests | Playwright |
