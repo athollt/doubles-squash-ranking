@@ -72,7 +72,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 05.2 | [Migrate to proxy.ts & collapse split auth config](steps/step-05.2-proxy-migration.md) | complete | 05.1 |
 | 05.3 | [App shell — global nav & auth control](steps/step-05.3-app-shell.md) | complete | 05.1 |
 | 06 | [Settings management (admin)](steps/step-06-settings-management.md) | complete | 04 |
-| 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | pending | 03, 05, 06 |
+| 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | complete | 03, 05, 06 |
 | 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |
 | 09 | [Public ladder page](steps/step-09-public-ladder.md) | pending | 07 |
 | 10 | [Public session history](steps/step-10-session-history.md) | pending | 07 |

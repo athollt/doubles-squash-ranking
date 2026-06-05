@@ -21,6 +21,23 @@ async function setup() {
 }
 
 async function teardown() {
+  // Sessions that involve any [e2e] player: delete them first (cascade removes
+  // SessionPlayer + RatingsLog) so the players can then be removed without FK
+  // violations.
+  const e2ePlayers = await prisma.player.findMany({
+    where: { name: { contains: "[e2e]" } },
+    select: { id: true },
+  });
+  const ids = e2ePlayers.map((p) => p.id);
+  if (ids.length > 0) {
+    const sessions = await prisma.session.findMany({
+      where: { sessionPlayers: { some: { playerId: { in: ids } } } },
+      select: { id: true },
+    });
+    await prisma.session.deleteMany({
+      where: { id: { in: sessions.map((s) => s.id) } },
+    });
+  }
   await prisma.player.deleteMany({ where: { name: { contains: "[e2e]" } } });
   await prisma.user.deleteMany({ where: { email: { in: TEST_USER_EMAILS } } });
 }

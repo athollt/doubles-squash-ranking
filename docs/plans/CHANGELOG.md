@@ -332,3 +332,30 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 18/18 Playwright specs pass (+3 settings)
 
 ---
+
+## Step 07 — Session submission (scorer)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/session-validation.ts`: pure `validateSession(input)` — 4–8 players, no duplicates, wins are integers ≥ 0, total even and > 0; returns derived `totalPlayerWins`, `inferredGames` (= total/2), `playerCount`.
+- `app/submit/actions.ts`: `submitSessionAction(data)` — resolves on-the-fly players (creates them with `createdById` = current user), validates, creates the `Session` + nested `SessionPlayer` rows, runs the full recalculation, redirects to the ladder. Guarded by the proxy (auth required) + the user lookup.
+- `app/submit/page.tsx` (server, `force-dynamic`) + `submit-client.tsx`: slot-based form — 4 default slots, "Add player slot" up to 8, per-slot player `<select>` with an "+ Add new player…" option, wins input, optional notes. Mobile-first stacked layout.
+- `lib/session-validation.test.ts` (8) + `e2e/submit.spec.ts` (3).
+- E2E teardown extended to delete sessions involving `[e2e]` players (cascade) before removing the players, avoiding FK violations.
+
+### Deviations / notes
+
+- **Combobox**: the spec mentioned a searchable combobox; used a plain `<select>` with an inline "+ Add new player…" option instead. Simpler, accessible, no extra dependency; a searchable combobox can be a step-13 polish item if desired.
+- On-the-fly players are created **before** validation; if validation then fails the players already exist. Acceptable (they're real roster entries an admin can remove), and matches the spec's "create on-the-fly" intent. A stricter create-only-on-success path can be added later if it becomes a problem.
+- Behaviours 9/10 (recalc + snapshot after submit) are exercised by the happy-path E2E end-to-end (real submit → recalc runs → redirect), backed by the step-06 recalc unit tests.
+
+### Validation
+
+- `npm run test` — ✅ 64 unit tests pass (+8 session-validation)
+- `npm run build` — ✅ zero errors/warnings; `/submit` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 21/21 Playwright specs pass (+3 submit); teardown leaves zero `[e2e]` players and sessions
+
+---
