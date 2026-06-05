@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { auth } from "@/auth";
 import { navLinksFor, type Role } from "@/lib/nav";
+import { AdminMenu } from "@/components/admin-menu";
 import { SignOutButton } from "@/components/sign-out-button";
 
 // Global app shell header. Server Component: reads the session to decide which
@@ -34,6 +35,7 @@ export async function SiteHeader() {
               {link.label}
             </Link>
           ))}
+          {role === "ADMIN" && <AdminMenu />}
         </div>
         <div className="ml-auto flex items-center gap-3">
           {session?.user ? (

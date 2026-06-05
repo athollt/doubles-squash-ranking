@@ -579,3 +579,29 @@ configured to write into `components`/`lib`.
 - Installability (Chrome DevTools → Application → Manifest) remains the documented manual check
 
 ---
+
+## Step 13.1 — Admin navigation dropdown
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- Closes the nav gap deferred by steps 06, 08, 12: `/admin/settings`, `/admin/sessions` and `/admin/users` existed and worked but had **no link anywhere** (URL-only). The header's single "Admin" link only reached `/admin/players`.
+- `lib/nav.ts`: added `adminLinks` (Players · Sessions · Settings · Users, in dropdown order); `navLinksFor` no longer appends `/admin/players` to the primary row (admin pages now live in the dropdown).
+- `components/admin-menu.tsx`: client "Admin ▾" dropdown (ADMIN only) built on `@base-ui/react/menu` (already a dependency — no new package), styled to the project's popover tokens. Accessible (keyboard + ARIA `menuitem` roles).
+- `components/site-header.tsx`: renders `<AdminMenu />` when `role === "ADMIN"`.
+- `lib/nav.test.ts`: updated — admin row no longer carries an admin link; new test asserts `adminLinks` lists all four pages. `e2e/app-shell.spec.ts`: the admin spec now opens the dropdown, asserts all four labels are visible, and navigates to Settings; logged-out/scorer specs assert no "Admin" button.
+
+### Notes
+
+- "Admin" is now a `<button>` (menu trigger), not a `<link>` — the app-shell selectors were updated accordingly.
+
+### Validation
+
+- `npm run test` — ✅ 96 unit tests pass (+1 nav)
+- `npm run build` — ✅ zero errors/warnings (typechecks the base-ui `render` prop)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` (app-shell) — ✅ 4/4; dropdown reaches every admin page
+- Manual: signed in as admin, Admin ▾ lists Players/Sessions/Settings/Users and each navigates
+
+---
