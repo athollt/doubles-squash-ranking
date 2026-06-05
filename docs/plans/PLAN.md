@@ -71,7 +71,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 05.1 | [Credentials provider & E2E (steps 1–5)](steps/step-05.1-credentials-e2e.md) | complete | 04, 05 |
 | 05.2 | [Migrate to proxy.ts & collapse split auth config](steps/step-05.2-proxy-migration.md) | complete | 05.1 |
 | 05.3 | [App shell — global nav & auth control](steps/step-05.3-app-shell.md) | complete | 05.1 |
-| 06 | [Settings management (admin)](steps/step-06-settings-management.md) | pending | 04 |
+| 06 | [Settings management (admin)](steps/step-06-settings-management.md) | complete | 04 |
 | 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | pending | 03, 05, 06 |
 | 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |
 | 09 | [Public ladder page](steps/step-09-public-ladder.md) | pending | 07 |

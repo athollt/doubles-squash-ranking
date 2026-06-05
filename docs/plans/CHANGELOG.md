@@ -302,3 +302,33 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 15/15 Playwright specs pass (+4 app-shell)
 
 ---
+
+## Step 06 — Settings management (admin)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/settings.ts`: pure `validateSettings(updates)` — all values positive, finite numbers; returns a result union.
+- `lib/recalc.ts`: `runRecalculation(store, now)` — the full-recalc orchestrator (ADR-001) over a `RecalcStore` port: loads settings/players/sessions, runs the pure engine (step 03), replaces RatingsLog, writes a LadderSnapshot. Unit-tested with a fake store.
+- `lib/recalc-store.ts`: Prisma-backed `RecalcStore`. `replaceRatingsLog` is a delete-all + `createMany` in one `$transaction`; `createLadderSnapshot` stores the ladder as JSON.
+- `app/admin/settings/actions.ts`: `saveAndRecalculateAction(updates)` — admin-guarded; validates, persists changed values in a transaction, then runs the recalculation (behaviour 4).
+- `app/admin/settings/page.tsx` (server, `force-dynamic`) + `settings-client.tsx`: editable table of all settings + "Save & Recalculate".
+- `lib/settings.test.ts` (3) + `lib/recalc.test.ts` (2) + `e2e/settings.spec.ts` (3).
+
+### Deviations / notes
+
+- Same pure-port pattern as prior steps; the orchestration is unit-tested without Prisma.
+- Recalc currently runs on an empty-session DB (no sessions until step 07) — it completes cleanly producing an empty ladder, which the E2E exercises end-to-end via the real Save & Recalculate button.
+- The edit E2E captures and restores the seeded `KFactor` so reruns/manual testing stay clean (settings aren't part of the ephemeral teardown).
+- **Nav not extended**: the header still has a single Admin link to `/admin/players`; `/admin/settings` is reached by URL for now. A proper admin sub-nav is deferred to when more admin pages exist (≈ step 12) to avoid scope creep here.
+- `LadderSnapshot.rankings` stores the ladder array as JSON (Dates serialise to ISO strings); fine for an audit snapshot.
+
+### Validation
+
+- `npm run test` — ✅ 56 unit tests pass (+5: 3 settings, 2 recalc)
+- `npm run build` — ✅ zero errors/warnings; `/admin/settings` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 18/18 Playwright specs pass (+3 settings)
+
+---
