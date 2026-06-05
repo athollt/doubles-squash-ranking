@@ -43,4 +43,8 @@ describe("authorizeRoute", () => {
   it("allows the auth API routes through without a session", () => {
     expect(authorizeRoute("/api/auth/signin", null)).toBe("allow");
   });
+
+  it("allows the sign-in page through without a session", () => {
+    expect(authorizeRoute("/signin", null)).toBe("allow");
+  });
 });

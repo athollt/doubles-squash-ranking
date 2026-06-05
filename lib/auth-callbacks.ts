@@ -43,3 +43,32 @@ export function resolveSession<S extends { role?: string }>(
   session.role = token.role;
   return session;
 }
+
+export interface CredentialUser {
+  email: string;
+  passwordHash: string | null;
+}
+
+export type CredentialLookup = (
+  email: string,
+) => Promise<CredentialUser | null>;
+
+export type PasswordVerifier = (
+  plain: string,
+  hash: string,
+) => Promise<boolean>;
+
+// Credentials provider authorize(): look up the user, verify the password hash.
+// Returns the minimal identity for Auth.js (the allowlist/role callbacks then
+// run on top of this), or null to reject. Role is NOT trusted from here.
+export async function verifyCredentials(
+  email: string,
+  password: string,
+  lookup: CredentialLookup,
+  verify: PasswordVerifier,
+): Promise<{ email: string } | null> {
+  const user = await lookup(email);
+  if (!user || !user.passwordHash) return null;
+  const ok = await verify(password, user.passwordHash);
+  return ok ? { email: user.email } : null;
+}

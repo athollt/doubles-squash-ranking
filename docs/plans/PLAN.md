@@ -50,6 +50,12 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 - Document spec deviations in `CHANGELOG.md`
 - One commit per step
 - Only requested changes in the diff — no drive-by refactors
+- **E2E coverage (from step 05.1 onward)**: any step that adds or changes a
+  user-facing route MUST add/extend Playwright E2E for the user journeys it
+  introduces (alongside Vitest unit tests). E2E uses the ephemeral test-user and
+  test-data pattern established in step 05.1 (created in global setup, deleted in
+  global teardown — never left in the seed). A step that touches no route records
+  "no E2E required" in `CHANGELOG.md`. Step 05.1 back-fills E2E for steps 01–05.
 
 ---
 
@@ -62,6 +68,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | complete | 02 |
 | 04 | [Authentication & authorisation](steps/step-04-auth.md) | complete | 02 |
 | 05 | [Player management (admin)](steps/step-05-player-management.md) | complete | 04 |
+| 05.1 | [Credentials provider & E2E (steps 1–5)](steps/step-05.1-credentials-e2e.md) | complete | 04, 05 |
 | 06 | [Settings management (admin)](steps/step-06-settings-management.md) | pending | 04 |
 | 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | pending | 03, 05, 06 |
 | 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |
@@ -79,6 +86,13 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 
 ```bash
 npm run build && npm run test
+```
+
+From step 05.1 onward, steps that touch user-facing routes also run the E2E
+suite (requires local Postgres up + migrated):
+
+```bash
+npm run test:e2e
 ```
 
 ---

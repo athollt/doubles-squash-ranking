@@ -54,3 +54,29 @@ Append-only. ADRs capture *why*; code shows *what*. New entries at the bottom; s
 
 **Consequence**: A scorer who is also a player appears in both tables independently. Simple and correct for this use case.
 
+---
+
+## ADR-005: Out-of-repo symlinks excluded from Tailwind source detection
+
+**Date**: 2026-06-05
+**Status**: accepted
+
+**Context**: The repo root contains `.claude` / `.devin` symlinks pointing outside the project. Tailwind v4's automatic content detection walked the root and followed them, crashing the Turbopack dev server (see CHANGELOG step 01.1). This ADR back-fills the reference made there.
+
+**Decision**: Disable Tailwind automatic detection (`@import "tailwindcss" source(none)`) and declare explicit `@source` lines for `app`, `components`, `lib`.
+
+**Consequence**: New top-level dirs holding class-bearing files need their own `@source` line. Documented as a maintenance note in CHANGELOG step 01.1.
+
+---
+
+## ADR-006: Credentials provider alongside Google for testability
+
+**Date**: 2026-06-05
+**Status**: accepted
+
+**Context**: Step 04 specified Google OAuth as the only sign-in method, but the Google Cloud credentials do not yet exist (provisioned at deployment, step 14). This blocked all end-to-end verification of auth and the admin pages, and prevented local manual testing. Step 04's spec explicitly allowed manual/deferred E2E, but the gap left behaviour 8 (non-allowlisted account denied) unverified end-to-end.
+
+**Decision**: Add an Auth.js Credentials provider (username/password against the `User` table, bcrypt hash in a nullable `passwordHash` column) **alongside** the Google provider. The provider lives only in the Node-runtime config (`auth.ts`), never the edge `auth.config.ts`, preserving the step-04 split. The existing allowlist/role callbacks are unchanged — they are provider-agnostic. Two seeded users (admin + test scorer) serve as E2E fixtures.
+
+**Consequence**: The app can be signed into and fully E2E-tested without Google. Both providers coexist; once Google works (step 14), the credentials fields are hidden from the sign-in UI while the provider remains for E2E. The tradeoff is a password surface that must not be exposed in production — mitigated by hiding the UI and keeping seed passwords env-driven. Supersedes the "Google OAuth only" intent of step 04.
+

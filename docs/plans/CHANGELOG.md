@@ -201,3 +201,47 @@ configured to write into `components`/`lib`.
 - `npm run lint` — ✅ clean
 
 ---
+
+## Step 05.1 — Credentials provider & retroactive E2E (steps 1–5)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+**Part A — Credentials provider (enabler, DECISIONS.md ADR-006):**
+- `prisma/schema.prisma`: nullable `passwordHash` on `User` + migration `add_user_password_hash`.
+- `bcryptjs` (+ `@types/bcryptjs`); `lib/password.ts` (`hashPassword`/`verifyPassword`).
+- `lib/auth-callbacks.ts`: pure `verifyCredentials(email, password, lookup, verify)` — looks up user, checks hash, returns `{email}` or null. Role is never trusted from here (the allowlist/role callbacks run on top).
+- `prisma/seed.ts`: real admin gets a dev password from `SEED_ADMIN_PASSWORD` (local-only default `localdev`); `update` now sets the hash so an already-seeded admin gets one. No test users in the seed.
+- `auth.ts`: Credentials provider added to the **Node-runtime** instance only, alongside Google; `pages.signIn = "/signin"`.
+- `app/signin/` (`page.tsx` + `signin-form.tsx`): minimal email+password form (client `signIn("credentials")`) plus a Google button. No reset/registration — out of scope by decision.
+- `/signin` added to public routes in `lib/auth-rules.ts`; middleware redirects unauthenticated users to `/signin` (was `/api/auth/signin`).
+
+**Part B — E2E suite for steps 1–5 (11 specs, all green):**
+- `playwright.config.ts`: fixed `baseURL`/`webServer.url` `3000 → 3001`; serial (`workers: 1`); global setup/teardown.
+- `e2e/manage-test-users.ts` (run via tsx) creates/deletes ephemeral `TestAdmin`/`TestScorer`; `global-setup.ts`/`global-teardown.ts` shell out to it (Playwright's loader can't `require()` the generated ESM Prisma client). Teardown also removes `[e2e]`-tagged players.
+- Specs: public pages 200 (`public.spec.ts`); unauthenticated redirects (`auth-redirects.spec.ts`); non-allowlisted denied + scorer→`/unauthorised` + admin→`/admin/players` (`auth-flow.spec.ts`); player add/rename/status/duplicate (`player-management.spec.ts`).
+
+### Bugs found and fixed (the E2E earned its keep)
+
+- **Edge instance never exposed `role`.** The step-04 split put the `session` callback only on the Node `auth.ts`, so the middleware's edge `auth` saw no role → every admin was treated as unauthorised. Role-based gating was only ever unit-tested at `authorizeRoute`, never end-to-end. Fixed by adding the pure (Prisma-free) `session` callback to `auth.config.ts`. **This means admin route protection did not actually work before this step.**
+- **`NEXTAUTH_URL=http://localhost:3000` in the live `.env`** (drifted from `.env.example`) made Auth.js build redirects on `:3000` while the dev server runs on `:3001`. Fixed the local `.env` to `AUTH_URL=http://localhost:3001` (`.env.example` already correct; `.env` is gitignored).
+- **Playwright config pointed at `:3000`** — E2E could never have connected. Fixed.
+- **Vitest was globbing the Playwright `.spec.ts` files** and erroring. `vitest.config.ts` now includes only `*.test.{ts,tsx}` and excludes `e2e/`.
+
+### Deviations / notes
+
+- Credentials + Google **coexist**; a follow-up at step 14 hides the credentials fields once Google works (provider stays for E2E).
+- `signIn` helper waits for the post-login navigation off `/signin` before returning (cookie race).
+- Back-filled **ADR-005** (Tailwind source/symlink decision, previously only referenced) and added **ADR-006** to `DECISIONS.md`.
+- PLAN.md gained a standing **E2E rule**: from 05.1 on, any step touching a user-facing route must add Playwright E2E (ephemeral test-user pattern); route-less steps record "no E2E required".
+- Non-blocking: Next warns `middleware.ts` should become `proxy.ts` (deprecation). Left for a later step.
+
+### Validation
+
+- `npm run test` — ✅ 48 unit tests pass (6 files; +6 password/credentials)
+- `npm run build` — ✅ zero errors, zero Edge warnings; `/signin` present
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 11/11 Playwright specs pass; teardown leaves only the real admin and zero `[e2e]` players
+
+---

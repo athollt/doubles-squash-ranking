@@ -15,6 +15,7 @@ function isPublicRoute(pathname: string): boolean {
   return (
     pathname === "/" ||
     pathname === "/unauthorised" ||
+    pathname === "/signin" ||
     pathname.startsWith("/api/auth/") ||
     pathname === "/sessions" ||
     isPublicSessionDetail(pathname) ||

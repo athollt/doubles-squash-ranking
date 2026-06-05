@@ -21,11 +21,12 @@ enum PlayerStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      Role
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  email        String   @unique
+  name         String
+  role         Role
+  passwordHash String?
+  createdAt    DateTime @default(now())
 
   players  Player[]
   sessions Session[]

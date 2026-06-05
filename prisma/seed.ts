@@ -1,5 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../app/generated/prisma/client";
+import { hashPassword } from "../lib/password";
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
@@ -32,13 +33,20 @@ async function main() {
     });
   }
 
+  // Dev password for local manual sign-in via the Credentials provider.
+  // Local-only — production uses Google. Never used in prod.
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "localdev";
+  const passwordHash = await hashPassword(adminPassword);
+
   await prisma.user.upsert({
     where: { email: "atholl@tomlinson.co.za" },
-    update: {},
+    // Set the hash on update too, so an already-seeded admin gets a password.
+    update: { passwordHash },
     create: {
       email: "atholl@tomlinson.co.za",
       name: "Atholl",
       role: "ADMIN",
+      passwordHash,
     },
   });
 }
