@@ -274,3 +274,31 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 11/11 Playwright specs pass
 
 ---
+
+## Step 05.3 — App shell (global nav & auth control)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/nav.ts`: pure `navLinksFor(role)` — public links (`Ladder`, `Sessions`) always; `Submit` when signed in; `Admin` (→ `/admin/players`) for `ADMIN`.
+- `components/site-header.tsx`: Server Component reading `auth()`; renders app name, role-aware nav, and the auth control (user email + Sign out when logged in, else Sign in link).
+- `components/sign-out-button.tsx`: client `signOut({callbackUrl:"/"})`.
+- Wired `SiteHeader` into `app/layout.tsx` above `{children}` so it is global.
+- `lib/nav.test.ts` (3) + `e2e/app-shell.spec.ts` (4): role-based links and the sign-out round-trip.
+
+### Notes
+
+- **Structure only — no visual styling** (plain shadcn/Tailwind defaults), per the decision to keep palette/logo/polish at step 13.
+- Nav includes forward links (`/sessions`, `/submit`) that 404 until their steps (07/09) land — intentional, forward-compatible.
+- Reading `auth()` in the root layout makes pages dynamic; acceptable for now. Public-page static/caching is a step-09 concern.
+- No new auth workflows — sign-out only.
+
+### Validation
+
+- `npm run test` — ✅ 51 unit tests pass (+3 nav)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 15/15 Playwright specs pass (+4 app-shell)
+
+---
