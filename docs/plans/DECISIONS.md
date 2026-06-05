@@ -53,3 +53,30 @@ Append-only. ADRs capture *why*; code shows *what*. New entries at the bottom; s
 **Decision**: Separate `users` table (Google accounts + roles) from `players` table (name roster). No foreign key between them.
 
 **Consequence**: A scorer who is also a player appears in both tables independently. Simple and correct for this use case.
+
+---
+
+## ADR-005: AGENTS.md and CLAUDE.md are symlinks — do not overwrite
+
+**Date**: 2026-06-05
+**Status**: accepted
+
+**Context**: `create-next-app` (Next.js 16+) generates `AGENTS.md` and `CLAUDE.md` in the project root by default. In this repo those files are symlinks pointing to the shared LifeStack agent rules at `diffdev/agent-tools/AGENTS.md`. During the step-01 scaffold, the generated regular files conflicted with the symlinks during a git rebase, requiring manual resolution.
+
+The generated `AGENTS.md` contained important Next.js-specific agent guidance:
+```
+<!-- BEGIN:nextjs-agent-rules -->
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ
+from your training data. Read the relevant guide in node_modules/next/dist/docs/ before
+writing any code. Heed deprecation notices.
+<!-- END:nextjs-agent-rules -->
+```
+
+**Decision**:
+1. `AGENTS.md` and `CLAUDE.md` remain symlinks to the shared LifeStack rules. Do not replace them with regular files.
+2. When scaffolding or upgrading Next.js, always exclude these two files from any copy/rsync operation.
+3. Agents working on this repo **must** read `node_modules/next/dist/docs/` before writing any Next.js code — treat this as a standing rule equivalent to the generated file's instruction.
+
+**Consequence**: The Next.js agent guidance is not in a file on disk, but is captured here and must be followed manually. Any agent starting a step should check `node_modules/next/dist/docs/01-app/` for breaking changes before writing framework code.
