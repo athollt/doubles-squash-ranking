@@ -80,3 +80,22 @@ Append-only. ADRs capture *why*; code shows *what*. New entries at the bottom; s
 
 **Consequence**: The app can be signed into and fully E2E-tested without Google. Both providers coexist; once Google works (step 14), the credentials fields are hidden from the sign-in UI while the provider remains for E2E. The tradeoff is a password surface that must not be exposed in production — mitigated by hiding the UI and keeping seed passwords env-driven. Supersedes the "Google OAuth only" intent of step 04.
 
+---
+
+## ADR-007: Adopt the `proxy.ts` convention and collapse the split auth config
+
+**Date**: 2026-06-05
+**Status**: accepted (supersedes the split-config rationale of ADR-006 / step 04)
+
+**Context**: Next.js 16 deprecates the root `middleware.ts` convention in favour of `proxy.ts` (the build emits a deprecation warning). The two are not identical: **`middleware.ts` runs in the Edge runtime; `proxy.ts` defaults to the Node.js runtime** (and forbids the `runtime` config option). 
+
+Step 04 introduced a *split* auth config specifically to work around the Edge runtime: `auth.config.ts` (Prisma-free, Edge-safe, shared with the middleware) and `auth.ts` (full Node instance with the Prisma-backed callbacks + Credentials provider). The split existed *only* because the middleware ran on the Edge and could not load Prisma/bcrypt. Under `proxy.ts` running in Node, that constraint no longer exists.
+
+The project has **no users yet** — the cheapest possible moment to correct foundational architecture.
+
+**Decision**:
+1. Rename `middleware.ts` → `proxy.ts`. The `config.matcher` export is unchanged; the Auth.js `auth(...)` wrapper remains the default export. 
+2. Collapse the split: merge `auth.config.ts` back into `auth.ts` and build the single auth instance once. The proxy imports `auth` from `auth.ts`. The Edge-safety carve-outs (e.g. the duplicated `session` callback added in step 05.1) are removed — there is one config with all providers and callbacks.
+3. The pure, provider-agnostic logic (`authorizeRoute`, `resolveSignIn`/`resolveJwt`/`resolveSession`/`verifyCredentials` in `lib/`) is unchanged — those are not coupled to the runtime and keep their unit tests.
+
+**Consequence**: One auth config instead of two; no Edge/Node duplication to keep in sync (the step 05.1 bug — the Edge instance silently missing the `session` callback — becomes structurally impossible). The proxy now runs in Node, so it *may* touch Prisma directly if ever needed (it currently does not — it still only reads `role` off the signed JWT). Risk: the migration touches the core auth wiring, but the 11 Playwright E2E specs from step 05.1 cover the exact behaviour (redirects + role gating) and are the acceptance gate. If a future need arises for Edge middleware, this decision would have to be revisited (re-introducing a Prisma-free config).

@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
-import NextAuth from "next-auth";
-import { authConfig } from "@/auth.config";
+import { auth } from "@/auth";
 import { authorizeRoute } from "@/lib/auth-rules";
 
-// Build an Edge-safe auth instance from the Prisma-free config. The middleware
-// only reads the role off the signed JWT, so no DB access is needed here.
-const { auth } = NextAuth(authConfig);
-
+// Next.js proxy convention (replaces the deprecated middleware.ts). Runs in the
+// Node runtime, so it shares the single auth instance from auth.ts — no
+// separate Edge-safe config needed (DECISIONS.md ADR-007). It only reads the
+// role off the signed JWT; route decisions live in the pure authorizeRoute.
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   const decision = authorizeRoute(

@@ -245,3 +245,32 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 11/11 Playwright specs pass; teardown leaves only the real admin and zero `[e2e]` players
 
 ---
+
+## Step 05.2 — Migrate to `proxy.ts` & collapse the split auth config
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- **`middleware.ts` → `proxy.ts`** (Next.js 16 convention; removes the build deprecation warning). The `auth((req) => …)` wrapper and `config.matcher` are unchanged.
+- **Collapsed the split config**: deleted `auth.config.ts`; `auth.ts` is now a single `NextAuth({...})` with both providers (Google + Credentials) and all three callbacks (`signIn`, `jwt`, `session`). `proxy.ts` imports `auth` from `@/auth`.
+- The duplicated `session` callback that step 05.1 had to add to the Edge config is gone — there is one config, so the Edge/Node duplication (and its failure mode) no longer exists.
+- Pure logic in `lib/` (`auth-rules`, `auth-callbacks`, `password`) and all unit tests unchanged.
+
+### Why now (ADR-007)
+
+`proxy.ts` defaults to the **Node.js runtime**, not Edge. The split config existed *only* to keep Prisma out of the Edge middleware (ADR-006 / step 04). Under Node that constraint is gone, so the split is pure overhead. With no users yet, this is the cheapest time to correct it. Recorded as **ADR-007** before implementation.
+
+### Deviations / notes
+
+- This is a refactor, not new behaviour: the acceptance gate was the **11 step-05.1 E2E specs**, all of which still pass through the new proxy + single config. The earlier safety net is exactly what made this safe.
+- The proxy still only reads `role` off the signed JWT (no Prisma call in the request path), but could now touch Prisma directly if ever needed.
+
+### Validation
+
+- `npm run test` — ✅ 48 unit tests pass (unchanged)
+- `npm run build` — ✅ zero errors, **no `middleware` deprecation warning**, no Edge warnings; route shown as `ƒ Proxy`
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 11/11 Playwright specs pass
+
+---

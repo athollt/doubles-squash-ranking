@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
+import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { authConfig } from "@/auth.config";
 import { prisma } from "@/lib/prisma";
 import { verifyPassword } from "@/lib/password";
 import {
@@ -19,16 +19,19 @@ const lookupCredentialUser = (email: string) =>
     select: { email: true, passwordHash: true },
   });
 
-// Full Node-runtime auth instance: the Prisma-backed callbacks and the
-// Credentials provider (bcrypt) run here (route handler, server actions),
-// never in the Edge middleware. Credentials sits alongside Google so the app
-// can be signed into for manual testing and E2E without Google Cloud creds
-// (DECISIONS.md ADR-006).
+// Single auth instance. The proxy (proxy.ts) and the route handler / server
+// actions all use it. proxy.ts runs in the Node runtime, so there is no longer
+// an Edge constraint forcing a Prisma-free config (DECISIONS.md ADR-007 —
+// supersedes the ADR-006 split). Google sits alongside Credentials so the app
+// can be signed into for manual testing and E2E without Google Cloud creds.
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  ...authConfig,
+  session: { strategy: "jwt" },
   pages: { signIn: "/signin" },
   providers: [
-    ...authConfig.providers,
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    }),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
