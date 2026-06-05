@@ -61,7 +61,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | complete | 01 |
 | 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | complete | 02 |
 | 04 | [Authentication & authorisation](steps/step-04-auth.md) | complete | 02 |
-| 05 | [Player management (admin)](steps/step-05-player-management.md) | pending | 04 |
+| 05 | [Player management (admin)](steps/step-05-player-management.md) | complete | 04 |
 | 06 | [Settings management (admin)](steps/step-06-settings-management.md) | pending | 04 |
 | 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | pending | 03, 05, 06 |
 | 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |

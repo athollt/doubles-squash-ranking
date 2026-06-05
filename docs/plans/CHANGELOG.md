@@ -173,3 +173,31 @@ configured to write into `components`/`lib`.
 - `npm run lint` — ✅ clean
 
 ---
+
+## Step 05 — Player management (admin)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/players.ts`: pure `createPlayer`, `updatePlayerName`, `updatePlayerStatus`, each taking a `PlayerStore` port (no Prisma import). Validation: trim + non-empty; case-insensitive name uniqueness (rename excludes the player's own row so a case-only edit is allowed). Returns a `PlayerResult` discriminated union (`{ok:true,player}` / `{ok:false,error}`) per ADR-003.
+- `lib/player-store.ts`: Prisma-backed `PlayerStore`. `findByNameInsensitive` uses Prisma `mode: "insensitive"` (no DB unique index on `Player.name`).
+- `app/admin/players/actions.ts`: server actions (`createPlayerAction`, `updatePlayerNameAction`, `updatePlayerStatusAction`) — each guards `session.role === "ADMIN"` (defence-in-depth beyond middleware), delegates to the pure function, and `revalidatePath("/admin/players")` on success.
+- `app/admin/players/page.tsx`: server component, lists all players (incl. REMOVED) ordered by name; `force-dynamic` so data is never prerendered/cached. `app/admin/players/players-client.tsx`: client component — Add dialog, Edit (rename) dialog, status toggle (Remove ↔ Reactivate), inline error display via `useTransition`.
+- shadcn `table`, `input`, `dialog` components added.
+- `lib/players.test.ts` (10): covers behaviours 1–6.
+
+### Deviations from spec
+
+- **Logic extracted to pure functions over a `PlayerStore` port** (mirrors step 04), so behaviours 1–6 are unit-tested without a live DB. The server actions are thin Prisma wrappers.
+- **Behaviour 7 (scorer denied `/admin/players`) not re-tested** — already covered verbatim by the step-04 `lib/auth-rules.test.ts` cases for `/admin/players` (scorer → unauthorised, admin → allow). Server actions also re-check the admin role.
+- **Rename self-collision**: uniqueness on rename excludes the player's own id, so a player can keep its name or change only its case. Surfaced as an explicit test.
+- **No `createdById` set on create** — the step's `createPlayer(name)` signature takes only a name, and the schema makes `createdById` nullable. Left null for now; can be wired to the session user later if needed.
+
+### Validation
+
+- `npm run test` — ✅ 42 tests pass (10 players + 10 auth-rules + 5 auth-callbacks + 15 engine + 2 Prisma)
+- `npm run build` — ✅ zero errors, zero Edge warnings; `/admin/players` renders dynamically (`ƒ`)
+- `npm run lint` — ✅ clean
+
+---
