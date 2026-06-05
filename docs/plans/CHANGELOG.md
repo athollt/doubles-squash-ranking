@@ -142,3 +142,34 @@ configured to write into `components`/`lib`.
 - `npm run lint` — ✅ clean
 
 ---
+
+## Step 04 — Authentication & authorisation
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/auth-rules.ts`: pure `authorizeRoute(pathname, auth)` → `"allow" | "signin" | "unauthorised"`. Public: `/`, `/unauthorised`, `/api/auth/*`, `/sessions`, `/sessions/<id>` (detail only), `/players/*`. `/sessions/<id>/edit` and everything else require auth; `/admin/*` additionally requires `ADMIN`.
+- `lib/auth-callbacks.ts`: pure `resolveSignIn`, `resolveJwt`, `resolveSession`, each taking a `UserLookup` dependency (no Prisma import) so the callbacks are unit-testable in isolation.
+- `auth.config.ts` + `auth.ts`: Auth.js v5 split config. `auth.config.ts` is Prisma-free (Google provider, JWT sessions) and shared by the Edge middleware; `auth.ts` is the Node-runtime instance that wires the Prisma-backed callbacks (`signIn` allowlist, `jwt` role attach, `session` role expose).
+- `app/api/auth/[...nextauth]/route.ts`: Auth.js GET/POST handlers.
+- `middleware.ts`: builds an Edge-safe `auth` from `authConfig` (no Prisma) and delegates to `authorizeRoute`; redirects to `/api/auth/signin` (with `callbackUrl`) or `/unauthorised`. Matcher excludes `_next` and static assets.
+- `app/unauthorised/page.tsx`: "Your Google account does not have access. Contact the admin."
+- `types/next-auth.d.ts`: augments `Session` and `JWT` with `role: Role`.
+- `lib/auth-rules.test.ts` (10) + `lib/auth-callbacks.test.ts` (5): cover all 9 step behaviours as pure logic.
+
+### Deviations from spec
+
+- **Roles are uppercase** (`ADMIN`/`SCORER`) per the step 02 Prisma `Role` enum, not the lowercase `admin`/`scorer` in RESEARCH §2's sketch.
+- **Split config (`auth.config.ts`).** Importing Prisma into the Edge middleware loads `node:path`/`node:url` (the pg driver adapter), which the Edge Runtime rejects. The Auth.js v5 split-config pattern keeps Prisma out of the middleware; the middleware only reads `role` off the signed JWT, so it needs no DB access. Eliminated both Edge Runtime build warnings.
+- **`@auth/prisma-adapter` installed but not wired.** The step lists it "for user lookup only", but sessions are JWT and the user lookup is a direct `prisma.user.findUnique` in the callbacks — the adapter (which manages a DB session/account schema) is not needed. Left installed per the step's dependency list; can be removed later if undesired.
+- **Env naming**: `.env.example` now uses Auth.js v5's `AUTH_URL`/`AUTH_SECRET` (was `NEXTAUTH_URL`/`NEXTAUTH_SECRET`; v5 still accepts the latter as a fallback). `AUTH_URL` points at port 3001 to match the dev server.
+- **Logic extracted to pure functions** rather than inlined in the Auth.js config/middleware, so the 9 behaviours are testable without the OAuth runtime or a live Google flow. Real Google OAuth (behaviour 8 end-to-end) remains manual/Playwright verification once OAuth credentials exist.
+
+### Validation
+
+- `npm run test` — ✅ 32 tests pass (10 auth-rules + 5 auth-callbacks + 15 engine + 2 Prisma)
+- `npm run build` — ✅ zero errors, zero Edge Runtime warnings; `/unauthorised`, `/api/auth/[...nextauth]`, and Middleware all present
+- `npm run lint` — ✅ clean
+
+---
