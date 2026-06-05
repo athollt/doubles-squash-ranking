@@ -415,3 +415,37 @@ configured to write into `components`/`lib`.
 - `npm run test:e2e` — ✅ 27/27 Playwright specs pass (+2 ladder); teardown leaves zero `[e2e]` players and sessions
 
 ---
+
+## Step 09.1 — Sample data seed (full-system test data)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/sample-data.ts`: pure, seeded, deterministic generator. `generateSampleSessions(SAMPLE_CONFIG)` returns a half-year schedule (10-player roster, 2026-01-05 → 2026-06-07, 3–4 sessions/week, 77 sessions). Per session: mostly 4 players (some 5/6/8), even-total win spreads biased by a deterministic per-player skill (so the ladder isn't flat), short (2-2-2 ≈ 5–8 games) vs long (best-of ≈ 9–12 games) styles. Dave L and Mike T stop early (inactive at the anchor); Grahame C plays early, has a >90-day gap, then returns within 90 days (active, returning-player boost). mulberry32 PRNG seeded from config — same config ⇒ identical output.
+- `lib/sample-data.test.ts` (7): validity (all pass `validateSession`), determinism, 3–4/week frequency, inactive-cutoff + returning-gap, player-count mix (4 majority, ≥1 each of 5/6/8), short+long style mix.
+- `prisma/seed-sample.ts`: opt-in seed layered on the blank baseline. Reuses the seeded admin as `submittedBy`, rebuilds its own sample rows idempotently (delete sample players + their sessions, clear derived RatingsLog/LadderSnapshot, re-insert), then **replays a weekly recalc** writing one `LadderSnapshot` per week (movement history) and a final full `RatingsLog`. Inlines the load→`recalculate`→write loop (relative imports only; tsx doesn't resolve `@/`).
+- `package.json`: `"seed:sample": "tsx prisma/seed-sample.ts"`.
+
+### Two start states
+
+- **Blank**: `npx prisma migrate dev` (or `prisma db seed`) → 15 settings + admin only (production-shaped). `prisma/seed.ts` is unchanged.
+- **Populated**: baseline, then `npm run seed:sample`.
+
+### Deviations / notes
+
+- **Grahame C = returning + active, not inactive.** The user's brief ("Grahame C inactive AND returning") conflicts under a 90-day active threshold; resolved with the user to *returning + currently active (boosted)*. So 2 players are inactive (Dave L, Mike T) and Grahame exercises the returning boost — matching the plan's "2–3 inactive + 1 returning".
+- **Determinism**: session timestamps are fixed 2026 dates (never "today"); win spreads come from the seeded PRNG; re-running rebuilds the same set. The only clock-derived value is the per-week `now` passed to recalc — set to the simulated week's latest session date, which is what makes active/inactive and the activity bonus correct as-of each week.
+- The weekly snapshots store `movement="new"` (same as the live recalc orchestrator); the ladder page derives real movement live from the previous snapshot's `{playerId, rank}` — no engine/orchestrator change needed.
+- The E2E suite runs unchanged against the now-populated DB (sample roster has no `[e2e]` tag, so teardown leaves it intact; the ephemeral test-user pattern is unaffected).
+
+### Validation
+
+- `npm run test` — ✅ 77 unit tests pass (+7 sample-data)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run seed:sample` — ✅ 10 players, 77 sessions, 22 weekly snapshots, 350 ratings-log rows; **idempotent** (identical counts on re-run)
+- Manual ladder check: 8 active (incl. Grahame C #4, boosted) above 2 inactive (Dave L, Mike T); ratings spread by skill
+- `npx playwright test` — ✅ 27/27 pass (exit 0) against the populated DB; sample roster intact, zero `[e2e]` leftovers
+
+---

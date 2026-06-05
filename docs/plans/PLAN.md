@@ -75,6 +75,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | complete | 03, 05, 06 |
 | 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | complete | 07 |
 | 09 | [Public ladder page](steps/step-09-public-ladder.md) | complete | 07 |
+| 09.1 | [Sample data seed (full-system test data)](steps/step-09.1-sample-data.md) | complete | 09 |
 | 10 | [Public session history](steps/step-10-session-history.md) | pending | 07 |
 | 11 | [Public player rating trend](steps/step-11-player-trend.md) | pending | 07 |
 | 12 | [User management (admin)](steps/step-12-user-management.md) | pending | 04 |
