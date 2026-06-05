@@ -107,3 +107,38 @@ configured to write into `components`/`lib`.
 - `npm run build` — ✅ zero errors, TypeScript clean
 
 ---
+
+## Step 03 — Rating algorithm engine
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/rating-engine.ts`: pure `recalculate(input)` function implementing the full
+  algorithm (SPEC §5–7) — strength weight, expected vs actual share, session weight
+  (sqrt + clamp), new/returning-player multiplier, activity bonus (capped), current
+  ratings, and ladder build with active/inactive sorting and movement indicators.
+- `lib/rating-engine.test.ts`: 15 unit tests covering all 13 step behaviours
+  (including a golden test against the SPEC §2 example with hand-computed ratings).
+- Exported types: `RecalcInput`, `RecalcOutput`, `RatingsLogEntry`, `PlayerRating`,
+  `LadderEntry`, `Movement`, `PlayerInput`, `SessionInput`.
+
+### Deviations from spec
+
+- **`RecalcInput` extended beyond the step's sketch** (the step said "or similar"):
+  added `players` (roster with `status`, needed to exclude REMOVED players from the
+  ladder per ADR-004 while keeping them in history), `now` (so activity/active are
+  computed deterministically — keeps the function pure rather than reading the clock),
+  and optional `previousRankings` (for movement indicators, behaviour 12).
+- **Movement shape**: returned as `{ direction: "up"|"down"|"same"|"new", places }`
+  rather than a pre-rendered `↑N/↓N/—` string, leaving presentation to the UI layer.
+- The engine is purely mathematical and processes whatever sessions it is given;
+  session validity is enforced at submission (ADR-003), not here.
+
+### Validation
+
+- `npm run test` — ✅ 17 tests pass (15 engine + 2 Prisma integration)
+- `npm run build` — ✅ zero errors
+- `npm run lint` — ✅ clean
+
+---

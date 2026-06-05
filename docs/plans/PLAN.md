@@ -59,7 +59,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 |---|------|--------|------------|
 | 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | complete | — |
 | 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | complete | 01 |
-| 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | pending | 02 |
+| 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | complete | 02 |
 | 04 | [Authentication & authorisation](steps/step-04-auth.md) | pending | 02 |
 | 05 | [Player management (admin)](steps/step-05-player-management.md) | pending | 04 |
 | 06 | [Settings management (admin)](steps/step-06-settings-management.md) | pending | 04 |
