@@ -504,3 +504,33 @@ configured to write into `components`/`lib`.
 - Manual render: unknown id → 404; zero-session player → empty state (200); removed player → accessible with "Removed" badge (200); recharts chart + trend table render for a player with history
 
 ---
+
+## Step 12 — User management (admin)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/users.ts`: pure `createUser` / `updateUserRole` / `deleteUser` over a `UserStore` port (mirrors `lib/players.ts`). Validation: email format (pragmatic regex), trimmed non-empty name, case-insensitive email uniqueness. `deleteUser(id, actingUserId, store)` guards self-delete and last-admin (refuses when the target is an ADMIN and `countAdmins() <= 1`). Discriminated-union results (`UserResult` / `DeleteResult`).
+- `lib/user-store.ts`: Prisma-backed `UserStore` (`findByEmailInsensitive`, `findById`, `countAdmins`, `create`, `updateRole`, `delete`).
+- `app/admin/users/actions.ts`: `createUserAction` / `updateUserRoleAction` / `deleteUserAction` — each re-checks `role === "ADMIN"` (defence-in-depth) and resolves the acting admin's id (email → user lookup) so the delete guard knows "self"; `revalidatePath("/admin/users")` on success.
+- `app/admin/users/page.tsx` (server, `force-dynamic`) + `users-client.tsx`: table (email, name, role, created); Add User dialog (email, name, role select); per-row role `<select>` that saves on change; per-row Remove disabled for self and for the last admin (with explanatory `title`). Row-level errors surfaced inline.
+- `lib/users.test.ts` (11) covering behaviours 1–8; `e2e/user-management.spec.ts` (5) covering 1–5, 7–9.
+
+### Deviations / notes
+
+- **New users have no `passwordHash`** — they sign in via Google once OAuth exists (step 14). The credentials provider only authenticates users that already have a hash (the seed admin / E2E fixtures), so admin-created accounts can't use the password path, which is correct.
+- **Native `<select>` for role** (no shadcn `select` component exists) — consistent with the step-07 plain-`<select>` decision; avoids a new dependency before the step-13 polish pass.
+- **Behaviour 6 (last admin) is unit-tested only.** The serial E2E runs against a shared DB that always has ≥2 admins (seed admin + `TestAdmin`), so a single-admin state can't be fixtured without disturbing other specs; the pure guard + its unit test are the gate, and the UI disables the button via the page's `adminCount`.
+- **Behaviour 5 (self-delete)** is both unit-tested and E2E-asserted (the acting admin's own Remove button is disabled). The action also re-checks it server-side.
+- **`/admin/users` gating (behaviour 9)** reuses the existing `authorizeRoute` (`/admin/*` ⇒ ADMIN) — already unit-tested in `lib/auth-rules.test.ts`; the new E2E adds the end-to-end scorer-denied assertion.
+- **Nav unchanged**: the header's single Admin link still points at `/admin/players`; `/admin/users` (like `/admin/settings`) is reached by URL. A proper admin sub-nav across players/settings/users remains deferred to step 13 (polish) to keep this step surgical.
+- **E2E cleanup**: created users are `[e2e]`-named; `e2e/manage-test-users.ts` teardown now also deletes users whose name contains `[e2e]` (verified zero leftovers after a full run).
+
+### Validation
+
+- `npm run test` — ✅ 93 unit tests pass (+11 users)
+- `npm run build` — ✅ zero errors/warnings; `/admin/users` dynamic (`ƒ`)
+- `npm run test:e2e` — ✅ 37/37 Playwright specs pass (+5 user-management); teardown leaves zero `[e2e]` users/players
+
+---

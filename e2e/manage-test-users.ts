@@ -39,7 +39,9 @@ async function teardown() {
     });
   }
   await prisma.player.deleteMany({ where: { name: { contains: "[e2e]" } } });
+  // The two fixture users plus any [e2e]-named users created by the user-management spec.
   await prisma.user.deleteMany({ where: { email: { in: TEST_USER_EMAILS } } });
+  await prisma.user.deleteMany({ where: { name: { contains: "[e2e]" } } });
 }
 
 const mode = process.argv[2];
