@@ -934,3 +934,33 @@ region existed — overturned once provisioning proved it didn't.)
 - Production-domain Google sign-in proof → **14.4** (after first deploy).
 
 ---
+
+## Step 14.3 — GitHub Actions secret (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/03-github-actions.md`.
+
+### Delivered
+
+- `FLY_API_TOKEN` added as a **GitHub Actions repository secret** (the deploy-scoped
+  token `github-actions-2` from 14.2). This is the only secret CI needs — `fly deploy`
+  builds remotely and reads runtime config from Fly secrets, so no GHCR, no SSH key, no
+  app secrets in GitHub.
+- Confirmed `origin` = `github.com/athollt/doubles-squash-ranking` and default/deploy
+  branch = `main`.
+
+### Token hygiene
+
+- Revoked the spare deploy token (`github-actions`, unused + exposed during 14.2);
+  only `github-actions-2` (the one in the GitHub secret) remains active.
+- Note: the **personal** `FLY_API_TOKEN` in local `.env` was also exposed earlier (the
+  `source .env` mishap) — broader-scoped, left active so local `fly` keeps working;
+  rotate at discretion.
+
+### Validation
+
+- `fly tokens list` — `github-actions` shows REVOKED AT; `github-actions-2` active.
+- GitHub repo secret `FLY_API_TOKEN` present (set via browser; value masked).
+
+---
