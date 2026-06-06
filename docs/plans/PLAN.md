@@ -82,7 +82,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 13 | [PWA & branding](steps/step-13-pwa-branding.md) | complete | 09 |
 | 13.1 | Admin navigation dropdown (no step file — see CHANGELOG) | complete | 12 |
 | 13.2 | [CI prototype (logo, colours, fonts)](steps/step-13.2-ci-prototype.md) | complete | 13 |
-| 13.3 | [Mobile-first prototype (ladder + submit)](steps/step-13.3-mobile-prototype.md) | pending | 13.2 |
+| 13.3 | [Mobile-first prototype (ladder + submit)](steps/step-13.3-mobile-prototype.md) | complete | 13.2 |
 | 13.4 | [Design-system foundation](steps/step-13.4-design-system.md) | pending | 13.3 |
 | 13.5 | [Redesign rollout (re-implement screens)](steps/step-13.5-redesign-rollout.md) | pending | 13.4 |
 | 13.6 | [Fix create-prd & create-plan skills](steps/step-13.6-skill-fixes.md) | pending | 13.5 |

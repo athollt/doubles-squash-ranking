@@ -639,3 +639,45 @@ configured to write into `components`/`lib`.
   captured in `docs/plans/PROTOTYPE-NOTES-ci.md`.
 
 ---
+
+## Step 13.3 — Mobile-first prototype (ladder + submit)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- In-app UX prototype (`/prototype` skill, UI branch, sub-shape A) under
+  `app/_prototype/` + `?variant=` gate blocks in `app/page.tsx` and
+  `app/submit/page.tsx`, rendered in the Court/day CI (Archivo + Space Grotesk loaded
+  in a scoped prototype stylesheet). Floating switcher; real data/auth above the gate;
+  submit writes stubbed. **All prototype code deleted after the decision** — the two
+  pages are byte-identical to their pre-prototype state.
+- **Decisions captured** in `docs/plans/PROTOTYPE-NOTES-ux.md`:
+  - **Ladder** = dense table, columns **# · Player · Score · Played · Trend**, **New**
+    badge. Score displays rounded `ladderScore` (the ranked number); Played =
+    `sessionsLast90Days`.
+  - **Submit** = flat all-players capture (**no teams** — corrected a wrong early
+    variant; the engine infers pairings), **chip player picker + segmented wins
+    buttons**, slots 4→8, label "wins", button "Log tonight's results".
+  - **Navigation** = bottom tab bar + accent FAB; sticky top bar.
+- **Terminology locked** and pinned in `CONTEXT-redesign.md` → "User-facing glossary"
+  (Score, Played, Trend, New, Session [internal]/warm button, Wins; Active/Inactive
+  kept). Display-copy only — internal/DB names unchanged.
+
+### Notes
+
+- Lesson for 13.4: the prototype's variants initially inherited the app's Geist font
+  via `var(--font-sans)` — the design system must wire **Archivo + Space Grotesk** into
+  `app/layout.tsx`, not assume them.
+- No tests/E2E added — prototype code was throwaway and is removed; the winning
+  approach is re-implemented with tests in 13.5.
+
+### Validation
+
+- Prototype served all variants (ladder 200; submit auth-gated as designed).
+- After deletion: `npm run lint` ✅ clean · `npm run test` ✅ 96/96 ·
+  `npm run build` ✅ no errors, no stray `_prototype` route · `git diff` on both pages
+  empty (clean revert).
+- Winning direction + full terminology confirmed with the human before capture.
+
+---
