@@ -84,7 +84,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 13.2 | [CI prototype (logo, colours, fonts)](steps/step-13.2-ci-prototype.md) | complete | 13 |
 | 13.3 | [Mobile-first prototype (ladder + submit)](steps/step-13.3-mobile-prototype.md) | complete | 13.2 |
 | 13.4 | [Design-system foundation](steps/step-13.4-design-system.md) | complete | 13.3 |
-| 13.5 | [Redesign rollout (re-implement screens)](steps/step-13.5-redesign-rollout.md) | pending | 13.4 |
+| 13.5 | [Redesign rollout (re-implement screens)](steps/step-13.5-redesign-rollout.md) | complete | 13.4 |
 | 13.6 | [Fix create-prd & create-plan skills](steps/step-13.6-skill-fixes.md) | pending | 13.5 |
 | 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | pending | 04 |
 | 14.2 | [Hetzner production environment (manual)](steps/step-14.2-hetzner.md) | pending | 14.1 |

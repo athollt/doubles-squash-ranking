@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { prismaRecalcStore } from "@/lib/recalc-store";
-import { recalculate, type LadderEntry, type Movement } from "@/lib/rating-engine";
+import { recalculate, type LadderEntry, type PlayerRating } from "@/lib/rating-engine";
 import {
   lastUpdatedFrom,
   previousRankingsFromSnapshot,
@@ -14,6 +14,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageShell } from "@/components/ui/page-shell";
+import { Badge } from "@/components/ui/badge";
+import { Trend } from "@/components/ui/trend";
 
 export const metadata = {
   title: "Ladder — Doubles Squash @ BSC",
@@ -22,76 +25,44 @@ export const metadata = {
 // Derives the live ladder on every request (ADR-002) — trivial at this scale.
 export const dynamic = "force-dynamic";
 
-function MovementIndicator({ movement }: { movement: Movement }) {
-  switch (movement.direction) {
-    case "up":
-      return <span className="text-green-600">↑{movement.places}</span>;
-    case "down":
-      return <span className="text-red-600">↓{movement.places}</span>;
-    case "new":
-      return <span className="text-blue-600">NEW</span>;
-    default:
-      return <span className="text-zinc-400">—</span>;
-  }
-}
-
-function StatusBadge({ entry }: { entry: LadderEntry }) {
-  return (
-    <>
-      {!entry.isActive && (
-        <span className="ml-2 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-600">
-          Inactive
-        </span>
-      )}
-      {entry.isProvisional && (
-        <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700">
-          (P)
-        </span>
-      )}
-    </>
-  );
-}
-
-function LadderRows({ entries }: { entries: LadderEntry[] }) {
+// One ladder row. `Score` = rounded ladderScore (the ranked number); `Played` =
+// sessions in the last 90 days; `Trend` = rank change. Terms per CONTEXT-redesign.md.
+function LadderRows({
+  entries,
+  ratings,
+}: {
+  entries: LadderEntry[];
+  ratings: Map<string, PlayerRating>;
+}) {
   return (
     <>
       {entries.map((e) => (
         <TableRow key={e.playerId}>
-          <TableCell className="tabular-nums">{e.rank}</TableCell>
+          <TableCell className="text-primary font-heading font-black tabular-nums">
+            {e.rank}
+          </TableCell>
           <TableCell>
-            <Link href={`/players/${e.playerId}`} className="hover:underline">
+            <Link href={`/players/${e.playerId}`} className="font-medium hover:underline">
               {e.name}
             </Link>
-            <StatusBadge entry={e} />
+            {e.isProvisional && (
+              <Badge variant="new" className="ml-2">
+                New
+              </Badge>
+            )}
+          </TableCell>
+          <TableCell className="font-heading text-right font-bold tabular-nums">
+            {Math.round(e.ladderScore)}
+          </TableCell>
+          <TableCell className="text-center tabular-nums">
+            {ratings.get(e.playerId)?.sessionsLast90Days ?? 0}
           </TableCell>
           <TableCell className="text-right">
-            <MovementIndicator movement={e.movement} />
+            <Trend movement={e.movement} />
           </TableCell>
         </TableRow>
       ))}
     </>
-  );
-}
-
-function LadderCards({ entries }: { entries: LadderEntry[] }) {
-  return (
-    <ul className="flex flex-col gap-2">
-      {entries.map((e) => (
-        <li
-          key={e.playerId}
-          className="flex items-center justify-between rounded border p-3"
-        >
-          <span className="flex items-center">
-            <span className="tabular-nums text-zinc-500">{e.rank}.</span>
-            <Link href={`/players/${e.playerId}`} className="ml-2 hover:underline">
-              {e.name}
-            </Link>
-            <StatusBadge entry={e} />
-          </span>
-          <MovementIndicator movement={e.movement} />
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -116,7 +87,7 @@ export default async function Home() {
       )
     : undefined;
 
-  const { ladder } = recalculate({
+  const { ladder, currentRatings } = recalculate({
     now: new Date(),
     settings,
     players,
@@ -129,65 +100,51 @@ export default async function Home() {
   const lastUpdated = lastUpdatedFrom(sessions);
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">BSC Doubles Squash Ladder</h1>
-
+    <PageShell title="Ladder" subtitle="Live doubles rankings · updated after every session">
       {ladder.length === 0 ? (
-        <p className="text-zinc-500">
+        <p className="text-muted-foreground">
           No sessions recorded yet. The ladder appears once the first session is
           submitted.
         </p>
       ) : (
-        <>
-          {/* Mobile: card list */}
-          <div className="sm:hidden">
-            <LadderCards entries={active} />
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>Player</TableHead>
+              <TableHead className="text-right">Score</TableHead>
+              <TableHead className="text-center">Played</TableHead>
+              <TableHead className="text-right">Trend</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <LadderRows entries={active} ratings={currentRatings} />
             {inactive.length > 0 && (
               <>
-                <h2 className="mt-6 mb-2 text-sm font-medium text-zinc-500">
-                  Inactive
-                </h2>
-                <LadderCards entries={inactive} />
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-muted-foreground pt-6 text-sm font-medium"
+                  >
+                    Inactive
+                  </TableCell>
+                </TableRow>
+                <LadderRows entries={inactive} ratings={currentRatings} />
               </>
             )}
-          </div>
-
-          {/* Wider screens: table */}
-          <div className="hidden sm:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Rank</TableHead>
-                  <TableHead>Player</TableHead>
-                  <TableHead className="text-right">Movement</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <LadderRows entries={active} />
-                {inactive.length > 0 && (
-                  <>
-                    <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="pt-6 text-sm font-medium text-zinc-500"
-                      >
-                        Inactive
-                      </TableCell>
-                    </TableRow>
-                    <LadderRows entries={inactive} />
-                  </>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </>
+          </TableBody>
+        </Table>
       )}
 
       {lastUpdated && (
-        <p className="mt-6 text-sm text-zinc-400">
+        <p className="text-muted-foreground mt-6 text-sm">
           Last updated: {lastUpdated.toISOString().slice(0, 10)}
         </p>
       )}
-    </main>
+
+      <p className="text-muted-foreground mt-2 text-xs">
+        “Score” ranks the ladder · “Played” = sessions in the last 90 days
+      </p>
+    </PageShell>
   );
 }

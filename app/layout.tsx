@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { auth } from "@/auth";
+import { type Role } from "@/lib/nav";
 import { SiteHeader } from "@/components/site-header";
+import { BottomNavBar } from "@/components/ui/bottom-nav";
 
 // Court CI fonts (step 13.4): Space Grotesk = body, Archivo = headings/display.
 // Exposed as CSS vars consumed by globals.css @theme (--font-sans / --font-heading).
@@ -51,11 +54,13 @@ export const viewport: Viewport = {
   themeColor: "#0B3D91",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  const role = session?.role as Role | undefined;
   return (
     <html
       lang="en"
@@ -63,7 +68,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <SiteHeader />
-        {children}
+        <div className="flex-1">{children}</div>
+        <BottomNavBar role={role} />
       </body>
     </html>
   );

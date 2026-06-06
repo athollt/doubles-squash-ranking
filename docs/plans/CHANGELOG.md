@@ -736,3 +736,71 @@ encodes the CI tokens, which deliberately changed).
 - `npm run lint` — ✅ clean
 
 ---
+
+## Step 13.5 — Redesign rollout (re-implement screens)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+Every route re-platformed onto the 13.4 primitives in the Court CI + the winning
+prototype direction. Consistency (Q1) and the mobile-app feel (Q2) now land.
+
+**App shell:**
+- `app/layout.tsx` now renders a slim sticky top bar + the `BottomNavBar` (PWA tab
+  bar). Layout is async to read the session role for the nav.
+- `components/site-header.tsx` slimmed to identity + account only (mark/wordmark, Admin
+  menu, email/Sign out). Primary nav (Ladder · Sessions · Submit) moved to the bottom
+  tab bar (`navLinksFor` set — no dead "Trends" tab; Submit only when signed in).
+
+**Ladder (`/`):** dense table on `PageShell` + `Badge`/`Trend`; columns **# · Player ·
+Score · Played · Trend** (Score = rounded `ladderScore`; Played = `sessionsLast90Days`).
+Dropped the `sm:hidden`/`hidden sm:block` card-vs-table fork and the local
+`StatusBadge`/`MovementIndicator`/`LadderCards`.
+
+**Submit (`/submit` + `components/session-form.tsx`):** the courtside model from the
+prototype — flat all-players capture (**no teams**), per slot a **tap-to-pick chip
+player picker** (+ "+ New" inline creation) and a **segmented 0–7 wins selector**,
+label "wins", button "Log tonight's results". The form's public contract
+(`FormSlot`/props) is unchanged, so the edit page reuses it; the **real** mutation is
+wired (not stubbed). Each slot is a `role="group"` "Player N" for a11y + testability.
+
+**All other routes onto `PageShell`:** `players/[id]` (+ a new optional `back` prop on
+PageShell, TDD'd), `sessions`, `sessions/[id]`, `sessions/[id]/edit`, and every
+`admin/*` page. Hardcoded `text-blue-600`/`zinc`/`green-600`/`red-600` swapped for
+theme tokens (`text-primary`, `text-muted-foreground`, `--up`/`--down`). Terms aligned
+to the glossary ("total wins", "Score"/"Played" on the player page).
+
+**E2E:** updated specs to the new structure/selectors — `app-shell` (Primary nav vs
+banner landmarks), `ladder`/`player-trend`/`session-history`/`submit`/`session-edit`
+(shared `addNewPlayer`/`setSlotWins` helpers driving the chip+segmented form; new
+button label + terms), `public` (heading "Ladder").
+
+### Deviations / notes
+
+- **Centred utility pages kept their own `<main>`** — `signin`, `unauthorised`,
+  `~offline` are full-screen centred messages, a different archetype from the
+  title-shell; forcing them into `PageShell` would look wrong. They carry no bespoke
+  page-width (the grep target `mx-auto w-full max-w-` is clean across content pages).
+- **Wins capped at 0–7** by the segmented selector (was an unbounded number input).
+  Ample for social doubles; flagged as a behaviour change. If >7 is ever needed, the
+  selector can grow or fall back to an input.
+- **`page-shell` gained a `back` prop** (+1 unit test) — a genuine shared need for the
+  detail→list pages, not invented per-page chrome.
+- **Pre-existing flake (not introduced here):** `e2e/user-management.spec.ts` (from
+  step 12, untouched by this step) intermittently fails the role-change assertion under
+  full-suite concurrency — a race between the optimistic `selectOption` and
+  `page.reload()`. Passes 100% in isolation (5/5 × 3 runs). Left per AGENTS.md §4 (no
+  drive-by fix); worth hardening separately.
+
+### Validation
+
+- `npm run test` — ✅ 112/112 unit (+1 PageShell back-link)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 38/39; the 1 failure is the pre-existing step-12
+  user-management concurrency flake (passes in isolation). All routes touched by this
+  step are green; no `[e2e]` leftovers after teardown.
+- Grep: no `mx-auto w-full max-w-` bespoke chrome remains in `app/**/page.tsx`.
+
+---

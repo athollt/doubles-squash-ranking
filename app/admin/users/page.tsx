@@ -1,5 +1,6 @@
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { PageShell } from "@/components/ui/page-shell";
 import { UsersClient } from "./users-client";
 
 export const metadata = {
@@ -34,13 +35,12 @@ export default async function AdminUsersPage() {
   }));
 
   return (
-    <main className="mx-auto w-full max-w-3xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Users</h1>
+    <PageShell title="Users">
       <UsersClient
         users={rows}
         selfId={self?.id ?? null}
         adminCount={adminCount}
       />
-    </main>
+    </PageShell>
   );
 }

@@ -22,4 +22,30 @@ export async function signIn(
   }
 }
 
+// Drive the redesigned session form (step 13.5): per slot, scoped via the `Player N`
+// group, tap "+ New", type the name, then tap the segmented `wins` button.
+export async function addNewPlayer(
+  page: Page,
+  n: number,
+  name: string,
+  wins: number,
+): Promise<void> {
+  const slot = page.getByRole("group", { name: `Player ${n}` });
+  await slot.getByRole("button", { name: "+ New" }).click();
+  await slot.getByRole("textbox", { name: `New player name ${n}` }).fill(name);
+  await slot.getByRole("button", { name: `${wins} wins`, exact: true }).click();
+}
+
+// Set the wins for an existing slot (edit flow) via the segmented buttons.
+export async function setSlotWins(
+  page: Page,
+  n: number,
+  wins: number,
+): Promise<void> {
+  await page
+    .getByRole("group", { name: `Player ${n}` })
+    .getByRole("button", { name: `${wins} wins`, exact: true })
+    .click();
+}
+
 export { expect };

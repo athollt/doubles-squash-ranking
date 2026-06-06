@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { PageShell } from "@/components/ui/page-shell";
 import { PlayersClient } from "./players-client";
 
 export const metadata = {
@@ -22,9 +23,8 @@ export default async function AdminPlayersPage() {
   }));
 
   return (
-    <main className="mx-auto w-full max-w-3xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Players</h1>
+    <PageShell title="Players">
       <PlayersClient players={rows} />
-    </main>
+    </PageShell>
   );
 }

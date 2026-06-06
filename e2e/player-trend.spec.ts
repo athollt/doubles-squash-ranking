@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, expect } from "./helpers";
+import { signIn, addNewPlayer, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
 // An unknown player id returns 404 (behaviour 4).
@@ -21,17 +21,9 @@ test("a player's page is public and shows their rating trend", async ({
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/submit");
   for (let i = 0; i < 4; i++) {
-    await page
-      .getByRole("combobox", { name: `Player ${i + 1}` })
-      .selectOption("__new__");
-    await page
-      .getByRole("textbox", { name: `New player name ${i + 1}` })
-      .fill(names[i]);
-    await page
-      .getByRole("spinbutton", { name: `Wins ${i + 1}` })
-      .fill(String(wins[i]));
+    await addNewPlayer(page, i + 1, names[i], wins[i]);
   }
-  await page.getByRole("button", { name: "Submit session" }).click();
+  await page.getByRole("button", { name: /log tonight/i }).click();
   await expect(page).toHaveURL(/\/$/);
 
   // Reach the player page by clicking their name on the ladder.
@@ -40,8 +32,10 @@ test("a player's page is public and shows their rating trend", async ({
 
   await expect(page).toHaveURL(/\/players\/[^/]+$/);
   await expect(page.getByRole("heading", { name: names[0] })).toBeVisible();
-  await expect(page.getByText(/current rating/i)).toBeVisible();
-  await expect(page.getByText(/sessions played/i)).toBeVisible();
+  // Stats are in the main content (scope past the header, which shows the user email).
+  const main = page.getByRole("main");
+  await expect(main.getByText("Score:")).toBeVisible();
+  await expect(main.getByText("Played:")).toBeVisible();
 
   // The trend table lists the session that was just played.
   await expect(page.getByRole("columnheader", { name: "Change" })).toBeVisible();

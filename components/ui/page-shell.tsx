@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 // The single source of truth for page width, padding, title and PWA safe-area insets.
@@ -8,12 +9,15 @@ import { cn } from "@/lib/utils";
 function PageShell({
   title,
   subtitle,
+  back,
   className,
   children,
   bottomGutter = true,
 }: {
   title: React.ReactNode;
   subtitle?: React.ReactNode;
+  // Optional back link rendered above the title (e.g. detail → list).
+  back?: { href: string; label: string };
   className?: string;
   children: React.ReactNode;
   bottomGutter?: boolean;
@@ -27,6 +31,14 @@ function PageShell({
         className,
       )}
     >
+      {back && (
+        <Link
+          href={back.href}
+          className="text-primary mb-1 inline-block text-sm font-medium hover:underline"
+        >
+          ← {back.label}
+        </Link>
+      )}
       <h1 className="font-heading text-2xl font-black tracking-tight">{title}</h1>
       {subtitle != null && (
         <p className="text-muted-foreground mt-0.5 mb-4 text-sm">{subtitle}</p>

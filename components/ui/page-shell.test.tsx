@@ -12,4 +12,14 @@ describe("PageShell", () => {
     const main = screen.getByRole("main");
     expect(main).toHaveTextContent("the ladder table");
   });
+
+  it("renders an optional back link above the title", () => {
+    render(
+      <PageShell title="Petros M." back={{ href: "/", label: "Ladder" }}>
+        content
+      </PageShell>,
+    );
+    const link = screen.getByRole("link", { name: /ladder/i });
+    expect(link).toHaveAttribute("href", "/");
+  });
 });
