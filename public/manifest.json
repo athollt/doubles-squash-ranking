@@ -4,8 +4,8 @@
   "description": "BSC Doubles Squash ladder — session results and player rankings",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#1a1a1a",
+  "background_color": "#F4F6FB",
+  "theme_color": "#0B3D91",
   "icons": [
     {
       "src": "/icon-192.png",

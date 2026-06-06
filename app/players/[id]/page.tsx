@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { prismaRecalcStore } from "@/lib/recalc-store";
@@ -13,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { PageShell } from "@/components/ui/page-shell";
+import { Badge } from "@/components/ui/badge";
 
 export const metadata = {
   title: "Player — Doubles Squash @ BSC",
@@ -71,35 +72,34 @@ export default async function PlayerPage({
   const isActive = rating?.isActive ?? false;
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 sm:p-8">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        ← Ladder
-      </Link>
-
-      <h1 className="mt-2 mb-1 text-2xl font-semibold">
-        {player.name}
-        {player.status === "REMOVED" && (
-          <span className="ml-2 rounded bg-zinc-200 px-1.5 py-0.5 text-xs text-zinc-600">
-            Removed
-          </span>
-        )}
-      </h1>
-
+    <PageShell
+      back={{ href: "/", label: "Ladder" }}
+      title={
+        <>
+          {player.name}
+          {player.status === "REMOVED" && (
+            <Badge variant="muted" className="ml-2 align-middle">
+              Removed
+            </Badge>
+          )}
+        </>
+      }
+    >
       <dl className="mb-6 flex flex-wrap gap-x-8 gap-y-1 text-sm">
         <div>
-          <dt className="inline text-zinc-500">Current rating: </dt>
+          <dt className="text-muted-foreground inline">Score: </dt>
           <dd className="inline font-medium tabular-nums">
             {rating ? Math.round(rating.currentRating) : "—"}
           </dd>
         </div>
         <div>
-          <dt className="inline text-zinc-500">Status: </dt>
+          <dt className="text-muted-foreground inline">Status: </dt>
           <dd className="inline font-medium">
             {isActive ? "Active" : "Inactive"}
           </dd>
         </div>
         <div>
-          <dt className="inline text-zinc-500">Sessions played: </dt>
+          <dt className="text-muted-foreground inline">Played: </dt>
           <dd className="inline font-medium tabular-nums">
             {sessionsPlayed} ({sessionsLast90} in last 90 days)
           </dd>
@@ -107,7 +107,7 @@ export default async function PlayerPage({
       </dl>
 
       {points.length === 0 ? (
-        <p className="text-zinc-500">
+        <p className="text-muted-foreground">
           No sessions played yet. A rating trend appears once {player.name} plays
           a session.
         </p>
@@ -134,10 +134,10 @@ export default async function PlayerPage({
                   <TableCell
                     className={`text-right tabular-nums ${
                       r.ratingChange > 0
-                        ? "text-green-600"
+                        ? "text-[var(--up)]"
                         : r.ratingChange < 0
-                          ? "text-red-600"
-                          : "text-zinc-400"
+                          ? "text-[var(--down)]"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {r.ratingChange > 0 ? "+" : ""}
@@ -152,6 +152,6 @@ export default async function PlayerPage({
           </Table>
         </>
       )}
-    </main>
+    </PageShell>
   );
 }

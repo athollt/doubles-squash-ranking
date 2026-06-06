@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { SessionForm, type FormSlot } from "@/components/session-form";
+import { PageShell } from "@/components/ui/page-shell";
 import { submitSessionAction } from "./actions";
 
 export const metadata = {
@@ -21,13 +22,15 @@ export default async function SubmitPage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Submit a session</h1>
+    <PageShell
+      title="Submit a session"
+      subtitle="Add each player and the games they won · courtside"
+    >
       <SessionForm
         players={players}
-        submitLabel="Submit session"
+        submitLabel="Log Results"
         onSubmit={onSubmit}
       />
-    </main>
+    </PageShell>
   );
 }

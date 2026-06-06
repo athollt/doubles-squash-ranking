@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
 test("ladder home page is public and renders the title", async ({ page }) => {
   await page.goto("/");
   await expect(
-    page.getByRole("heading", { name: "BSC Doubles Squash Ladder" }),
+    page.getByRole("heading", { name: "Ladder" }),
   ).toBeVisible();
 });
 

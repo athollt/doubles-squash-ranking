@@ -605,3 +605,436 @@ configured to write into `components`/`lib`.
 - Manual: signed in as admin, Admin ▾ lists Players/Sessions/Settings/Users and each navigates
 
 ---
+
+## Step 13.2 — CI prototype (logo, colours, fonts)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- Standalone CI mood-board (`/prototype` skill, UI branch, sub-shape B) at
+  `zTemp/ci-prototype/index.html` — a single zero-build HTML file showing complete
+  visual identities (logo mark + wordmark, palette with hex, type specimen with
+  numerals, sample ladder rows, buttons), switchable via `?ci=`/tabs/← → and (after
+  narrowing) a day/night `?mode=` toggle. **Throwaway** — `zTemp/` is gitignored.
+- Explored 5 identities (Court, Club, Neon, Retro, Fresh), narrowed to the two
+  finalists (Court, Neon) each rendered in day **and** night to test inversion.
+- **Decision: Court wins**, shipping both day and night modes with **day as default**.
+  Headings `Archivo` (900), body `Space Grotesk`; royal `#0B3D91` + volt-lime `#C6FF00`
+  (day), navy + brightened sky `#4D8DFF` + volt (night). Full token tables in
+  `PROTOTYPE-NOTES-ci.md`. Supersedes the step-13 baseline (charcoal + electric-blue,
+  Geist) — applied to the real app in 13.4.
+
+### Notes
+
+- No app code touched (the step explicitly excludes `app/globals.css` / `app/layout.tsx`
+  — those change in 13.4). No tests, no E2E (no route added).
+- `zTemp/ci-prototype/` is disposable; `PROTOTYPE-NOTES-ci.md` is the durable artifact.
+
+### Validation
+
+- Mood-board opens with one command (`open zTemp/ci-prototype/index.html`); all
+  identities + both modes switch via tabs / arrow keys / mode toggle, URL-stable.
+- Winning identity (Court, day-default, both modes) confirmed with the human and
+  captured in `docs/plans/PROTOTYPE-NOTES-ci.md`.
+
+---
+
+## Step 13.3 — Mobile-first prototype (ladder + submit)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- In-app UX prototype (`/prototype` skill, UI branch, sub-shape A) under
+  `app/_prototype/` + `?variant=` gate blocks in `app/page.tsx` and
+  `app/submit/page.tsx`, rendered in the Court/day CI (Archivo + Space Grotesk loaded
+  in a scoped prototype stylesheet). Floating switcher; real data/auth above the gate;
+  submit writes stubbed. **All prototype code deleted after the decision** — the two
+  pages are byte-identical to their pre-prototype state.
+- **Decisions captured** in `docs/plans/PROTOTYPE-NOTES-ux.md`:
+  - **Ladder** = dense table, columns **# · Player · Score · Played · Trend**, **New**
+    badge. Score displays rounded `ladderScore` (the ranked number); Played =
+    `sessionsLast90Days`.
+  - **Submit** = flat all-players capture (**no teams** — corrected a wrong early
+    variant; the engine infers pairings), **chip player picker + segmented wins
+    buttons**, slots 4→8, label "wins", button "Log tonight's results".
+  - **Navigation** = bottom tab bar + accent FAB; sticky top bar.
+- **Terminology locked** and pinned in `CONTEXT-redesign.md` → "User-facing glossary"
+  (Score, Played, Trend, New, Session [internal]/warm button, Wins; Active/Inactive
+  kept). Display-copy only — internal/DB names unchanged.
+
+### Notes
+
+- Lesson for 13.4: the prototype's variants initially inherited the app's Geist font
+  via `var(--font-sans)` — the design system must wire **Archivo + Space Grotesk** into
+  `app/layout.tsx`, not assume them.
+- No tests/E2E added — prototype code was throwaway and is removed; the winning
+  approach is re-implemented with tests in 13.5.
+
+### Validation
+
+- Prototype served all variants (ladder 200; submit auth-gated as designed).
+- After deletion: `npm run lint` ✅ clean · `npm run test` ✅ 96/96 ·
+  `npm run build` ✅ no errors, no stray `_prototype` route · `git diff` on both pages
+  empty (clean revert).
+- Winning direction + full terminology confirmed with the human before capture.
+
+---
+
+## Step 13.4 — Design-system foundation
+
+**Date**: 2026-06-06
+
+### Delivered
+
+**Shared primitives (all in `components/ui/`, unit-tested, TDD vertical cycles):**
+- `badge.tsx` — status pill (`new` / `muted` / `accent` variants); canonical replacement
+  for the inline `StatusBadge` spans. The ladder's **New** flag.
+- `card.tsx` — card surface with optional `title`; replaces the inlined `LadderCards`
+  bordered rows.
+- `page-shell.tsx` — **single source of page width/padding/title + PWA safe-area
+  insets**; replaces the per-page `<main class="mx-auto max-w-… p-4 sm:p-8"> + <h1>`
+  pattern (the three-different-`max-w` inconsistency).
+- `trend.tsx` — the ladder **Trend** column (▲n/▼n/NEW/—, up/down colours from new
+  `--up`/`--down` tokens); promotes the local `MovementIndicator`.
+- `bottom-nav.tsx` — PWA bottom tab bar. `BottomNav` is the pure, tested core (role +
+  pathname → role-aware tabs + `aria-current` active state, fed by the shared
+  `navLinksFor`); `BottomNavBar` is the thin `usePathname` client wrapper. **Built and
+  tested, not yet wired** — the top-header→bottom-nav swap is the 13.5 rollout.
+
+**Court CI applied (the design-system identity layer):**
+- `app/globals.css` — `:root` (day, default) and `.dark` (night) token blocks replaced
+  with the Court palette, **hex→OKLCH** (royal `#0B3D91` / sky `#4D8DFF`, volt-lime
+  accent `#C6FF00`, navy/mist surfaces); added `--up`/`--down` ladder-Trend tokens;
+  `--radius` → 0.875rem (Court 14px). `@theme` now maps `--font-heading` to Archivo.
+- `app/layout.tsx` — fonts swapped Geist → **Space Grotesk (body) + Archivo
+  (headings)**; `viewport.themeColor` → royal `#0B3D91`. (Lesson from 13.3: fonts must
+  be wired here, not assumed.)
+- `public/manifest.json` — `theme_color` `#0B3D91`, `background_color` `#F4F6FB`.
+- **Logo/mark assets recoloured to Court** — `icon.svg` / `logo.svg` / `og.svg` masters
+  (royal badge, volt racket/ball), re-rastered via `sharp` to `icon-192/512`,
+  `apple-touch-icon` (180), `favicon-16/32`, `og.png` (1200×630); `app/favicon.ico`
+  rebuilt as a 16+32 PNG-in-ICO from the Court favicons.
+
+**Tests:** +15 unit (badge 2, card 2, page-shell 2, trend 5, bottom-nav 4). Updated
+`public/manifest.test.ts` to the Court `theme_color`/`background_color` (the test
+encodes the CI tokens, which deliberately changed).
+
+### Deviations / notes
+
+- **No feature page re-skinned** (per the step boundary) — the diff is `components/ui/`
+  + CI assets (`globals.css`, `layout.tsx`, `manifest.json`, `/public` icons) + tests.
+  Pages still render their old chrome until the 13.5 rollout consumes these primitives.
+- Both light (default) **and** dark token sets wired, per the CI decision that the PWA
+  honours `prefers-color-scheme`.
+
+### Validation
+
+- `npm run test` — ✅ 111/111 (96 prior + 15 new)
+- `npm run build` — ✅ zero errors/warnings; Court fonts bundled
+- `npm run lint` — ✅ clean
+
+---
+
+## Step 13.5 — Redesign rollout (re-implement screens)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+Every route re-platformed onto the 13.4 primitives in the Court CI + the winning
+prototype direction. Consistency (Q1) and the mobile-app feel (Q2) now land.
+
+**App shell:**
+- `app/layout.tsx` now renders a slim sticky top bar + the `BottomNavBar` (PWA tab
+  bar). Layout is async to read the session role for the nav.
+- `components/site-header.tsx` slimmed to identity + account only (mark/wordmark, Admin
+  menu, email/Sign out). Primary nav (Ladder · Sessions · Submit) moved to the bottom
+  tab bar (`navLinksFor` set — no dead "Trends" tab; Submit only when signed in).
+
+**Ladder (`/`):** dense table on `PageShell` + `Badge`/`Trend`; columns **# · Player ·
+Score · Played · Trend** (Score = rounded `ladderScore`; Played = `sessionsLast90Days`).
+Dropped the `sm:hidden`/`hidden sm:block` card-vs-table fork and the local
+`StatusBadge`/`MovementIndicator`/`LadderCards`.
+
+**Submit (`/submit` + `components/session-form.tsx`):** the courtside model from the
+prototype — flat all-players capture (**no teams**), per slot a **tap-to-pick chip
+player picker** (+ "+ New" inline creation) and a **segmented 0–7 wins selector**,
+label "wins", button "Log tonight's results". The form's public contract
+(`FormSlot`/props) is unchanged, so the edit page reuses it; the **real** mutation is
+wired (not stubbed). Each slot is a `role="group"` "Player N" for a11y + testability.
+
+**All other routes onto `PageShell`:** `players/[id]` (+ a new optional `back` prop on
+PageShell, TDD'd), `sessions`, `sessions/[id]`, `sessions/[id]/edit`, and every
+`admin/*` page. Hardcoded `text-blue-600`/`zinc`/`green-600`/`red-600` swapped for
+theme tokens (`text-primary`, `text-muted-foreground`, `--up`/`--down`). Terms aligned
+to the glossary ("total wins", "Score"/"Played" on the player page).
+
+**E2E:** updated specs to the new structure/selectors — `app-shell` (Primary nav vs
+banner landmarks), `ladder`/`player-trend`/`session-history`/`submit`/`session-edit`
+(shared `addNewPlayer`/`setSlotWins` helpers driving the chip+segmented form; new
+button label + terms), `public` (heading "Ladder").
+
+### Deviations / notes
+
+- **Centred utility pages kept their own `<main>`** — `signin`, `unauthorised`,
+  `~offline` are full-screen centred messages, a different archetype from the
+  title-shell; forcing them into `PageShell` would look wrong. They carry no bespoke
+  page-width (the grep target `mx-auto w-full max-w-` is clean across content pages).
+- **Wins capped at 0–7** by the segmented selector (was an unbounded number input).
+  Ample for social doubles; flagged as a behaviour change. If >7 is ever needed, the
+  selector can grow or fall back to an input.
+- **`page-shell` gained a `back` prop** (+1 unit test) — a genuine shared need for the
+  detail→list pages, not invented per-page chrome.
+- **Pre-existing flake (not introduced here):** `e2e/user-management.spec.ts` (from
+  step 12, untouched by this step) intermittently fails the role-change assertion under
+  full-suite concurrency — a race between the optimistic `selectOption` and
+  `page.reload()`. Passes 100% in isolation (5/5 × 3 runs). Left per AGENTS.md §4 (no
+  drive-by fix); worth hardening separately.
+
+### Validation
+
+- `npm run test` — ✅ 112/112 unit (+1 PageShell back-link)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 38/39; the 1 failure is the pre-existing step-12
+  user-management concurrency flake (passes in isolation). All routes touched by this
+  step are green; no `[e2e]` leftovers after teardown.
+- Grep: no `mx-auto w-full max-w-` bespoke chrome remains in `app/**/page.tsx`.
+
+### Follow-up fixes (post-rollout review)
+
+From hands-on review of the rolled-out app:
+
+- **Submit button** "Log tonight's results" → **"Log Results"**.
+- **Wins selector** now goes **0–8** (was 0–7).
+- **Settings** is now a responsive **card-per-setting** list (name + description, value
+  input full-width below) — the old 3-column table clipped the value input to an empty
+  circle on a phone and pushed Description off-screen. (Values were always present in
+  the DB; this was purely a rendering/overflow bug.)
+- **Users** is now a responsive **card-per-user** list (`role="group"` named by email)
+  — the 5-column table overflowed on a phone.
+- **Session detail** earns its place: added **Change** and **Score after** columns
+  (per-player rating impact from this session, via `RatingsLog`) — the value the
+  expandable list row can't show. (Decision: keep the route, add value.)
+- **Fixed the pre-existing `user-management.spec.ts` flake** (now in scope, since the
+  spec moved to the card list): wait for the role `<select>` to reflect the new value
+  *before* `page.reload()`, removing the race against the in-flight server action.
+  Full E2E suite now **39/39** under concurrency (5/5 × 3 in isolation too).
+
+Validation: 112/112 unit · build clean · lint clean · **e2e 39/39**.
+
+---
+
+## Step 14.1 — Google Cloud OAuth setup (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/01-google-oauth.md`.
+
+### Delivered
+
+- Google Cloud project `bsc-squash-ladder` created under the `tomlinson.co.za` org.
+- OAuth consent screen: **External**, app name `BSC Doubles Squash Ladder`, authorised
+  domain `tomlinson.co.za`, default scopes; left in **Testing** with the required
+  test users added (incl. non-`tomlinson.co.za` Gmail scorers).
+- OAuth Web client `squash-web` with **both** redirect URIs registered:
+  `http://localhost:3001/api/auth/callback/google` (local) and
+  `https://squash.tomlinson.co.za/api/auth/callback/google` (production).
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` obtained and placed in the local
+  (gitignored) `.env`; `AUTH_SECRET` generated via `openssl rand -base64 32`.
+
+### Verified (local proof)
+
+- Real Google sign-in as `atholl@tomlinson.co.za` at `/signin` → lands signed-in with
+  **Admin ▾** visible (role attached from the `users` table).
+- A Google account **not** in the `users` table → redirected to `/unauthorised`
+  (allowlist gate works end-to-end via the live OAuth flow).
+
+### Notes / blockers resolved
+
+- The blocker chain was a misleading **"Google Cloud Platform service has been
+  disabled"** error. Real causes, in order hit: (1) the GCP service was OFF in the
+  Workspace Admin console (turned ON for everyone); (2) the persistent error was
+  actually a missing IAM role — **Organization Administrator does not include
+  `resourcemanager.projects.create`**; granting `atholl@tomlinson.co.za` the
+  **Project Creator** role at the org (then sign-out/in to refresh the permission
+  cache) fixed it. The **Age-based access** theory was a dead end (Education-edition
+  only). All captured in the runbook as "Workspace gotcha #1/#2".
+
+### Outputs (carry forward)
+
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` → VPS `.env` (14.2) + GitHub Secrets (14.3).
+- Production-domain OAuth verification is deferred to **14.4** (first live deploy).
+
+---
+
+## Step 14.2 — Fly.io production environment (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/02-fly.md`.
+
+### Decision: switched hosting from Hetzner to Fly.io (Johannesburg)
+
+The plan's "Hetzner Cloud, Cape Town" was a **wrong fact** — Hetzner has **no South
+Africa datacenter** (only EU/US/Singapore), so it couldn't deliver the ZA latency it
+was chosen for; **CX22 was also discontinued (2026-02-13)**. Fly.io's **jnb**
+(Johannesburg) region is the only option that puts the app in SA (~10–30ms vs
+~150–180ms from Hetzner EU). Switched the deployment plan to Fly. Full reasoning +
+the accepted deprecated-unmanaged-Postgres risk: **ADR-008** in `DECISIONS.md`;
+`RESEARCH-flyio-vs-hetzner.md` carries the correction/reversal. (A short-lived Fly-vs-
+Hetzner research earlier the same day had favoured Hetzner *because* it assumed a ZA
+region existed — overturned once provisioning proved it didn't.)
+
+### Provisioned (all on Fly; state lives on Fly, not in git)
+
+- **App** `bsc-squash-ladder`, `primary_region = jnb`, via `fly launch --no-deploy
+  --no-db`. Always-on corrected in `fly.toml` (`auto_stop_machines = off`,
+  `min_machines_running = 1` — `fly launch` defaulted to scale-to-zero).
+- **Postgres** `bsc-squash-db` (Postgres 17 flex, shared-cpu-1x, 1GB volume,
+  **encrypted**) in jnb; **attached** → `DATABASE_URL` secret set (private `.flycast`
+  network, `sslmode=disable` — internal traffic only).
+- **Secrets** (5, staged for first deploy): `DATABASE_URL` (from attach), `AUTH_URL`
+  (`https://squash.tomlinson.co.za`), fresh `AUTH_SECRET`, `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`.
+- **Domain + TLS**: shared IPv4 + IPv6 allocated; Route 53 **CNAME** `squash` →
+  `le9dp11.bsc-squash-ladder.fly.dev`; `fly certs` issued a verified Let's Encrypt
+  cert (RSA+ECDSA, auto-renew).
+- **Backups**: volume `pg_data` has scheduled snapshots on, **5-day retention**
+  (first snapshot lands within ~a day). Restore path documented in the runbook.
+- **CI**: deploy-scoped `FLY_API_TOKEN` created (→ GitHub secret in 14.3).
+
+### Deviations / notes
+
+- **`fly launch` generated local files** (`fly.toml`, `Dockerfile`, `docker-entrypoint.js`,
+  `.dockerignore`, `.github/workflows/fly-deploy.yml`) and added `@flydotio/dockerfile`
+  to `package.json` + a `FLY_API_TOKEN` line to `.env.example`. These are **14.4
+  deploy artifacts** — left **uncommitted** in this step; 14.4 reviews/finalises and
+  commits them (only `fly.toml`'s always-on fix was applied now). This 14.2 commit is
+  docs only.
+- Fly account org is `personal` under `atholl@different.co.za` (independent of the
+  `tomlinson.co.za` Google OAuth — fine).
+- Unmanaged Postgres prints a "not supported by Fly" notice on every command — expected
+  (ADR-008 risk, accepted).
+
+### Validation
+
+- `fly status` — app in jnb (`pending`: not yet deployed, correct for 14.2).
+- `fly secrets list` — 5 secrets staged.
+- `fly certs check squash.tomlinson.co.za` — **Issued / verified / active**.
+- `dig +short squash.tomlinson.co.za` — resolves via CNAME → 66.241.125.70.
+- `fly volume show` — scheduled snapshots true, retention 5.
+
+### Outputs (carry forward)
+
+- `FLY_API_TOKEN` (deploy token) → GitHub secret (**14.3**).
+- App `bsc-squash-ladder` / region `jnb` → `fly.toml` finalisation (**14.4**).
+- Production-domain Google sign-in proof → **14.4** (after first deploy).
+
+---
+
+## Step 14.3 — GitHub Actions secret (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/03-github-actions.md`.
+
+### Delivered
+
+- `FLY_API_TOKEN` added as a **GitHub Actions repository secret** (the deploy-scoped
+  token `github-actions-2` from 14.2). This is the only secret CI needs — `fly deploy`
+  builds remotely and reads runtime config from Fly secrets, so no GHCR, no SSH key, no
+  app secrets in GitHub.
+- Confirmed `origin` = `github.com/athollt/doubles-squash-ranking` and default/deploy
+  branch = `main`.
+
+### Token hygiene
+
+- Revoked the spare deploy token (`github-actions`, unused + exposed during 14.2);
+  only `github-actions-2` (the one in the GitHub secret) remains active.
+- Note: the **personal** `FLY_API_TOKEN` in local `.env` was also exposed earlier (the
+  `source .env` mishap) — broader-scoped, left active so local `fly` keeps working;
+  rotate at discretion.
+
+### Validation
+
+- `fly tokens list` — `github-actions` shows REVOKED AT; `github-actions-2` active.
+- GitHub repo secret `FLY_API_TOKEN` present (set via browser; value masked).
+
+---
+
+## Step 14.4 — Deployment setup (Fly.io)
+
+**Date**: 2026-06-06
+
+Finalised + committed the deploy artifacts `fly launch` generated in 14.2 (left
+uncommitted then). The generated Dockerfile/entrypoint did **not** fit this project; the
+substance of this step was rewriting them to a correct standalone image. Config and
+**local** verification are done; the live first-deploy proof (behaviours 5–8) follows on
+the manual merge to `main`.
+
+### Delivered
+
+- **`Dockerfile` — rewritten** to a multi-stage **standalone** image (was the
+  `fly launch` default that ran `next build --experimental-build-mode compile` + a
+  runtime `generate`, non-standalone, and **skipped Serwist**). Now: builder runs the
+  project's real `npm run build` (`next build --webpack`) so the **Serwist PWA service
+  worker is emitted** (CHANGELOG step 13 — the default/Turbopack builder skips the
+  webpack plugin); runner serves `node server.js` on 3000. `npx prisma generate` runs at
+  build time.
+- **Runner copies the full build `node_modules`** (decision, over hand-picking): Next's
+  standalone trace omitted the pg **driver adapter** (`@prisma/adapter-pg`, constructed
+  in bundled app code so the tracer misses the bare require), `dotenv` (imported by
+  `prisma.config.ts`), and `tsx`/`esbuild` (the documented `prisma db seed` step). Trading
+  image size for robustness — no missing-module surprises at release/runtime. Also copies
+  the generated client (`app/generated/prisma`), `prisma/` (schema + migrations) and
+  `prisma.config.ts` for the release command + seed.
+- **`docker-entrypoint.js` removed** — the generated one ran a Next build at container
+  start (incompatible with standalone `node server.js`); migrations run via `fly.toml`
+  `release_command`, not at boot.
+- **`fly.toml`** — confirmed app/region/always-on/`release_command`; **added the spec's
+  `GET /` HTTP health check** (`[[http_service.checks]]`, 15s interval).
+- **`.dockerignore`** — added `.git`, `e2e`, `*.test.*`, `docs`, and the **out-of-repo
+  agent-tooling symlinks** (`CLAUDE.md`/`AGENTS.md`/`.claude`/`.devin`, ADR-005). The
+  symlinks are dangling inside the build context and made `next build` fail with
+  `ENOENT: /app/CLAUDE.md` — found and fixed during the first build attempt.
+- **`.github/workflows/fly-deploy.yml`** — kept as generated (matches spec: push to
+  `main` → `setup-flyctl` → `flyctl deploy --remote-only`, `FLY_API_TOKEN` only). Spec
+  said `deploy.yml`; kept the `fly-deploy.yml` name 14.2 already referenced.
+- **`.env.example`** — reconciled to the Fly model (prod values are Fly secrets, not a
+  file; `DATABASE_URL` from `fly postgres attach`); removed the **duplicate
+  `FLY_API_TOKEN`** key (the CI token is a GitHub secret, not a local env var).
+- **`package.json`** — keeps `@flydotio/dockerfile` (dev dep) from `fly launch`.
+- **`docs/DEPLOYMENT.md`** — Fly runtime guide: deploy flow + release-command migrations,
+  first-deploy admin seed, `fly logs`/`status`/`ssh`/`secrets`, rollback (`fly releases` /
+  `fly deploy --image`), volume-snapshot restore, token hygiene. References the 01–03
+  runbooks for one-time setup (no duplication).
+
+### Deviations / notes
+
+- **Full `node_modules` in the runner instead of a minimal hand-picked set** — chosen for
+  robustness after the trace was found to omit adapter-pg/dotenv/tsx. Larger image; can be
+  slimmed later if size matters.
+- Workflow filename `fly-deploy.yml` (spec said `deploy.yml`) — content matches; name is
+  the one 14.2 already used.
+- **Behaviours 5–8 (live deploy + production Google sign-in) are pending the manual merge
+  to `main`** (PLAN forbids the agent merging). This entry will be amended with the live
+  proof (release migration ran, TLS, admin seeded, real Google sign-in) once deployed.
+
+### Validation (local — behaviours 1–4)
+
+- `docker build -t squash-test .` — ✅ builds (standalone); Serwist logs
+  "Bundling the service worker script with the URL '/sw.js'".
+- **Runtime smoke (image vs local compose Postgres):** `npx prisma migrate deploy` in the
+  image loads `prisma.config.ts`, connects via the pg adapter, "No pending migrations"
+  (release-command path proven); `node server.js` boots, **`GET /` → HTTP 200** (health
+  check), the ladder renders DB-derived content through the adapter with no Prisma errors,
+  and **`GET /sw.js` → HTTP 200** (PWA SW present).
+- `fly config validate` — ✅ "Configuration is valid" (incl. the health check).
+- Workflow YAML — ✅ structural check (push→main, setup-flyctl, `--remote-only`,
+  `FLY_API_TOKEN`).
+- `npm run build` — ✅ EXIT 0 · `npm run lint` — ✅ clean · `npm run test` — ✅ 112/112.
+
+---

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 export type Player = { id: string; name: string };
 
@@ -36,6 +37,11 @@ interface Props {
   onDelete?: () => Promise<SessionFormResult>;
 }
 
+// Courtside doubles capture (step 13.5, per PROTOTYPE-NOTES-ux.md): a flat list of
+// player slots — no teams (the engine infers pairings). Each slot: a tap-to-pick chip
+// picker (with "+ New" for on-the-fly creation) + a segmented 0–7 "wins" selector.
+// The public contract (props + FormSlot payload) is unchanged from the prior form, so
+// both /submit and the edit page reuse it.
 export function SessionForm({
   players,
   initialSlots,
@@ -86,42 +92,15 @@ export function SessionForm({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-3">
       {slots.map((slot, i) => (
-        <div key={i} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <select
-            aria-label={`Player ${i + 1}`}
-            className="border-input h-9 rounded-md border px-3 text-sm"
-            value={slot.playerId}
-            onChange={(e) => update(i, { playerId: e.target.value })}
-          >
-            <option value="">— select player —</option>
-            {players.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-            <option value={NEW}>+ Add new player…</option>
-          </select>
-
-          {slot.playerId === NEW && (
-            <Input
-              aria-label={`New player name ${i + 1}`}
-              placeholder="New player name"
-              value={slot.newName}
-              onChange={(e) => update(i, { newName: e.target.value })}
-            />
-          )}
-
-          <Input
-            type="number"
-            min={0}
-            aria-label={`Wins ${i + 1}`}
-            className="sm:w-24"
-            value={slot.wins}
-            onChange={(e) => update(i, { wins: e.target.value })}
-          />
-        </div>
+        <Slot
+          key={i}
+          n={i + 1}
+          slot={slot}
+          players={players}
+          onChange={(patch) => update(i, patch)}
+        />
       ))}
 
       {slots.length < 8 && (
@@ -129,9 +108,10 @@ export function SessionForm({
           type="button"
           variant="outline"
           size="sm"
+          className="self-start"
           onClick={() => setSlots((s) => [...s, emptySlot()])}
         >
-          Add player slot
+          + Add player
         </Button>
       )}
 
@@ -145,7 +125,7 @@ export function SessionForm({
       {error && <p className="text-destructive text-sm">{error}</p>}
 
       <div className="flex gap-3">
-        <Button onClick={handleSubmit} disabled={pending}>
+        <Button onClick={handleSubmit} disabled={pending} className="flex-1">
           {submitLabel}
         </Button>
         {onDelete && (
@@ -158,6 +138,117 @@ export function SessionForm({
             Delete
           </Button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function Slot({
+  n,
+  slot,
+  players,
+  onChange,
+}: {
+  n: number;
+  slot: SlotState;
+  players: Player[];
+  onChange: (patch: Partial<SlotState>) => void;
+}) {
+  const chosen =
+    slot.playerId === NEW
+      ? slot.newName.trim() || "New player"
+      : players.find((p) => p.id === slot.playerId)?.name;
+  const [picking, setPicking] = useState(!slot.playerId);
+
+  return (
+    <div
+      role="group"
+      aria-label={`Player ${n}`}
+      className="bg-card border-border flex flex-col gap-3 rounded-xl border p-3"
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground font-heading font-black">{n}</span>
+        <span className="flex-1 font-medium">
+          {chosen ?? <span className="text-muted-foreground">Choose a player</span>}
+        </span>
+        {slot.playerId && (
+          <button
+            type="button"
+            className="text-primary text-sm font-bold"
+            onClick={() => setPicking((p) => !p)}
+          >
+            change
+          </button>
+        )}
+      </div>
+
+      {(picking || !slot.playerId) && (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            {players.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                aria-pressed={slot.playerId === p.id}
+                className={cn(
+                  "border-border rounded-full border px-3 py-2 text-sm font-medium",
+                  slot.playerId === p.id
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "bg-background",
+                )}
+                onClick={() => {
+                  onChange({ playerId: p.id, newName: "" });
+                  setPicking(false);
+                }}
+              >
+                {p.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-pressed={slot.playerId === NEW}
+              className={cn(
+                "border-primary text-primary rounded-full border border-dashed px-3 py-2 text-sm font-medium",
+                slot.playerId === NEW && "bg-primary/10",
+              )}
+              onClick={() => onChange({ playerId: NEW })}
+            >
+              + New
+            </button>
+          </div>
+          {slot.playerId === NEW && (
+            <Input
+              aria-label={`New player name ${n}`}
+              placeholder="New player name"
+              value={slot.newName}
+              onChange={(e) => onChange({ newName: e.target.value })}
+            />
+          )}
+        </div>
+      )}
+
+      <div>
+        <p className="text-muted-foreground mb-1.5 text-xs">wins</p>
+        {/* 0–9 as two rows of five, large thumb targets for courtside entry. */}
+        <div className="grid grid-cols-5 gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => (
+            <button
+              key={g}
+              type="button"
+              aria-label={`${g} wins`}
+              aria-pressed={Number(slot.wins) === g}
+              className={cn(
+                "border-border font-heading h-12 rounded-lg border text-lg font-bold tabular-nums",
+                Number(slot.wins) === g
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background",
+              )}
+              onClick={() => onChange({ wins: String(g) })}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

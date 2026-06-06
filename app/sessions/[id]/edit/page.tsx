@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canMutateSession } from "@/lib/session-authz";
 import { SessionForm, type FormSlot } from "@/components/session-form";
+import { PageShell } from "@/components/ui/page-shell";
 import { updateSessionAction, deleteSessionAction } from "./actions";
 
 export const metadata = {
@@ -71,8 +72,7 @@ export default async function EditSessionPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-2xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Edit session</h1>
+    <PageShell title="Edit session">
       <SessionForm
         players={players}
         initialSlots={initialSlots}
@@ -81,6 +81,6 @@ export default async function EditSessionPage({
         onSubmit={onUpdate}
         onDelete={onDelete}
       />
-    </main>
+    </PageShell>
   );
 }

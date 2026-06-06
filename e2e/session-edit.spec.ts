@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, expect } from "./helpers";
+import { signIn, addNewPlayer, setSlotWins, expect } from "./helpers";
 import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 import type { Page } from "@playwright/test";
 
@@ -8,13 +8,9 @@ async function submitSession(page: Page, token: string) {
   await page.goto("/submit");
   const wins = [3, 3, 1, 1];
   for (let i = 0; i < 4; i++) {
-    await page.getByRole("combobox", { name: `Player ${i + 1}` }).selectOption("__new__");
-    await page
-      .getByRole("textbox", { name: `New player name ${i + 1}` })
-      .fill(`[e2e] ${token} P${i}`);
-    await page.getByRole("spinbutton", { name: `Wins ${i + 1}` }).fill(String(wins[i]));
+    await addNewPlayer(page, i + 1, `[e2e] ${token} P${i}`, wins[i]);
   }
-  await page.getByRole("button", { name: "Submit session" }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
   await expect(page).toHaveURL(/\/$/);
 }
 
@@ -40,8 +36,8 @@ test("a scorer can edit their own session", async ({ page }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto(href);
   await expect(page.getByRole("heading", { name: "Edit session" })).toBeVisible();
-  await page.getByRole("spinbutton", { name: "Wins 1" }).fill("5");
-  await page.getByRole("spinbutton", { name: "Wins 3" }).fill("3");
+  await setSlotWins(page, 1, 5);
+  await setSlotWins(page, 3, 3);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page).toHaveURL(/\/$/);
 });
@@ -68,8 +64,8 @@ test("an admin can edit any session and save", async ({ page }) => {
   await page.goto(href);
   await expect(page.getByRole("heading", { name: "Edit session" })).toBeVisible();
   // Change a win value (keep total even) and save.
-  await page.getByRole("spinbutton", { name: "Wins 1" }).fill("5");
-  await page.getByRole("spinbutton", { name: "Wins 3" }).fill("3");
+  await setSlotWins(page, 1, 5);
+  await setSlotWins(page, 3, 3);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page).toHaveURL(/\/$/);
 });

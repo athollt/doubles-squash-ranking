@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -94,32 +87,29 @@ export function UsersClient({
 
       {rowError && <p className="text-destructive text-sm">{rowError}</p>}
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {users.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={5} className="text-muted-foreground text-center">
-                No users yet.
-              </TableCell>
-            </TableRow>
-          ) : (
-            users.map((user) => {
-              const isSelf = user.id === selfId;
-              const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
-              return (
-                <TableRow key={user.id}>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.name}</TableCell>
-                  <TableCell>
+      {/* Card per user (step 13.5 follow-up) — the 5-column table overflowed on a
+          phone. Each row is a role="group" named by email so it stays addressable. */}
+      {users.length === 0 ? (
+        <p className="text-muted-foreground">No users yet.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {users.map((user) => {
+            const isSelf = user.id === selfId;
+            const isLastAdmin = user.role === "ADMIN" && adminCount <= 1;
+            return (
+              <li key={user.id}>
+                <Card
+                  role="group"
+                  aria-label={user.email}
+                  className="p-3 sm:flex sm:items-center sm:gap-4"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{user.email}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {user.name} · joined {user.created}
+                    </p>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 sm:mt-0">
                     <select
                       className={ROLE_SELECT_CLASS}
                       aria-label={`Role for ${user.email}`}
@@ -132,9 +122,6 @@ export function UsersClient({
                       <option value="SCORER">SCORER</option>
                       <option value="ADMIN">ADMIN</option>
                     </select>
-                  </TableCell>
-                  <TableCell>{user.created}</TableCell>
-                  <TableCell className="flex justify-end gap-2">
                     <Button
                       variant="destructive"
                       size="sm"
@@ -150,13 +137,13 @@ export function UsersClient({
                     >
                       Remove
                     </Button>
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>

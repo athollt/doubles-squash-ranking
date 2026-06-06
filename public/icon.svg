@@ -1,14 +1,14 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BSC Squash Ladder icon">
-  <!-- Charcoal rounded badge -->
-  <rect width="512" height="512" rx="112" fill="#1A1A1A"/>
-  <!-- Squash racket: electric-blue handle + elliptical head with string grid -->
+  <!-- Court CI (step 13.4): royal rounded badge -->
+  <rect width="512" height="512" rx="112" fill="#0B3D91"/>
+  <!-- Squash racket: volt-lime handle + elliptical head with string grid -->
   <g transform="rotate(-30 256 256)">
     <!-- handle -->
-    <rect x="240" y="248" width="32" height="176" rx="16" fill="#2D7FF9"/>
+    <rect x="240" y="248" width="32" height="176" rx="16" fill="#C6FF00"/>
     <!-- racket head ring -->
-    <ellipse cx="256" cy="176" rx="104" ry="120" fill="none" stroke="#2D7FF9" stroke-width="30"/>
+    <ellipse cx="256" cy="176" rx="104" ry="120" fill="none" stroke="#C6FF00" stroke-width="30"/>
     <!-- strings -->
-    <g stroke="#2D7FF9" stroke-width="10" opacity="0.55">
+    <g stroke="#C6FF00" stroke-width="10" opacity="0.55">
       <line x1="210" y1="76" x2="210" y2="276"/>
       <line x1="256" y1="64" x2="256" y2="288"/>
       <line x1="302" y1="76" x2="302" y2="276"/>
@@ -19,5 +19,5 @@
   </g>
   <!-- Squash ball with single yellow dot, lower-right -->
   <circle cx="356" cy="372" r="46" fill="#FAFAFA"/>
-  <circle cx="356" cy="372" r="11" fill="#2D7FF9"/>
+  <circle cx="356" cy="372" r="11" fill="#C6FF00"/>
 </svg>

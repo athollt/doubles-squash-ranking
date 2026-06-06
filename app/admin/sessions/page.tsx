@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { buttonVariants } from "@/components/ui/button";
+import { PageShell } from "@/components/ui/page-shell";
 
 export const metadata = {
   title: "Sessions — Doubles Squash @ BSC",
@@ -29,8 +30,7 @@ export default async function AdminSessionsPage() {
   });
 
   return (
-    <main className="mx-auto w-full max-w-4xl p-4 sm:p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Sessions</h1>
+    <PageShell title="Sessions">
       <Table>
         <TableHeader>
           <TableRow>
@@ -68,6 +68,6 @@ export default async function AdminSessionsPage() {
           )}
         </TableBody>
       </Table>
-    </main>
+    </PageShell>
   );
 }

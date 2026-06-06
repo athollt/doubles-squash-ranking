@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import { saveAndRecalculateAction } from "./actions";
 
 type SettingRow = { key: string; value: number; description: string | null };
@@ -39,36 +32,33 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
 
   return (
     <div className="space-y-4">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Setting</TableHead>
-            <TableHead>Value</TableHead>
-            <TableHead>Description</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {settings.map((s) => (
-            <TableRow key={s.key}>
-              <TableCell>{s.key}</TableCell>
-              <TableCell>
-                <Input
-                  type="number"
-                  step="any"
-                  aria-label={s.key}
-                  value={values[s.key]}
-                  onChange={(e) =>
-                    setValues((v) => ({ ...v, [s.key]: e.target.value }))
-                  }
-                />
-              </TableCell>
-              <TableCell className="text-muted-foreground text-sm">
-                {s.description}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {/* Card per setting — name + description stacked, value input full-width below.
+          Replaces the 3-column table that clipped the input on a phone (step 13.5
+          follow-up). On wider screens the value sits beside the label. */}
+      <ul className="flex flex-col gap-3">
+        {settings.map((s) => (
+          <li key={s.key}>
+            <Card className="flex items-center gap-3 p-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-medium">{s.key}</p>
+                {s.description && (
+                  <p className="text-muted-foreground text-sm">{s.description}</p>
+                )}
+              </div>
+              <Input
+                type="number"
+                step="any"
+                aria-label={s.key}
+                className="w-20 shrink-0 text-center tabular-nums"
+                value={values[s.key]}
+                onChange={(e) =>
+                  setValues((v) => ({ ...v, [s.key]: e.target.value }))
+                }
+              />
+            </Card>
+          </li>
+        ))}
+      </ul>
 
       {error && <p className="text-destructive text-sm">{error}</p>}
       {done && <p className="text-sm">Saved and recalculated.</p>}
