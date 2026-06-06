@@ -30,7 +30,7 @@ test("a submitted session is listed and has a detail page", async ({
   for (let i = 0; i < 4; i++) {
     await addNewPlayer(page, i + 1, names[i], wins[i]);
   }
-  await page.getByRole("button", { name: /log tonight/i }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
   await expect(page).toHaveURL(/\/$/);
 
   // The session shows on the public list with player count and games.

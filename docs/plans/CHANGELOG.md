@@ -803,6 +803,28 @@ button label + terms), `public` (heading "Ladder").
   step are green; no `[e2e]` leftovers after teardown.
 - Grep: no `mx-auto w-full max-w-` bespoke chrome remains in `app/**/page.tsx`.
 
+### Follow-up fixes (post-rollout review)
+
+From hands-on review of the rolled-out app:
+
+- **Submit button** "Log tonight's results" → **"Log Results"**.
+- **Wins selector** now goes **0–8** (was 0–7).
+- **Settings** is now a responsive **card-per-setting** list (name + description, value
+  input full-width below) — the old 3-column table clipped the value input to an empty
+  circle on a phone and pushed Description off-screen. (Values were always present in
+  the DB; this was purely a rendering/overflow bug.)
+- **Users** is now a responsive **card-per-user** list (`role="group"` named by email)
+  — the 5-column table overflowed on a phone.
+- **Session detail** earns its place: added **Change** and **Score after** columns
+  (per-player rating impact from this session, via `RatingsLog`) — the value the
+  expandable list row can't show. (Decision: keep the route, add value.)
+- **Fixed the pre-existing `user-management.spec.ts` flake** (now in scope, since the
+  spec moved to the card list): wait for the role `<select>` to reflect the new value
+  *before* `page.reload()`, removing the race against the in-flight server action.
+  Full E2E suite now **39/39** under concurrency (5/5 × 3 in isolation too).
+
+Validation: 112/112 unit · build clean · lint clean · **e2e 39/39**.
+
 ---
 
 ## Step 14.1 — Google Cloud OAuth setup (manual)

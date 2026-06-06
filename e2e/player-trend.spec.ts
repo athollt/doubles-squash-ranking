@@ -23,7 +23,7 @@ test("a player's page is public and shows their rating trend", async ({
   for (let i = 0; i < 4; i++) {
     await addNewPlayer(page, i + 1, names[i], wins[i]);
   }
-  await page.getByRole("button", { name: /log tonight/i }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
   await expect(page).toHaveURL(/\/$/);
 
   // Reach the player page by clicking their name on the ladder.

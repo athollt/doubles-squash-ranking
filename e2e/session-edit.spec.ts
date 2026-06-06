@@ -10,7 +10,7 @@ async function submitSession(page: Page, token: string) {
   for (let i = 0; i < 4; i++) {
     await addNewPlayer(page, i + 1, `[e2e] ${token} P${i}`, wins[i]);
   }
-  await page.getByRole("button", { name: /log tonight/i }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
   await expect(page).toHaveURL(/\/$/);
 }
 

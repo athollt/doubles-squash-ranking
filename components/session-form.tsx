@@ -228,7 +228,7 @@ function Slot({
       )}
 
       <div className="flex flex-wrap items-center gap-1.5">
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((g) => (
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((g) => (
           <button
             key={g}
             type="button"

@@ -16,6 +16,12 @@ async function addUser(
   await page.getByRole("button", { name: "Add", exact: true }).click();
 }
 
+// Each user is a role="group" named by email (the responsive card list, step 13.5
+// follow-up — replaced the table rows).
+function userRow(page: import("@playwright/test").Page, email: string) {
+  return page.getByRole("group", { name: email });
+}
+
 test("admin can add scorer and admin users, change role, and delete (b1-4)", async ({
   page,
 }) => {
@@ -29,33 +35,31 @@ test("admin can add scorer and admin users, change role, and delete (b1-4)", asy
 
   // Behaviour 1: add a Scorer.
   await addUser(page, scorer, `[e2e] ${token} Scorer`, "SCORER");
-  const scorerRow = page.locator("tr", { hasText: scorer });
+  const scorerRow = userRow(page, scorer);
   await expect(scorerRow).toBeVisible();
   await expect(scorerRow.getByRole("combobox")).toHaveValue("SCORER");
 
   // Behaviour 2: add an Admin.
   await addUser(page, adminUser, `[e2e] ${token} Admin`, "ADMIN");
-  const adminRow = page.locator("tr", { hasText: adminUser });
-  await expect(adminRow.getByRole("combobox")).toHaveValue("ADMIN");
+  await expect(userRow(page, adminUser).getByRole("combobox")).toHaveValue("ADMIN");
 
-  // Behaviour 3: promote the scorer to admin.
+  // Behaviour 3: promote the scorer to admin. Wait for the role change to settle
+  // (the select reflects the new value after the server action re-renders the row)
+  // *before* reloading, so the assertion isn't racing the in-flight transition.
   await scorerRow.getByRole("combobox").selectOption("ADMIN");
+  await expect(scorerRow.getByRole("combobox")).toHaveValue("ADMIN");
   await page.reload();
-  await expect(
-    page.locator("tr", { hasText: scorer }).getByRole("combobox"),
-  ).toHaveValue("ADMIN");
+  await expect(userRow(page, scorer).getByRole("combobox")).toHaveValue("ADMIN");
 
   // Behaviour 4: delete the (now-admin) user — others remain, so it is allowed.
-  await page.locator("tr", { hasText: scorer }).getByRole("button", {
-    name: "Remove",
-  }).click();
-  await expect(page.locator("tr", { hasText: scorer })).toHaveCount(0);
+  await userRow(page, scorer).getByRole("button", { name: "Remove" }).click();
+  await expect(userRow(page, scorer)).toHaveCount(0);
 });
 
 test("the admin cannot remove their own row (b5)", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   await page.goto("/admin/users");
-  const selfRow = page.locator("tr", { hasText: TEST_ADMIN.email });
+  const selfRow = userRow(page, TEST_ADMIN.email);
   await expect(selfRow.getByRole("button", { name: "Remove" })).toBeDisabled();
 });
 

@@ -28,7 +28,7 @@ export default async function SubmitPage() {
     >
       <SessionForm
         players={players}
-        submitLabel="Log tonight’s results"
+        submitLabel="Log Results"
         onSubmit={onSubmit}
       />
     </PageShell>

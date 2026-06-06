@@ -35,12 +35,21 @@ export default async function SessionDetailPage({
       submittedBy: { select: { name: true } },
       sessionPlayers: {
         orderBy: { wins: "desc" },
-        select: { wins: true, player: { select: { name: true } } },
+        select: { playerId: true, wins: true, player: { select: { name: true } } },
+      },
+      // The rating impact this session had on each player — the value the
+      // expandable list row can't show (step 13.5 follow-up).
+      ratingsLogs: {
+        select: { playerId: true, ratingChange: true, ratingAfter: true },
       },
     },
   });
 
   if (!session) notFound();
+
+  const impactByPlayer = new Map(
+    session.ratingsLogs.map((r) => [r.playerId, r]),
+  );
 
   return (
     <PageShell
@@ -53,17 +62,37 @@ export default async function SessionDetailPage({
           <TableRow>
             <TableHead>Player</TableHead>
             <TableHead className="text-right">Wins</TableHead>
+            <TableHead className="text-right">Change</TableHead>
+            <TableHead className="text-right">Score after</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {session.sessionPlayers.map((sp, i) => (
-            <TableRow key={i}>
-              <TableCell>{sp.player.name}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {sp.wins}
-              </TableCell>
-            </TableRow>
-          ))}
+          {session.sessionPlayers.map((sp) => {
+            const impact = impactByPlayer.get(sp.playerId);
+            const change = impact ? Math.round(impact.ratingChange) : null;
+            return (
+              <TableRow key={sp.playerId}>
+                <TableCell>{sp.player.name}</TableCell>
+                <TableCell className="text-right tabular-nums">{sp.wins}</TableCell>
+                <TableCell
+                  className={`text-right tabular-nums ${
+                    change == null
+                      ? "text-muted-foreground"
+                      : change > 0
+                        ? "text-[var(--up)]"
+                        : change < 0
+                          ? "text-[var(--down)]"
+                          : "text-muted-foreground"
+                  }`}
+                >
+                  {change == null ? "—" : `${change > 0 ? "+" : ""}${change}`}
+                </TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {impact ? Math.round(impact.ratingAfter) : "—"}
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
 

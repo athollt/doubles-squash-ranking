@@ -28,7 +28,7 @@ test("a scorer submits a valid session and lands on the ladder", async ({
   await page.goto("/submit");
 
   await fillFourNewPlayers(page, `ok-${Date.now()}`, [3, 3, 1, 1]);
-  await page.getByRole("button", { name: /log tonight/i }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
 
   // Redirects to the ladder (home) on success.
   await expect(page).toHaveURL(/\/$/);
@@ -39,7 +39,7 @@ test("a session with an odd total of wins is rejected", async ({ page }) => {
   await page.goto("/submit");
 
   await fillFourNewPlayers(page, `odd-${Date.now()}`, [3, 3, 1, 2]);
-  await page.getByRole("button", { name: /log tonight/i }).click();
+  await page.getByRole("button", { name: /log results/i }).click();
 
   await expect(page.getByText(/total wins must be even/i)).toBeVisible();
   await expect(page).toHaveURL(/\/submit/);
