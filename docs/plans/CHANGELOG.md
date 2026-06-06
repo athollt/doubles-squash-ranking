@@ -38,3 +38,570 @@ Append-only log. Each entry: what was delivered, deviations from spec, validatio
 - `docker compose down` — ✅ clean teardown
 
 ---
+
+## Step 01.1 — Fix Turbopack dev server vs out-of-repo symlinks
+
+**Date**: 2026-06-05
+
+### Problem
+
+`next dev` (Turbopack, the default) crashed with HTTP 500 and a panic:
+`FileSystemPath("").join("../diffdev/agent-tools/.claude") leaves the filesystem root`.
+Tailwind v4's automatic content detection walks the repo root and follows the
+`.claude` / `.devin` symlinks, which point outside the project (ADR-005). Turbopack
+refuses to resolve files outside the root and panics on the underflowing path while
+processing `app/globals.css`. `next build` was unaffected (different resolver), so
+step 01/02 validated clean.
+
+### Delivered
+
+- `app/globals.css`: switched to `@import "tailwindcss" source(none)` and declared
+  explicit `@source "./"`, `@source "../components"`, `@source "../lib"`. This stops
+  Tailwind walking the root, so the symlinks are never enumerated. (`@source not` was
+  tried first and did **not** work — Tailwind enumerates a path before excluding it,
+  and the enumeration is what crashes Turbopack.)
+- `package.json`: `dev` now runs on port 3001 (port 3000 is held by an unrelated
+  local container).
+
+### Maintenance note
+
+Because automatic detection is disabled, class-bearing files in a **new top-level
+dir** (e.g. a future `hooks/`) need their own `@source` line or their classes won't
+generate. Current source dirs (`app`, `components`, `lib`) are all covered; shadcn is
+configured to write into `components`/`lib`.
+
+### Validation
+
+- `next dev` (Turbopack) — ✅ HTTP 200, page styled, no panic
+- Tailwind class detection through `components/` — ✅ verified `shrink-0` (only in
+  `components/ui/button.tsx`) appears in the compiled CSS when the Button renders
+- `npm run build` — ✅ zero errors
+- `npm run test` — ✅ 2/2 pass
+
+---
+
+## Step 02 — Database schema & Prisma setup
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `prisma/schema.prisma`: all 8 models (`User`, `Player`, `Setting`, `Session`, `SessionPlayer`, `RatingsLog`, `LadderSnapshot`) plus `Role` and `PlayerStatus` enums. Per spec: `SessionPlayer` unique on (sessionId, playerId); `SessionPlayer` and `RatingsLog` cascade-delete with their `Session`; `Player.createdById` nullable FK to `User`.
+- Initial migration `prisma/migrations/<ts>_init` created and applied.
+- `prisma/seed.ts`: seeds the 15 default settings (SPEC §4.2) and the first admin user `atholl@tomlinson.co.za` (role ADMIN). Idempotent via `upsert`.
+- `lib/prisma.ts`: shared `PrismaClient` singleton constructed with the `@prisma/adapter-pg` driver adapter (required by Prisma 7).
+- `lib/prisma.test.ts`: integration test querying all 7 queryable models and asserting the seeded admin + 15 settings.
+
+### Deviations from spec
+
+- **Prisma 7 requires a driver adapter.** The generated client no longer reads `DATABASE_URL` implicitly at runtime; it must be constructed with `new PrismaClient({ adapter: new PrismaPg(...) })`. Added `@prisma/adapter-pg` and a shared `lib/prisma.ts`.
+- **Seed runner.** Prisma 7 runs the seed via `migrations.seed` in `prisma.config.ts`. Added `tsx` (dev dep) and set `seed: "tsx prisma/seed.ts"`. The seed imports the client by relative path (tsx does not resolve the `@/` alias).
+- Added `import "dotenv/config"` to `vitest.config.ts` so the integration test gets `DATABASE_URL`.
+- Admin email is `atholl@tomlinson.co.za` per the step spec (PRD/SPEC reference `atholl@different.co.za` is the dev account, not the seeded admin).
+
+### Validation
+
+- `npx prisma migrate dev --name init` — ✅ migration created and applied
+- `npx prisma db seed` — ✅ 15 settings + admin user inserted (verified via psql)
+- `npm run test` — ✅ 2 tests pass (integration test, node env)
+- `npm run build` — ✅ zero errors, TypeScript clean
+
+---
+
+## Step 03 — Rating algorithm engine
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/rating-engine.ts`: pure `recalculate(input)` function implementing the full
+  algorithm (SPEC §5–7) — strength weight, expected vs actual share, session weight
+  (sqrt + clamp), new/returning-player multiplier, activity bonus (capped), current
+  ratings, and ladder build with active/inactive sorting and movement indicators.
+- `lib/rating-engine.test.ts`: 15 unit tests covering all 13 step behaviours
+  (including a golden test against the SPEC §2 example with hand-computed ratings).
+- Exported types: `RecalcInput`, `RecalcOutput`, `RatingsLogEntry`, `PlayerRating`,
+  `LadderEntry`, `Movement`, `PlayerInput`, `SessionInput`.
+
+### Deviations from spec
+
+- **`RecalcInput` extended beyond the step's sketch** (the step said "or similar"):
+  added `players` (roster with `status`, needed to exclude REMOVED players from the
+  ladder per ADR-004 while keeping them in history), `now` (so activity/active are
+  computed deterministically — keeps the function pure rather than reading the clock),
+  and optional `previousRankings` (for movement indicators, behaviour 12).
+- **Movement shape**: returned as `{ direction: "up"|"down"|"same"|"new", places }`
+  rather than a pre-rendered `↑N/↓N/—` string, leaving presentation to the UI layer.
+- The engine is purely mathematical and processes whatever sessions it is given;
+  session validity is enforced at submission (ADR-003), not here.
+
+### Validation
+
+- `npm run test` — ✅ 17 tests pass (15 engine + 2 Prisma integration)
+- `npm run build` — ✅ zero errors
+- `npm run lint` — ✅ clean
+
+---
+
+## Step 04 — Authentication & authorisation
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/auth-rules.ts`: pure `authorizeRoute(pathname, auth)` → `"allow" | "signin" | "unauthorised"`. Public: `/`, `/unauthorised`, `/api/auth/*`, `/sessions`, `/sessions/<id>` (detail only), `/players/*`. `/sessions/<id>/edit` and everything else require auth; `/admin/*` additionally requires `ADMIN`.
+- `lib/auth-callbacks.ts`: pure `resolveSignIn`, `resolveJwt`, `resolveSession`, each taking a `UserLookup` dependency (no Prisma import) so the callbacks are unit-testable in isolation.
+- `auth.config.ts` + `auth.ts`: Auth.js v5 split config. `auth.config.ts` is Prisma-free (Google provider, JWT sessions) and shared by the Edge middleware; `auth.ts` is the Node-runtime instance that wires the Prisma-backed callbacks (`signIn` allowlist, `jwt` role attach, `session` role expose).
+- `app/api/auth/[...nextauth]/route.ts`: Auth.js GET/POST handlers.
+- `middleware.ts`: builds an Edge-safe `auth` from `authConfig` (no Prisma) and delegates to `authorizeRoute`; redirects to `/api/auth/signin` (with `callbackUrl`) or `/unauthorised`. Matcher excludes `_next` and static assets.
+- `app/unauthorised/page.tsx`: "Your Google account does not have access. Contact the admin."
+- `types/next-auth.d.ts`: augments `Session` and `JWT` with `role: Role`.
+- `lib/auth-rules.test.ts` (10) + `lib/auth-callbacks.test.ts` (5): cover all 9 step behaviours as pure logic.
+
+### Deviations from spec
+
+- **Roles are uppercase** (`ADMIN`/`SCORER`) per the step 02 Prisma `Role` enum, not the lowercase `admin`/`scorer` in RESEARCH §2's sketch.
+- **Split config (`auth.config.ts`).** Importing Prisma into the Edge middleware loads `node:path`/`node:url` (the pg driver adapter), which the Edge Runtime rejects. The Auth.js v5 split-config pattern keeps Prisma out of the middleware; the middleware only reads `role` off the signed JWT, so it needs no DB access. Eliminated both Edge Runtime build warnings.
+- **`@auth/prisma-adapter` installed but not wired.** The step lists it "for user lookup only", but sessions are JWT and the user lookup is a direct `prisma.user.findUnique` in the callbacks — the adapter (which manages a DB session/account schema) is not needed. Left installed per the step's dependency list; can be removed later if undesired.
+- **Env naming**: `.env.example` now uses Auth.js v5's `AUTH_URL`/`AUTH_SECRET` (was `NEXTAUTH_URL`/`NEXTAUTH_SECRET`; v5 still accepts the latter as a fallback). `AUTH_URL` points at port 3001 to match the dev server.
+- **Logic extracted to pure functions** rather than inlined in the Auth.js config/middleware, so the 9 behaviours are testable without the OAuth runtime or a live Google flow. Real Google OAuth (behaviour 8 end-to-end) remains manual/Playwright verification once OAuth credentials exist.
+
+### Validation
+
+- `npm run test` — ✅ 32 tests pass (10 auth-rules + 5 auth-callbacks + 15 engine + 2 Prisma)
+- `npm run build` — ✅ zero errors, zero Edge Runtime warnings; `/unauthorised`, `/api/auth/[...nextauth]`, and Middleware all present
+- `npm run lint` — ✅ clean
+
+---
+
+## Step 05 — Player management (admin)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/players.ts`: pure `createPlayer`, `updatePlayerName`, `updatePlayerStatus`, each taking a `PlayerStore` port (no Prisma import). Validation: trim + non-empty; case-insensitive name uniqueness (rename excludes the player's own row so a case-only edit is allowed). Returns a `PlayerResult` discriminated union (`{ok:true,player}` / `{ok:false,error}`) per ADR-003.
+- `lib/player-store.ts`: Prisma-backed `PlayerStore`. `findByNameInsensitive` uses Prisma `mode: "insensitive"` (no DB unique index on `Player.name`).
+- `app/admin/players/actions.ts`: server actions (`createPlayerAction`, `updatePlayerNameAction`, `updatePlayerStatusAction`) — each guards `session.role === "ADMIN"` (defence-in-depth beyond middleware), delegates to the pure function, and `revalidatePath("/admin/players")` on success.
+- `app/admin/players/page.tsx`: server component, lists all players (incl. REMOVED) ordered by name; `force-dynamic` so data is never prerendered/cached. `app/admin/players/players-client.tsx`: client component — Add dialog, Edit (rename) dialog, status toggle (Remove ↔ Reactivate), inline error display via `useTransition`.
+- shadcn `table`, `input`, `dialog` components added.
+- `lib/players.test.ts` (10): covers behaviours 1–6.
+
+### Deviations from spec
+
+- **Logic extracted to pure functions over a `PlayerStore` port** (mirrors step 04), so behaviours 1–6 are unit-tested without a live DB. The server actions are thin Prisma wrappers.
+- **Behaviour 7 (scorer denied `/admin/players`) not re-tested** — already covered verbatim by the step-04 `lib/auth-rules.test.ts` cases for `/admin/players` (scorer → unauthorised, admin → allow). Server actions also re-check the admin role.
+- **Rename self-collision**: uniqueness on rename excludes the player's own id, so a player can keep its name or change only its case. Surfaced as an explicit test.
+- **No `createdById` set on create** — the step's `createPlayer(name)` signature takes only a name, and the schema makes `createdById` nullable. Left null for now; can be wired to the session user later if needed.
+
+### Validation
+
+- `npm run test` — ✅ 42 tests pass (10 players + 10 auth-rules + 5 auth-callbacks + 15 engine + 2 Prisma)
+- `npm run build` — ✅ zero errors, zero Edge warnings; `/admin/players` renders dynamically (`ƒ`)
+- `npm run lint` — ✅ clean
+
+---
+
+## Step 05.1 — Credentials provider & retroactive E2E (steps 1–5)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+**Part A — Credentials provider (enabler, DECISIONS.md ADR-006):**
+- `prisma/schema.prisma`: nullable `passwordHash` on `User` + migration `add_user_password_hash`.
+- `bcryptjs` (+ `@types/bcryptjs`); `lib/password.ts` (`hashPassword`/`verifyPassword`).
+- `lib/auth-callbacks.ts`: pure `verifyCredentials(email, password, lookup, verify)` — looks up user, checks hash, returns `{email}` or null. Role is never trusted from here (the allowlist/role callbacks run on top).
+- `prisma/seed.ts`: real admin gets a dev password from `SEED_ADMIN_PASSWORD` (local-only default `localdev`); `update` now sets the hash so an already-seeded admin gets one. No test users in the seed.
+- `auth.ts`: Credentials provider added to the **Node-runtime** instance only, alongside Google; `pages.signIn = "/signin"`.
+- `app/signin/` (`page.tsx` + `signin-form.tsx`): minimal email+password form (client `signIn("credentials")`) plus a Google button. No reset/registration — out of scope by decision.
+- `/signin` added to public routes in `lib/auth-rules.ts`; middleware redirects unauthenticated users to `/signin` (was `/api/auth/signin`).
+
+**Part B — E2E suite for steps 1–5 (11 specs, all green):**
+- `playwright.config.ts`: fixed `baseURL`/`webServer.url` `3000 → 3001`; serial (`workers: 1`); global setup/teardown.
+- `e2e/manage-test-users.ts` (run via tsx) creates/deletes ephemeral `TestAdmin`/`TestScorer`; `global-setup.ts`/`global-teardown.ts` shell out to it (Playwright's loader can't `require()` the generated ESM Prisma client). Teardown also removes `[e2e]`-tagged players.
+- Specs: public pages 200 (`public.spec.ts`); unauthenticated redirects (`auth-redirects.spec.ts`); non-allowlisted denied + scorer→`/unauthorised` + admin→`/admin/players` (`auth-flow.spec.ts`); player add/rename/status/duplicate (`player-management.spec.ts`).
+
+### Bugs found and fixed (the E2E earned its keep)
+
+- **Edge instance never exposed `role`.** The step-04 split put the `session` callback only on the Node `auth.ts`, so the middleware's edge `auth` saw no role → every admin was treated as unauthorised. Role-based gating was only ever unit-tested at `authorizeRoute`, never end-to-end. Fixed by adding the pure (Prisma-free) `session` callback to `auth.config.ts`. **This means admin route protection did not actually work before this step.**
+- **`NEXTAUTH_URL=http://localhost:3000` in the live `.env`** (drifted from `.env.example`) made Auth.js build redirects on `:3000` while the dev server runs on `:3001`. Fixed the local `.env` to `AUTH_URL=http://localhost:3001` (`.env.example` already correct; `.env` is gitignored).
+- **Playwright config pointed at `:3000`** — E2E could never have connected. Fixed.
+- **Vitest was globbing the Playwright `.spec.ts` files** and erroring. `vitest.config.ts` now includes only `*.test.{ts,tsx}` and excludes `e2e/`.
+
+### Deviations / notes
+
+- Credentials + Google **coexist**; a follow-up at step 14 hides the credentials fields once Google works (provider stays for E2E).
+- `signIn` helper waits for the post-login navigation off `/signin` before returning (cookie race).
+- Back-filled **ADR-005** (Tailwind source/symlink decision, previously only referenced) and added **ADR-006** to `DECISIONS.md`.
+- PLAN.md gained a standing **E2E rule**: from 05.1 on, any step touching a user-facing route must add Playwright E2E (ephemeral test-user pattern); route-less steps record "no E2E required".
+- Non-blocking: Next warns `middleware.ts` should become `proxy.ts` (deprecation). Left for a later step.
+
+### Validation
+
+- `npm run test` — ✅ 48 unit tests pass (6 files; +6 password/credentials)
+- `npm run build` — ✅ zero errors, zero Edge warnings; `/signin` present
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 11/11 Playwright specs pass; teardown leaves only the real admin and zero `[e2e]` players
+
+---
+
+## Step 05.2 — Migrate to `proxy.ts` & collapse the split auth config
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- **`middleware.ts` → `proxy.ts`** (Next.js 16 convention; removes the build deprecation warning). The `auth((req) => …)` wrapper and `config.matcher` are unchanged.
+- **Collapsed the split config**: deleted `auth.config.ts`; `auth.ts` is now a single `NextAuth({...})` with both providers (Google + Credentials) and all three callbacks (`signIn`, `jwt`, `session`). `proxy.ts` imports `auth` from `@/auth`.
+- The duplicated `session` callback that step 05.1 had to add to the Edge config is gone — there is one config, so the Edge/Node duplication (and its failure mode) no longer exists.
+- Pure logic in `lib/` (`auth-rules`, `auth-callbacks`, `password`) and all unit tests unchanged.
+
+### Why now (ADR-007)
+
+`proxy.ts` defaults to the **Node.js runtime**, not Edge. The split config existed *only* to keep Prisma out of the Edge middleware (ADR-006 / step 04). Under Node that constraint is gone, so the split is pure overhead. With no users yet, this is the cheapest time to correct it. Recorded as **ADR-007** before implementation.
+
+### Deviations / notes
+
+- This is a refactor, not new behaviour: the acceptance gate was the **11 step-05.1 E2E specs**, all of which still pass through the new proxy + single config. The earlier safety net is exactly what made this safe.
+- The proxy still only reads `role` off the signed JWT (no Prisma call in the request path), but could now touch Prisma directly if ever needed.
+
+### Validation
+
+- `npm run test` — ✅ 48 unit tests pass (unchanged)
+- `npm run build` — ✅ zero errors, **no `middleware` deprecation warning**, no Edge warnings; route shown as `ƒ Proxy`
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 11/11 Playwright specs pass
+
+---
+
+## Step 05.3 — App shell (global nav & auth control)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/nav.ts`: pure `navLinksFor(role)` — public links (`Ladder`, `Sessions`) always; `Submit` when signed in; `Admin` (→ `/admin/players`) for `ADMIN`.
+- `components/site-header.tsx`: Server Component reading `auth()`; renders app name, role-aware nav, and the auth control (user email + Sign out when logged in, else Sign in link).
+- `components/sign-out-button.tsx`: client `signOut({callbackUrl:"/"})`.
+- Wired `SiteHeader` into `app/layout.tsx` above `{children}` so it is global.
+- `lib/nav.test.ts` (3) + `e2e/app-shell.spec.ts` (4): role-based links and the sign-out round-trip.
+
+### Notes
+
+- **Structure only — no visual styling** (plain shadcn/Tailwind defaults), per the decision to keep palette/logo/polish at step 13.
+- Nav includes forward links (`/sessions`, `/submit`) that 404 until their steps (07/09) land — intentional, forward-compatible.
+- Reading `auth()` in the root layout makes pages dynamic; acceptable for now. Public-page static/caching is a step-09 concern.
+- No new auth workflows — sign-out only.
+
+### Validation
+
+- `npm run test` — ✅ 51 unit tests pass (+3 nav)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 15/15 Playwright specs pass (+4 app-shell)
+
+---
+
+## Step 06 — Settings management (admin)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/settings.ts`: pure `validateSettings(updates)` — all values positive, finite numbers; returns a result union.
+- `lib/recalc.ts`: `runRecalculation(store, now)` — the full-recalc orchestrator (ADR-001) over a `RecalcStore` port: loads settings/players/sessions, runs the pure engine (step 03), replaces RatingsLog, writes a LadderSnapshot. Unit-tested with a fake store.
+- `lib/recalc-store.ts`: Prisma-backed `RecalcStore`. `replaceRatingsLog` is a delete-all + `createMany` in one `$transaction`; `createLadderSnapshot` stores the ladder as JSON.
+- `app/admin/settings/actions.ts`: `saveAndRecalculateAction(updates)` — admin-guarded; validates, persists changed values in a transaction, then runs the recalculation (behaviour 4).
+- `app/admin/settings/page.tsx` (server, `force-dynamic`) + `settings-client.tsx`: editable table of all settings + "Save & Recalculate".
+- `lib/settings.test.ts` (3) + `lib/recalc.test.ts` (2) + `e2e/settings.spec.ts` (3).
+
+### Deviations / notes
+
+- Same pure-port pattern as prior steps; the orchestration is unit-tested without Prisma.
+- Recalc currently runs on an empty-session DB (no sessions until step 07) — it completes cleanly producing an empty ladder, which the E2E exercises end-to-end via the real Save & Recalculate button.
+- The edit E2E captures and restores the seeded `KFactor` so reruns/manual testing stay clean (settings aren't part of the ephemeral teardown).
+- **Nav not extended**: the header still has a single Admin link to `/admin/players`; `/admin/settings` is reached by URL for now. A proper admin sub-nav is deferred to when more admin pages exist (≈ step 12) to avoid scope creep here.
+- `LadderSnapshot.rankings` stores the ladder array as JSON (Dates serialise to ISO strings); fine for an audit snapshot.
+
+### Validation
+
+- `npm run test` — ✅ 56 unit tests pass (+5: 3 settings, 2 recalc)
+- `npm run build` — ✅ zero errors/warnings; `/admin/settings` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 18/18 Playwright specs pass (+3 settings)
+
+---
+
+## Step 07 — Session submission (scorer)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/session-validation.ts`: pure `validateSession(input)` — 4–8 players, no duplicates, wins are integers ≥ 0, total even and > 0; returns derived `totalPlayerWins`, `inferredGames` (= total/2), `playerCount`.
+- `app/submit/actions.ts`: `submitSessionAction(data)` — resolves on-the-fly players (creates them with `createdById` = current user), validates, creates the `Session` + nested `SessionPlayer` rows, runs the full recalculation, redirects to the ladder. Guarded by the proxy (auth required) + the user lookup.
+- `app/submit/page.tsx` (server, `force-dynamic`) + `submit-client.tsx`: slot-based form — 4 default slots, "Add player slot" up to 8, per-slot player `<select>` with an "+ Add new player…" option, wins input, optional notes. Mobile-first stacked layout.
+- `lib/session-validation.test.ts` (8) + `e2e/submit.spec.ts` (3).
+- E2E teardown extended to delete sessions involving `[e2e]` players (cascade) before removing the players, avoiding FK violations.
+
+### Deviations / notes
+
+- **Combobox**: the spec mentioned a searchable combobox; used a plain `<select>` with an inline "+ Add new player…" option instead. Simpler, accessible, no extra dependency; a searchable combobox can be a step-13 polish item if desired.
+- On-the-fly players are created **before** validation; if validation then fails the players already exist. Acceptable (they're real roster entries an admin can remove), and matches the spec's "create on-the-fly" intent. A stricter create-only-on-success path can be added later if it becomes a problem.
+- Behaviours 9/10 (recalc + snapshot after submit) are exercised by the happy-path E2E end-to-end (real submit → recalc runs → redirect), backed by the step-06 recalc unit tests.
+
+### Validation
+
+- `npm run test` — ✅ 64 unit tests pass (+8 session-validation)
+- `npm run build` — ✅ zero errors/warnings; `/submit` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 21/21 Playwright specs pass (+3 submit); teardown leaves zero `[e2e]` players and sessions
+
+---
+
+## Step 08 — Session edit & delete
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/session-authz.ts`: pure `canMutateSession({userId, role, submittedById})` — admin may mutate any session; a scorer only their own (PRD #12, #13, #16).
+- `app/sessions/[id]/edit/actions.ts`: `updateSessionAction` (re-validates via step-07's `validateSession`, replaces `SessionPlayer` rows in a transaction, recalculates) and `deleteSessionAction` (cascade-deletes Session → SessionPlayer + RatingsLog, recalculates). Both gated by `canMutateSession` after a user/session lookup.
+- `app/sessions/[id]/edit/page.tsx`: server component — loads the session, **redirects a non-owner scorer to `/unauthorised`** (behaviour 2), pre-populates the shared form, binds update + delete server actions.
+- `app/admin/sessions/page.tsx`: admin-only list of all sessions (date, submitter, players, total wins) with an Edit link per row.
+- `components/session-form.tsx`: extracted the submit form into a reusable component (player slots, add-new-player, wins, notes) parameterised by `submitLabel`/`onSubmit`/optional `onDelete`. `app/submit` now uses it; `app/submit/submit-client.tsx` removed.
+- `lib/session-authz.test.ts` (3) + `e2e/session-edit.spec.ts` (4).
+
+### Deviations / notes
+
+- **Refactor (approved by the feature need)**: the step-07 `SubmitClient` became the shared `SessionForm` so edit and submit share one form. The step-07 submit E2E still pass unchanged, confirming behaviour preserved.
+- The ownership check exists in **two places by design**: the edit *page* redirects non-owners to `/unauthorised` (UX), and the *actions* re-check (defence-in-depth — a scorer can't mutate via a forged action call).
+- No public/own session list exists yet (step 10), so the edit E2E discover a session's id via the admin list, then act as the relevant user. This is an E2E-only convenience, not a product path.
+- `/admin/sessions` Edit uses `buttonVariants` on a `Link` (the project's Button has no `asChild`). Delete is on the edit page (with the form), per the spec's "Delete button (with confirmation)" — confirmation UI kept minimal (no modal yet; polish at step 13 if wanted).
+
+### Validation
+
+- `npm run test` — ✅ 67 unit tests pass (+3 session-authz)
+- `npm run build` — ✅ zero errors/warnings; `/sessions/[id]/edit` and `/admin/sessions` dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 25/25 Playwright specs pass (+4 session-edit); teardown leaves zero `[e2e]` players and sessions
+
+---
+
+## Step 09 — Public ladder page
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `app/page.tsx`: the public ladder at `/` (Server Component, `force-dynamic`, no auth). Loads settings/players/sessions via `prismaRecalcStore`, runs the pure engine (step 03), and renders the ladder — active players first (by ladder score), inactive players below under an "Inactive" sub-heading (by last-played desc). Per-row: rank, name, an `Inactive` and/or `(P)` provisional badge, and a movement indicator (↑N green / ↓N red / NEW blue / — grey). "Last updated: <date>" footer from the most recent session. No rating points shown. Empty state when there are no sessions. Mobile = card list (`sm:hidden`), wider screens = `Table` (`hidden sm:block`).
+- `lib/public-ladder.ts`: pure `previousRankingsFromSnapshot(rankings)` → `Map<playerId, rank>` and `lastUpdatedFrom(sessions)` → latest timestamp | null. `lib/public-ladder.test.ts` (3) covers both.
+- `e2e/ladder.spec.ts` (2): public page is reachable with the title (behaviour 1); after a scorer submits a session the players appear on the ladder ranked, with `(P)` + `NEW` on a first-timer, and the 3-win winner outranks the 1-win loser (behaviours 2, 3, 6, 7).
+
+### Deviations / notes
+
+- **Movement basis (decision)**: the step says "load the most recent snapshot", but each recalc writes a fresh snapshot of the *current* state — comparing the live ladder to it yields "same" for everyone. Movement is instead measured against the **2nd-most-recent** snapshot (the previous state); the page loads the two latest snapshots and feeds the prior one's rankings to the engine as `previousRankings`. The recalc orchestrator is unchanged (its stored snapshots still carry movement="new", which the page does not read).
+- **Behaviours 2–7 are already engine-level** and covered by `lib/rating-engine.test.ts` (active-above-inactive, sorting, removed-excluded, provisional flag, movement). Step 09 adds the *page* that surfaces them, unit-tests the new snapshot/last-updated glue, and E2E-verifies the rendered journey rather than re-testing the engine.
+- **Behaviour 8 (empty state)**: rendered via the `ladder.length === 0` branch. Not asserted in E2E because the suite runs serially against a shared DB that already holds seeded/submitted data; the populated path is the meaningful E2E and the empty branch is a simple conditional.
+- **No Badge dependency**: status/provisional badges and movement are plain spans with Tailwind classes (no shadcn `badge` added) — consistent with the "no visual polish until step 13" stance.
+- The existing `e2e/public.spec.ts` heading assertion was updated from "Doubles Squash @ BSC" to the spec's "BSC Doubles Squash Ladder" (the new H1); the old placeholder home page is replaced.
+
+### Validation
+
+- `npm run test` — ✅ 70 unit tests pass (+3 public-ladder)
+- `npm run build` — ✅ zero errors/warnings; `/` now dynamic (`ƒ`)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 27/27 Playwright specs pass (+2 ladder); teardown leaves zero `[e2e]` players and sessions
+
+---
+
+## Step 09.1 — Sample data seed (full-system test data)
+
+**Date**: 2026-06-05
+
+### Delivered
+
+- `lib/sample-data.ts`: pure, seeded, deterministic generator. `generateSampleSessions(SAMPLE_CONFIG)` returns a half-year schedule (10-player roster, 2026-01-05 → 2026-06-07, 3–4 sessions/week, 77 sessions). Per session: mostly 4 players (some 5/6/8), even-total win spreads biased by a deterministic per-player skill (so the ladder isn't flat), short (2-2-2 ≈ 5–8 games) vs long (best-of ≈ 9–12 games) styles. Dave L and Mike T stop early (inactive at the anchor); Grahame C plays early, has a >90-day gap, then returns within 90 days (active, returning-player boost). mulberry32 PRNG seeded from config — same config ⇒ identical output.
+- `lib/sample-data.test.ts` (7): validity (all pass `validateSession`), determinism, 3–4/week frequency, inactive-cutoff + returning-gap, player-count mix (4 majority, ≥1 each of 5/6/8), short+long style mix.
+- `prisma/seed-sample.ts`: opt-in seed layered on the blank baseline. Reuses the seeded admin as `submittedBy`, rebuilds its own sample rows idempotently (delete sample players + their sessions, clear derived RatingsLog/LadderSnapshot, re-insert), then **replays a weekly recalc** writing one `LadderSnapshot` per week (movement history) and a final full `RatingsLog`. Inlines the load→`recalculate`→write loop (relative imports only; tsx doesn't resolve `@/`).
+- `package.json`: `"seed:sample": "tsx prisma/seed-sample.ts"`.
+
+### Two start states
+
+- **Blank**: `npx prisma migrate dev` (or `prisma db seed`) → 15 settings + admin only (production-shaped). `prisma/seed.ts` is unchanged.
+- **Populated**: baseline, then `npm run seed:sample`.
+
+### Deviations / notes
+
+- **Grahame C = returning + active, not inactive.** The user's brief ("Grahame C inactive AND returning") conflicts under a 90-day active threshold; resolved with the user to *returning + currently active (boosted)*. So 2 players are inactive (Dave L, Mike T) and Grahame exercises the returning boost — matching the plan's "2–3 inactive + 1 returning".
+- **Determinism**: session timestamps are fixed 2026 dates (never "today"); win spreads come from the seeded PRNG; re-running rebuilds the same set. The only clock-derived value is the per-week `now` passed to recalc — set to the simulated week's latest session date, which is what makes active/inactive and the activity bonus correct as-of each week.
+- The weekly snapshots store `movement="new"` (same as the live recalc orchestrator); the ladder page derives real movement live from the previous snapshot's `{playerId, rank}` — no engine/orchestrator change needed.
+- The E2E suite runs unchanged against the now-populated DB (sample roster has no `[e2e]` tag, so teardown leaves it intact; the ephemeral test-user pattern is unaffected).
+
+### Validation
+
+- `npm run test` — ✅ 77 unit tests pass (+7 sample-data)
+- `npm run build` — ✅ zero errors/warnings
+- `npm run lint` — ✅ clean
+- `npm run seed:sample` — ✅ 10 players, 77 sessions, 22 weekly snapshots, 350 ratings-log rows; **idempotent** (identical counts on re-run)
+- Manual ladder check: 8 active (incl. Grahame C #4, boosted) above 2 inactive (Dave L, Mike T); ratings spread by skill
+- `npx playwright test` — ✅ 27/27 pass (exit 0) against the populated DB; sample roster intact, zero `[e2e]` leftovers
+
+---
+
+## Step 10 — Public session history
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/session-history.ts`: pure `formatSessionDate(date)` → "D Mon YYYY" (e.g. "5 Jun 2026") in UTC, per the PRD's "formatted nicely" requirement. `lib/session-history.test.ts` (2): format + locale/UTC stability.
+- `app/sessions/page.tsx`: public `/sessions` (Server Component, `force-dynamic`, no auth). Lists sessions most recent first; each row is a native `<details>` summarising date + "N players · M games" (`inferredGames`), expanding to player names with games won, plus a "View full detail →" link. Empty state when there are no sessions.
+- `app/sessions/[id]/page.tsx`: public `/sessions/[id]` detail — date, "Submitted by <name>", a players-with-wins table (desc), total player-wins + inferred games, and notes (when present). `notFound()` → 404 for an unknown id. Back link to `/sessions`.
+- `e2e/session-history.spec.ts` (3): list page is public (behaviour 1); unknown id 404s (behaviour 5); a submitted session is listed with player count/games and reachable on its own detail page (behaviours 2, 3, 4).
+
+### Deviations / notes
+
+- **Date format is a deliberate deviation** from the ISO `slice(0,10)` used on the ladder/admin pages — the step spec explicitly asks for "5 Jun 2026". Isolated to the public history pages via the pure helper.
+- **Expandable detail uses native `<details>`/`<summary>`** rather than a JS toggle — keeps both pages pure Server Components (no client bundle), accessible by default. The detail link sits inside the expanded content (a `<Link>` in the `<summary>` would need a client-side `stopPropagation` to avoid also toggling).
+- **Behaviour 6 (empty state)** is the `sessions.length === 0` branch; not asserted in E2E because the serial suite runs against a populated shared DB (matches the step-09 empty-state rationale).
+- `/sessions` and `/sessions/<id>` were already public in `lib/auth-rules.ts` (step 04) and forward-linked from the nav (step 05.3); no auth/nav change needed. `/sessions/[id]/edit` is unaffected (nested route).
+
+### Validation
+
+- `npm run test` — ✅ 79 unit tests pass (+2 session-history)
+- `npm run build` — ✅ zero errors/warnings; `/sessions` and `/sessions/[id]` dynamic (`ƒ`)
+- `npx playwright test session-history` — ✅ 3/3 pass
+
+---
+
+## Step 11 — Public player rating trend
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/player-trend.ts`: pure `buildTrendPoints(rows)` (oldest → newest `{date, rating}` for the chart) and `buildTrendRows(rows)` (newest → oldest `{date, before, change, after}` for the table), both rounding ratings to 1dp. `lib/player-trend.test.ts` (3): ordering, rounding, empty input.
+- `components/rating-trend-chart.tsx`: client component — a responsive recharts `LineChart` (monotone line, dots) of rating-after over session dates.
+- `app/players/[id]/page.tsx`: public `/players/[id]` (Server Component, `force-dynamic`, no auth). `notFound()` → 404 for an unknown id. Shows name (+ "Removed" badge when removed), current rating, Active/Inactive status, sessions played (total + last-90-days) from the engine's `currentRatings`; the trend chart; and a colour-coded before/change/after table. Empty state when the player has zero sessions. Back link to the ladder.
+- `app/page.tsx`: ladder player names (both the desktop table and the mobile card list) now link to `/players/[id]` (step 11 navigation).
+- `recharts@3` added (the step's recommended chart lib).
+- `e2e/player-trend.spec.ts` (2): unknown id 404s (behaviour 4); a played player is reachable from the ladder link, the page is public, and shows name + current rating + sessions played + the trend table (behaviours 1, 2, 3).
+
+### Deviations / notes
+
+- **Current rating / sessions-played come from the live engine** (`recalculate(...).currentRatings`), the same source as the ladder — not re-derived — so the player page and ladder never disagree. The RatingsLog is queried only for the per-session trend (before/change/after + dates).
+- **The chart is the only client component**; the page stays a Server Component and passes the already-shaped points in. recharts renders the line/dots after hydration (responsive sizing needs the browser); the trend *table* renders server-side so the data is present without JS.
+- **Behaviours 5 (zero sessions) and 6 (removed player still accessible)** are conditional branches not present in the sample seed, so they were verified manually against a live dev render with throwaway `[verify]` players (both 200; empty-state and "Removed" badge respectively), then the players were deleted. Not added to the serial E2E suite (would need bespoke fixtures); matches the step-09/10 stance on hard-to-fixture branches.
+- **Removed players appear in `currentRatings`** (the engine only excludes them from the *ladder*), so their historical page works unchanged — no special-casing needed.
+
+### Validation
+
+- `npm run test` — ✅ 82 unit tests pass (+3 player-trend)
+- `npm run build` — ✅ zero errors/warnings; `/players/[id]` dynamic (`ƒ`)
+- `npm run test:e2e` — ✅ 32/32 Playwright specs pass (+3 session-history, +2 player-trend); ladder name-links cause no regression; teardown leaves zero `[e2e]` leftovers
+- Manual render: unknown id → 404; zero-session player → empty state (200); removed player → accessible with "Removed" badge (200); recharts chart + trend table render for a player with history
+
+---
+
+## Step 12 — User management (admin)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- `lib/users.ts`: pure `createUser` / `updateUserRole` / `deleteUser` over a `UserStore` port (mirrors `lib/players.ts`). Validation: email format (pragmatic regex), trimmed non-empty name, case-insensitive email uniqueness. `deleteUser(id, actingUserId, store)` guards self-delete and last-admin (refuses when the target is an ADMIN and `countAdmins() <= 1`). Discriminated-union results (`UserResult` / `DeleteResult`).
+- `lib/user-store.ts`: Prisma-backed `UserStore` (`findByEmailInsensitive`, `findById`, `countAdmins`, `create`, `updateRole`, `delete`).
+- `app/admin/users/actions.ts`: `createUserAction` / `updateUserRoleAction` / `deleteUserAction` — each re-checks `role === "ADMIN"` (defence-in-depth) and resolves the acting admin's id (email → user lookup) so the delete guard knows "self"; `revalidatePath("/admin/users")` on success.
+- `app/admin/users/page.tsx` (server, `force-dynamic`) + `users-client.tsx`: table (email, name, role, created); Add User dialog (email, name, role select); per-row role `<select>` that saves on change; per-row Remove disabled for self and for the last admin (with explanatory `title`). Row-level errors surfaced inline.
+- `lib/users.test.ts` (11) covering behaviours 1–8; `e2e/user-management.spec.ts` (5) covering 1–5, 7–9.
+
+### Deviations / notes
+
+- **New users have no `passwordHash`** — they sign in via Google once OAuth exists (step 14). The credentials provider only authenticates users that already have a hash (the seed admin / E2E fixtures), so admin-created accounts can't use the password path, which is correct.
+- **Native `<select>` for role** (no shadcn `select` component exists) — consistent with the step-07 plain-`<select>` decision; avoids a new dependency before the step-13 polish pass.
+- **Behaviour 6 (last admin) is unit-tested only.** The serial E2E runs against a shared DB that always has ≥2 admins (seed admin + `TestAdmin`), so a single-admin state can't be fixtured without disturbing other specs; the pure guard + its unit test are the gate, and the UI disables the button via the page's `adminCount`.
+- **Behaviour 5 (self-delete)** is both unit-tested and E2E-asserted (the acting admin's own Remove button is disabled). The action also re-checks it server-side.
+- **`/admin/users` gating (behaviour 9)** reuses the existing `authorizeRoute` (`/admin/*` ⇒ ADMIN) — already unit-tested in `lib/auth-rules.test.ts`; the new E2E adds the end-to-end scorer-denied assertion.
+- **Nav unchanged**: the header's single Admin link still points at `/admin/players`; `/admin/users` (like `/admin/settings`) is reached by URL. A proper admin sub-nav across players/settings/users remains deferred to step 13 (polish) to keep this step surgical.
+- **E2E cleanup**: created users are `[e2e]`-named; `e2e/manage-test-users.ts` teardown now also deletes users whose name contains `[e2e]` (verified zero leftovers after a full run).
+
+### Validation
+
+- `npm run test` — ✅ 93 unit tests pass (+11 users)
+- `npm run build` — ✅ zero errors/warnings; `/admin/users` dynamic (`ƒ`)
+- `npm run test:e2e` — ✅ 37/37 Playwright specs pass (+5 user-management); teardown leaves zero `[e2e]` users/players
+
+---
+
+## Step 13 — PWA & branding
+
+**Date**: 2026-06-06
+
+### Delivered
+
+**Branding assets (all in `/public`):**
+- `icon.svg` — square app-icon master: a blue squash racket + yellow-dot ball on a charcoal rounded badge. `logo.svg` — horizontal mark+wordmark lockup (the wordmark uses `currentColor` so it adapts to light/dark). `og.svg` — 1200×630 OG master.
+- Rasterised from the SVG masters (via `sharp`): `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` (180), `favicon-32x32.png`, `favicon-16x16.png`, `og.png` (1200×630). `app/favicon.ico` regenerated as a 2-image (16+32) PNG-in-ICO, replacing the Next scaffold default.
+- **Palette (charcoal + electric blue)** defined as CSS theme variables in `app/globals.css` (Tailwind v4 has no `tailwind.config.ts` — see deviation): `--primary` charcoal `#1A1A1A`, `--accent`/`--ring`/`--chart-1` electric blue `#2D7FF9`, dark-mode `--background` `#0E0E10`. The manifest `theme_color`/`background_color` mirror these.
+
+**PWA configuration:**
+- `@serwist/next@9.5.11` + `serwist@9.5.11` (dev) installed.
+- `app/sw.ts` — minimal Serwist service worker: precaches the build manifest, `defaultCache` runtime caching, and an offline document fallback to `/~offline`. `app/~offline/page.tsx` is the branded offline page.
+- `public/manifest.json` — `name` "BSC Squash Ladder", `short_name` "Squash", `start_url` "/", `display` "standalone", theme/background from the palette, 192 + 512 icons (`purpose: "any maskable"`).
+- `next.config.ts` wraps the config with Serwist **for the production (webpack) build only** (see deviation).
+- `app/layout.tsx` — Next Metadata API now emits the manifest link, `apple-touch-icon`, `icons`, OpenGraph (with `/og.png`), `appleWebApp`, a `viewport.themeColor`, and a `metadataBase` (from `AUTH_URL`, fallback `https://squash.tomlinson.co.za`) so OG/icon URLs resolve absolutely.
+
+**UI polish:**
+- `components/site-header.tsx` — the app mark (`icon.svg`, 28px, via `next/image`) now sits beside the wordmark in the global header.
+- Palette applied app-wide via the theme variables (accent/ring/charts) — no per-page colour changes needed.
+
+**Tests:**
+- `public/manifest.test.ts` (2): manifest required fields + 192/512 PNG icons (behaviour 1, unit).
+- `e2e/pwa.spec.ts` (2): `/manifest.json` served with correct fields (behaviour 1); ladder page links the manifest, apple-touch-icon, and OG image in `<head>` (behaviours 4, 5).
+
+### Deviations from spec
+
+- **Palette lives in `app/globals.css`, not `tailwind.config.ts`.** The project is Tailwind v4 (no JS config file; CHANGELOG step 01) — the v4-correct place for theme colours is the `@theme`/`:root` CSS variables. Functionally equivalent to the step's intent.
+- **Serwist wraps the production build only, gated on `NODE_ENV`.** Next 16 dev defaults to Turbopack, which **errors** when a webpack config is present without a turbopack one; Serwist 9.5.x is a webpack plugin. The wrapper is therefore applied only when `NODE_ENV !== "development"`, leaving dev a clean Turbopack config. `package.json` `build` is now `next build --webpack` so the SW is actually emitted (Turbopack would skip the plugin). The SW is a build artifact, so dev never needs it.
+- **`public/sw.js` is gitignored** (generated on every build), alongside `public/sw.js.map`. Added to `.gitignore` and to ESLint `globalIgnores` (the minified bundle otherwise floods lint).
+- **Behaviours 2, 3, 6 (SW registers, favicon in tab, installable) are manual/browser checks** per the step's own "manual verification" note — not automatable in the headless serial E2E. Behaviours 1, 4, 5, 7 are covered (unit + E2E + the green build).
+- **Pre-existing Next scaffold SVGs left in place** (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`) — unreferenced, but not made unused by this step (AGENTS.md §4); flagged here, not deleted.
+
+### Validation
+
+- `npm run test` — ✅ 95 unit tests pass (+2 manifest)
+- `npm run build` — ✅ zero errors/warnings; Serwist bundles `/sw.js`; no `metadataBase` warning; `/~offline` route present (behaviour 7)
+- `npm run lint` — ✅ clean (generated `sw.js` ignored)
+- `npm run test:e2e` — ✅ 39/39 Playwright specs pass (+2 pwa); teardown leaves zero `[e2e]` leftovers
+- Manual head check (dev render): `theme-color #1a1a1a`, manifest link, absolute `og:image`, `apple-touch-icon` all present; `/icon.svg` served 200
+- Installability (Chrome DevTools → Application → Manifest) remains the documented manual check
+
+---
+
+## Step 13.1 — Admin navigation dropdown
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- Closes the nav gap deferred by steps 06, 08, 12: `/admin/settings`, `/admin/sessions` and `/admin/users` existed and worked but had **no link anywhere** (URL-only). The header's single "Admin" link only reached `/admin/players`.
+- `lib/nav.ts`: added `adminLinks` (Players · Sessions · Settings · Users, in dropdown order); `navLinksFor` no longer appends `/admin/players` to the primary row (admin pages now live in the dropdown).
+- `components/admin-menu.tsx`: client "Admin ▾" dropdown (ADMIN only) built on `@base-ui/react/menu` (already a dependency — no new package), styled to the project's popover tokens. Accessible (keyboard + ARIA `menuitem` roles).
+- `components/site-header.tsx`: renders `<AdminMenu />` when `role === "ADMIN"`.
+- `lib/nav.test.ts`: updated — admin row no longer carries an admin link; new test asserts `adminLinks` lists all four pages. `e2e/app-shell.spec.ts`: the admin spec now opens the dropdown, asserts all four labels are visible, and navigates to Settings; logged-out/scorer specs assert no "Admin" button.
+
+### Notes
+
+- "Admin" is now a `<button>` (menu trigger), not a `<link>` — the app-shell selectors were updated accordingly.
+
+### Validation
+
+- `npm run test` — ✅ 96 unit tests pass (+1 nav)
+- `npm run build` — ✅ zero errors/warnings (typechecks the base-ui `render` prop)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` (app-shell) — ✅ 4/4; dropdown reaches every admin page
+- Manual: signed in as admin, Admin ▾ lists Players/Sessions/Settings/Users and each navigates
+
+---

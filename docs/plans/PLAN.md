@@ -50,6 +50,12 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 - Document spec deviations in `CHANGELOG.md`
 - One commit per step
 - Only requested changes in the diff — no drive-by refactors
+- **E2E coverage (from step 05.1 onward)**: any step that adds or changes a
+  user-facing route MUST add/extend Playwright E2E for the user journeys it
+  introduces (alongside Vitest unit tests). E2E uses the ephemeral test-user and
+  test-data pattern established in step 05.1 (created in global setup, deleted in
+  global teardown — never left in the seed). A step that touches no route records
+  "no E2E required" in `CHANGELOG.md`. Step 05.1 back-fills E2E for steps 01–05.
 
 ---
 
@@ -58,18 +64,22 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | # | Step | Status | Depends On |
 |---|------|--------|------------|
 | 01 | [Project scaffold & dev environment](steps/step-01-project-scaffold.md) | complete | — |
-| 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | pending | 01 |
-| 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | pending | 02 |
-| 04 | [Authentication & authorisation](steps/step-04-auth.md) | pending | 02 |
-| 05 | [Player management (admin)](steps/step-05-player-management.md) | pending | 04 |
-| 06 | [Settings management (admin)](steps/step-06-settings-management.md) | pending | 04 |
-| 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | pending | 03, 05, 06 |
-| 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | pending | 07 |
-| 09 | [Public ladder page](steps/step-09-public-ladder.md) | pending | 07 |
-| 10 | [Public session history](steps/step-10-session-history.md) | pending | 07 |
-| 11 | [Public player rating trend](steps/step-11-player-trend.md) | pending | 07 |
-| 12 | [User management (admin)](steps/step-12-user-management.md) | pending | 04 |
-| 13 | [PWA & branding](steps/step-13-pwa-branding.md) | pending | 09 |
+| 02 | [Database schema & Prisma setup](steps/step-02-database-schema.md) | complete | 01 |
+| 03 | [Rating algorithm engine](steps/step-03-rating-engine.md) | complete | 02 |
+| 04 | [Authentication & authorisation](steps/step-04-auth.md) | complete | 02 |
+| 05 | [Player management (admin)](steps/step-05-player-management.md) | complete | 04 |
+| 05.1 | [Credentials provider & E2E (steps 1–5)](steps/step-05.1-credentials-e2e.md) | complete | 04, 05 |
+| 05.2 | [Migrate to proxy.ts & collapse split auth config](steps/step-05.2-proxy-migration.md) | complete | 05.1 |
+| 05.3 | [App shell — global nav & auth control](steps/step-05.3-app-shell.md) | complete | 05.1 |
+| 06 | [Settings management (admin)](steps/step-06-settings-management.md) | complete | 04 |
+| 07 | [Session submission (scorer)](steps/step-07-session-submission.md) | complete | 03, 05, 06 |
+| 08 | [Session edit & delete](steps/step-08-session-edit-delete.md) | complete | 07 |
+| 09 | [Public ladder page](steps/step-09-public-ladder.md) | complete | 07 |
+| 09.1 | [Sample data seed (full-system test data)](steps/step-09.1-sample-data.md) | complete | 09 |
+| 10 | [Public session history](steps/step-10-session-history.md) | complete | 07 |
+| 11 | [Public player rating trend](steps/step-11-player-trend.md) | complete | 07 |
+| 12 | [User management (admin)](steps/step-12-user-management.md) | complete | 04 |
+| 13 | [PWA & branding](steps/step-13-pwa-branding.md) | complete | 09 |
 | 14 | [Deployment setup](steps/step-14-deployment.md) | pending | all prior |
 | 15 | [Update documentation](steps/step-15-update-docs.md) | pending | all prior |
 
@@ -79,6 +89,13 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 
 ```bash
 npm run build && npm run test
+```
+
+From step 05.1 onward, steps that touch user-facing routes also run the E2E
+suite (requires local Postgres up + migrated):
+
+```bash
+npm run test:e2e
 ```
 
 ---

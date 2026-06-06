@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# serwist (service worker is generated on build)
+/public/sw.js
+/public/sw.js.map
+
 # production
 /build
 
