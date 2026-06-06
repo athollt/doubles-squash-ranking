@@ -1,13 +1,13 @@
 <svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!-- Charcoal background with a subtle electric-blue accent bar -->
-  <rect width="1200" height="630" fill="#0E0E10"/>
-  <rect x="0" y="0" width="1200" height="10" fill="#2D7FF9"/>
+  <rect width="1200" height="630" fill="#0B3D91"/>
+  <rect x="0" y="0" width="1200" height="10" fill="#C6FF00"/>
   <!-- Large mark, left-of-centre -->
   <g transform="translate(150 175) scale(1.6)">
     <g transform="rotate(-30 110 110)">
-      <rect x="103" y="106" width="14" height="76" rx="7" fill="#2D7FF9"/>
-      <ellipse cx="110" cy="76" rx="45" ry="52" fill="none" stroke="#2D7FF9" stroke-width="13"/>
-      <g stroke="#2D7FF9" stroke-width="4.5" opacity="0.55">
+      <rect x="103" y="106" width="14" height="76" rx="7" fill="#C6FF00"/>
+      <ellipse cx="110" cy="76" rx="45" ry="52" fill="none" stroke="#C6FF00" stroke-width="13"/>
+      <g stroke="#C6FF00" stroke-width="4.5" opacity="0.55">
         <line x1="90" y1="33" x2="90" y2="119"/>
         <line x1="110" y1="28" x2="110" y2="124"/>
         <line x1="130" y1="33" x2="130" y2="119"/>
@@ -17,10 +17,10 @@
       </g>
     </g>
     <circle cx="153" cy="160" r="20" fill="#FAFAFA"/>
-    <circle cx="153" cy="160" r="5" fill="#2D7FF9"/>
+    <circle cx="153" cy="160" r="5" fill="#C6FF00"/>
   </g>
   <!-- App name -->
   <text x="560" y="290" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="76" font-weight="800" fill="#FAFAFA">BSC Squash</text>
-  <text x="560" y="360" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="44" font-weight="600" fill="#2D7FF9">Doubles Ladder</text>
+  <text x="560" y="360" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="44" font-weight="600" fill="#C6FF00">Doubles Ladder</text>
   <text x="560" y="420" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="26" font-weight="400" fill="#9CA3AF">Session results and player rankings</text>
 </svg>

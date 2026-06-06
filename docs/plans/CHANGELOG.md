@@ -681,3 +681,58 @@ configured to write into `components`/`lib`.
 - Winning direction + full terminology confirmed with the human before capture.
 
 ---
+
+## Step 13.4 — Design-system foundation
+
+**Date**: 2026-06-06
+
+### Delivered
+
+**Shared primitives (all in `components/ui/`, unit-tested, TDD vertical cycles):**
+- `badge.tsx` — status pill (`new` / `muted` / `accent` variants); canonical replacement
+  for the inline `StatusBadge` spans. The ladder's **New** flag.
+- `card.tsx` — card surface with optional `title`; replaces the inlined `LadderCards`
+  bordered rows.
+- `page-shell.tsx` — **single source of page width/padding/title + PWA safe-area
+  insets**; replaces the per-page `<main class="mx-auto max-w-… p-4 sm:p-8"> + <h1>`
+  pattern (the three-different-`max-w` inconsistency).
+- `trend.tsx` — the ladder **Trend** column (▲n/▼n/NEW/—, up/down colours from new
+  `--up`/`--down` tokens); promotes the local `MovementIndicator`.
+- `bottom-nav.tsx` — PWA bottom tab bar. `BottomNav` is the pure, tested core (role +
+  pathname → role-aware tabs + `aria-current` active state, fed by the shared
+  `navLinksFor`); `BottomNavBar` is the thin `usePathname` client wrapper. **Built and
+  tested, not yet wired** — the top-header→bottom-nav swap is the 13.5 rollout.
+
+**Court CI applied (the design-system identity layer):**
+- `app/globals.css` — `:root` (day, default) and `.dark` (night) token blocks replaced
+  with the Court palette, **hex→OKLCH** (royal `#0B3D91` / sky `#4D8DFF`, volt-lime
+  accent `#C6FF00`, navy/mist surfaces); added `--up`/`--down` ladder-Trend tokens;
+  `--radius` → 0.875rem (Court 14px). `@theme` now maps `--font-heading` to Archivo.
+- `app/layout.tsx` — fonts swapped Geist → **Space Grotesk (body) + Archivo
+  (headings)**; `viewport.themeColor` → royal `#0B3D91`. (Lesson from 13.3: fonts must
+  be wired here, not assumed.)
+- `public/manifest.json` — `theme_color` `#0B3D91`, `background_color` `#F4F6FB`.
+- **Logo/mark assets recoloured to Court** — `icon.svg` / `logo.svg` / `og.svg` masters
+  (royal badge, volt racket/ball), re-rastered via `sharp` to `icon-192/512`,
+  `apple-touch-icon` (180), `favicon-16/32`, `og.png` (1200×630); `app/favicon.ico`
+  rebuilt as a 16+32 PNG-in-ICO from the Court favicons.
+
+**Tests:** +15 unit (badge 2, card 2, page-shell 2, trend 5, bottom-nav 4). Updated
+`public/manifest.test.ts` to the Court `theme_color`/`background_color` (the test
+encodes the CI tokens, which deliberately changed).
+
+### Deviations / notes
+
+- **No feature page re-skinned** (per the step boundary) — the diff is `components/ui/`
+  + CI assets (`globals.css`, `layout.tsx`, `manifest.json`, `/public` icons) + tests.
+  Pages still render their old chrome until the 13.5 rollout consumes these primitives.
+- Both light (default) **and** dark token sets wired, per the CI decision that the PWA
+  honours `prefers-color-scheme`.
+
+### Validation
+
+- `npm run test` — ✅ 111/111 (96 prior + 15 new)
+- `npm run build` — ✅ zero errors/warnings; Court fonts bundled
+- `npm run lint` — ✅ clean
+
+---

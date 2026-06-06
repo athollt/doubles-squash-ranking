@@ -8,8 +8,9 @@ describe("manifest.json", () => {
     expect(manifest.short_name).toBe("Squash");
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");
-    expect(manifest.theme_color).toBe("#1a1a1a");
-    expect(manifest.background_color).toBe("#ffffff");
+    // Court palette (step 13.4): royal primary + mist background.
+    expect(manifest.theme_color).toBe("#0B3D91");
+    expect(manifest.background_color).toBe("#F4F6FB");
   });
 
   it("declares the 192 and 512 PNG icons", () => {

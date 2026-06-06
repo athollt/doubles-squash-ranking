@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Archivo, Space_Grotesk, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SiteHeader } from "@/components/site-header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Court CI fonts (step 13.4): Space Grotesk = body, Archivo = headings/display.
+// Exposed as CSS vars consumed by globals.css @theme (--font-sans / --font-heading).
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-sans",
+  subsets: ["latin"],
+});
+
+const archivo = Archivo({
+  variable: "--font-heading",
+  weight: ["500", "700", "900"],
   subsets: ["latin"],
 });
 
@@ -40,7 +48,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1a1a1a",
+  themeColor: "#0B3D91",
 };
 
 export default function RootLayout({
@@ -51,7 +59,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${spaceGrotesk.variable} ${archivo.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <SiteHeader />
