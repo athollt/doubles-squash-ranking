@@ -80,7 +80,16 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 11 | [Public player rating trend](steps/step-11-player-trend.md) | complete | 07 |
 | 12 | [User management (admin)](steps/step-12-user-management.md) | complete | 04 |
 | 13 | [PWA & branding](steps/step-13-pwa-branding.md) | complete | 09 |
-| 14 | [Deployment setup](steps/step-14-deployment.md) | pending | all prior |
+| 13.1 | Admin navigation dropdown (no step file — see CHANGELOG) | complete | 12 |
+| 13.2 | [CI prototype (logo, colours, fonts)](steps/step-13.2-ci-prototype.md) | complete | 13 |
+| 13.3 | [Mobile-first prototype (ladder + submit)](steps/step-13.3-mobile-prototype.md) | pending | 13.2 |
+| 13.4 | [Design-system foundation](steps/step-13.4-design-system.md) | pending | 13.3 |
+| 13.5 | [Redesign rollout (re-implement screens)](steps/step-13.5-redesign-rollout.md) | pending | 13.4 |
+| 13.6 | [Fix create-prd & create-plan skills](steps/step-13.6-skill-fixes.md) | pending | 13.5 |
+| 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | pending | 04 |
+| 14.2 | [Hetzner production environment (manual)](steps/step-14.2-hetzner.md) | pending | 14.1 |
+| 14.3 | [GitHub repo & Actions secrets (manual)](steps/step-14.3-github-actions.md) | pending | 14.1, 14.2 |
+| 14.4 | [Deployment setup](steps/step-14.4-deployment.md) | pending | 14.1, 14.2, 14.3, 13.5 |
 | 15 | [Update documentation](steps/step-15-update-docs.md) | pending | all prior |
 
 ---

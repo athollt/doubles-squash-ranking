@@ -605,3 +605,37 @@ configured to write into `components`/`lib`.
 - Manual: signed in as admin, Admin ▾ lists Players/Sessions/Settings/Users and each navigates
 
 ---
+
+## Step 13.2 — CI prototype (logo, colours, fonts)
+
+**Date**: 2026-06-06
+
+### Delivered
+
+- Standalone CI mood-board (`/prototype` skill, UI branch, sub-shape B) at
+  `zTemp/ci-prototype/index.html` — a single zero-build HTML file showing complete
+  visual identities (logo mark + wordmark, palette with hex, type specimen with
+  numerals, sample ladder rows, buttons), switchable via `?ci=`/tabs/← → and (after
+  narrowing) a day/night `?mode=` toggle. **Throwaway** — `zTemp/` is gitignored.
+- Explored 5 identities (Court, Club, Neon, Retro, Fresh), narrowed to the two
+  finalists (Court, Neon) each rendered in day **and** night to test inversion.
+- **Decision: Court wins**, shipping both day and night modes with **day as default**.
+  Headings `Archivo` (900), body `Space Grotesk`; royal `#0B3D91` + volt-lime `#C6FF00`
+  (day), navy + brightened sky `#4D8DFF` + volt (night). Full token tables in
+  `PROTOTYPE-NOTES-ci.md`. Supersedes the step-13 baseline (charcoal + electric-blue,
+  Geist) — applied to the real app in 13.4.
+
+### Notes
+
+- No app code touched (the step explicitly excludes `app/globals.css` / `app/layout.tsx`
+  — those change in 13.4). No tests, no E2E (no route added).
+- `zTemp/ci-prototype/` is disposable; `PROTOTYPE-NOTES-ci.md` is the durable artifact.
+
+### Validation
+
+- Mood-board opens with one command (`open zTemp/ci-prototype/index.html`); all
+  identities + both modes switch via tabs / arrow keys / mode toggle, URL-stable.
+- Winning identity (Court, day-default, both modes) confirmed with the human and
+  captured in `docs/plans/PROTOTYPE-NOTES-ci.md`.
+
+---
