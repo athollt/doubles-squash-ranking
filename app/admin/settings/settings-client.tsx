@@ -49,7 +49,7 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
                 type="number"
                 step="any"
                 aria-label={s.key}
-                className="w-20 shrink-0 tabular-nums"
+                className="w-20 shrink-0 text-center tabular-nums"
                 value={values[s.key]}
                 onChange={(e) =>
                   setValues((v) => ({ ...v, [s.key]: e.target.value }))
