@@ -38,7 +38,7 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
       <ul className="flex flex-col gap-3">
         {settings.map((s) => (
           <li key={s.key}>
-            <Card className="p-3 sm:flex sm:items-center sm:gap-4">
+            <Card className="flex items-center gap-3 p-3">
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{s.key}</p>
                 {s.description && (
@@ -49,7 +49,7 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
                 type="number"
                 step="any"
                 aria-label={s.key}
-                className="mt-2 w-full tabular-nums sm:mt-0 sm:w-28"
+                className="w-20 shrink-0 tabular-nums"
                 value={values[s.key]}
                 onChange={(e) =>
                   setValues((v) => ({ ...v, [s.key]: e.target.value }))
