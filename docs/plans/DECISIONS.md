@@ -99,3 +99,29 @@ The project has **no users yet** — the cheapest possible moment to correct fou
 3. The pure, provider-agnostic logic (`authorizeRoute`, `resolveSignIn`/`resolveJwt`/`resolveSession`/`verifyCredentials` in `lib/`) is unchanged — those are not coupled to the runtime and keep their unit tests.
 
 **Consequence**: One auth config instead of two; no Edge/Node duplication to keep in sync (the step 05.1 bug — the Edge instance silently missing the `session` callback — becomes structurally impossible). The proxy now runs in Node, so it *may* touch Prisma directly if ever needed (it currently does not — it still only reads `role` off the signed JWT). Risk: the migration touches the core auth wiring, but the 11 Playwright E2E specs from step 05.1 cover the exact behaviour (redirects + role gating) and are the acceptance gate. If a future need arises for Edge middleware, this decision would have to be revisited (re-introducing a Prisma-free config).
+
+---
+
+## ADR-008: Identity-first, prototype-before-refactor sequencing for the redesign
+
+**Date**: 2026-06-06
+**Status**: accepted
+
+**Context**: After step 13 the app worked but felt like a web page, not the mobile/PWA app it is meant to be, and the screens were visually inconsistent — every `page.tsx` hand-rolled its own shell/heading/width and defined local components (`StatusBadge`, `MovementIndicator`, `LadderCards` in `app/page.tsx`). The root cause is structural: no earlier step established shared UI primitives or a "reuse before you build" rule, so each feature page improvised. The obvious instinct — "add a refactor-for-consistency step at the end" — is a trap: extracting shared components *before* the look-and-feel and navigation model are decided produces primitives that get thrown away. The redesign covers two separable axes — **CI** (logo, palette, fonts) and **UX** (layout, navigation, interaction) — and the question was how to sequence them against the build.
+
+**Decision**: Sequence the redesign as five steps, deciding before building, identity before structure:
+1. **13.2 CI prototype** — a standalone `zTemp/` mood-board of 5 complete identities; lock the visual identity first.
+2. **13.3 UX prototype** — in-app `?variant=` layouts for the two first-class phone journeys (ladder, submit), rendered *in the chosen CI* so feedback is about structure, not placeholder styling.
+3. **13.4 design-system foundation** — build the shared primitives (page shell, card, badge, nav chrome) in the chosen identity. No feature page re-skinned.
+4. **13.5 rollout** — re-implement every screen on those primitives. This is where consistency and the mobile-app feel actually land.
+5. **13.6 skill-fixes** — retrofit `create-prd`/`create-plan` so a future plan mandates a design-system-first step + per-step reuse check (learn-then-retrofit, after living the redesign).
+
+Deployment (14.4) depends on 13.5 so it ships the finished design. Prototype code is throwaway; the durable artifacts are `PROTOTYPE-NOTES-ci.md` and `PROTOTYPE-NOTES-ux.md`.
+
+**Considered options**:
+- *Refactor-for-consistency step at the end* — rejected: builds components before the design that defines them; guaranteed rework.
+- *One combined redesign step* — rejected: too large to validate incrementally; conflates the CI decision, the UX decision, and the rollout.
+- *UX-first, CI later* — rejected: layout variants would render in placeholder styling, and "ignore the colours" feedback is noisy. CI-first lets 13.3 be judged on structure alone.
+- *Fix the skills up front* — rejected: would encode an unvalidated convention; 13.6 codifies what actually worked.
+
+**Consequence**: The redesign is five tracked steps instead of one, with a clear decision→build boundary and no speculative component extraction. The cost is more plan ceremony and two prototype phases before any production code changes. The "refactor for consistency" work is reframed as 13.4 + 13.5 (implementation of a decided design), not an end-of-plan cleanup. The skill fix (13.6) makes the design-system-first convention the default for future features, so this inconsistency should not recur. A future reader asking "why is the redesign five steps / why CI before UX?" finds the answer here.
