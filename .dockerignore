@@ -1,0 +1,76 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# git
+/.git
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# serwist (service worker is generated on build)
+/public/sw.js
+/public/sw.js.map
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# temp output
+zTemp
+
+/app/generated/prisma
+
+# Docker local postgres data volume
+/postgres-data
+
+# Playwright + tests (not needed in the runtime image)
+/test-results
+/playwright-report
+/playwright/.cache
+/e2e
+*.test.ts
+*.test.tsx
+
+# docs (not needed in the image)
+/docs
+
+# Out-of-repo agent-tooling symlinks (ADR-005) — dangling inside the build
+# context and not needed at runtime; Next's build stats them and errors.
+/CLAUDE.md
+/AGENTS.md
+/.claude
+/.devin
+/.windsurf

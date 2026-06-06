@@ -964,3 +964,77 @@ Manual runbook, no app code change. Runbook: `docs/deployment/03-github-actions.
 - GitHub repo secret `FLY_API_TOKEN` present (set via browser; value masked).
 
 ---
+
+## Step 14.4 — Deployment setup (Fly.io)
+
+**Date**: 2026-06-06
+
+Finalised + committed the deploy artifacts `fly launch` generated in 14.2 (left
+uncommitted then). The generated Dockerfile/entrypoint did **not** fit this project; the
+substance of this step was rewriting them to a correct standalone image. Config and
+**local** verification are done; the live first-deploy proof (behaviours 5–8) follows on
+the manual merge to `main`.
+
+### Delivered
+
+- **`Dockerfile` — rewritten** to a multi-stage **standalone** image (was the
+  `fly launch` default that ran `next build --experimental-build-mode compile` + a
+  runtime `generate`, non-standalone, and **skipped Serwist**). Now: builder runs the
+  project's real `npm run build` (`next build --webpack`) so the **Serwist PWA service
+  worker is emitted** (CHANGELOG step 13 — the default/Turbopack builder skips the
+  webpack plugin); runner serves `node server.js` on 3000. `npx prisma generate` runs at
+  build time.
+- **Runner copies the full build `node_modules`** (decision, over hand-picking): Next's
+  standalone trace omitted the pg **driver adapter** (`@prisma/adapter-pg`, constructed
+  in bundled app code so the tracer misses the bare require), `dotenv` (imported by
+  `prisma.config.ts`), and `tsx`/`esbuild` (the documented `prisma db seed` step). Trading
+  image size for robustness — no missing-module surprises at release/runtime. Also copies
+  the generated client (`app/generated/prisma`), `prisma/` (schema + migrations) and
+  `prisma.config.ts` for the release command + seed.
+- **`docker-entrypoint.js` removed** — the generated one ran a Next build at container
+  start (incompatible with standalone `node server.js`); migrations run via `fly.toml`
+  `release_command`, not at boot.
+- **`fly.toml`** — confirmed app/region/always-on/`release_command`; **added the spec's
+  `GET /` HTTP health check** (`[[http_service.checks]]`, 15s interval).
+- **`.dockerignore`** — added `.git`, `e2e`, `*.test.*`, `docs`, and the **out-of-repo
+  agent-tooling symlinks** (`CLAUDE.md`/`AGENTS.md`/`.claude`/`.devin`, ADR-005). The
+  symlinks are dangling inside the build context and made `next build` fail with
+  `ENOENT: /app/CLAUDE.md` — found and fixed during the first build attempt.
+- **`.github/workflows/fly-deploy.yml`** — kept as generated (matches spec: push to
+  `main` → `setup-flyctl` → `flyctl deploy --remote-only`, `FLY_API_TOKEN` only). Spec
+  said `deploy.yml`; kept the `fly-deploy.yml` name 14.2 already referenced.
+- **`.env.example`** — reconciled to the Fly model (prod values are Fly secrets, not a
+  file; `DATABASE_URL` from `fly postgres attach`); removed the **duplicate
+  `FLY_API_TOKEN`** key (the CI token is a GitHub secret, not a local env var).
+- **`package.json`** — keeps `@flydotio/dockerfile` (dev dep) from `fly launch`.
+- **`docs/DEPLOYMENT.md`** — Fly runtime guide: deploy flow + release-command migrations,
+  first-deploy admin seed, `fly logs`/`status`/`ssh`/`secrets`, rollback (`fly releases` /
+  `fly deploy --image`), volume-snapshot restore, token hygiene. References the 01–03
+  runbooks for one-time setup (no duplication).
+
+### Deviations / notes
+
+- **Full `node_modules` in the runner instead of a minimal hand-picked set** — chosen for
+  robustness after the trace was found to omit adapter-pg/dotenv/tsx. Larger image; can be
+  slimmed later if size matters.
+- Workflow filename `fly-deploy.yml` (spec said `deploy.yml`) — content matches; name is
+  the one 14.2 already used.
+- **Behaviours 5–8 (live deploy + production Google sign-in) are pending the manual merge
+  to `main`** (PLAN forbids the agent merging). This entry will be amended with the live
+  proof (release migration ran, TLS, admin seeded, real Google sign-in) once deployed.
+
+### Validation (local — behaviours 1–4)
+
+- `docker build -t squash-test .` — ✅ builds (standalone); Serwist logs
+  "Bundling the service worker script with the URL '/sw.js'".
+- **Runtime smoke (image vs local compose Postgres):** `npx prisma migrate deploy` in the
+  image loads `prisma.config.ts`, connects via the pg adapter, "No pending migrations"
+  (release-command path proven); `node server.js` boots, **`GET /` → HTTP 200** (health
+  check), the ladder renders DB-derived content through the adapter with no Prisma errors,
+  and **`GET /sw.js` → HTTP 200** (PWA SW present).
+- `fly config validate` — ✅ "Configuration is valid" (incl. the health check).
+- Workflow YAML — ✅ structural check (push→main, setup-flyctl, `--remote-only`,
+  `FLY_API_TOKEN`).
+- `npm run build` — ✅ EXIT 0 · `npm run lint` — ✅ clean · `npm run test` — ✅ 112/112.
+
+---
