@@ -86,7 +86,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 13.4 | [Design-system foundation](steps/step-13.4-design-system.md) | complete | 13.3 |
 | 13.5 | [Redesign rollout (re-implement screens)](steps/step-13.5-redesign-rollout.md) | complete | 13.4 |
 | 13.6 | [Fix create-prd & create-plan skills](steps/step-13.6-skill-fixes.md) | pending | 13.5 |
-| 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | pending | 04 |
+| 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | complete | 04 |
 | 14.2 | [Hetzner production environment (manual)](steps/step-14.2-hetzner.md) | pending | 14.1 |
 | 14.3 | [GitHub repo & Actions secrets (manual)](steps/step-14.3-github-actions.md) | pending | 14.1, 14.2 |
 | 14.4 | [Deployment setup](steps/step-14.4-deployment.md) | pending | 14.1, 14.2, 14.3, 13.5 |

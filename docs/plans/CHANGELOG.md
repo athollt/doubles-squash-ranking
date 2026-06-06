@@ -804,3 +804,46 @@ button label + terms), `public` (heading "Ladder").
 - Grep: no `mx-auto w-full max-w-` bespoke chrome remains in `app/**/page.tsx`.
 
 ---
+
+## Step 14.1 — Google Cloud OAuth setup (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/01-google-oauth.md`.
+
+### Delivered
+
+- Google Cloud project `bsc-squash-ladder` created under the `tomlinson.co.za` org.
+- OAuth consent screen: **External**, app name `BSC Doubles Squash Ladder`, authorised
+  domain `tomlinson.co.za`, default scopes; left in **Testing** with the required
+  test users added (incl. non-`tomlinson.co.za` Gmail scorers).
+- OAuth Web client `squash-web` with **both** redirect URIs registered:
+  `http://localhost:3001/api/auth/callback/google` (local) and
+  `https://squash.tomlinson.co.za/api/auth/callback/google` (production).
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` obtained and placed in the local
+  (gitignored) `.env`; `AUTH_SECRET` generated via `openssl rand -base64 32`.
+
+### Verified (local proof)
+
+- Real Google sign-in as `atholl@tomlinson.co.za` at `/signin` → lands signed-in with
+  **Admin ▾** visible (role attached from the `users` table).
+- A Google account **not** in the `users` table → redirected to `/unauthorised`
+  (allowlist gate works end-to-end via the live OAuth flow).
+
+### Notes / blockers resolved
+
+- The blocker chain was a misleading **"Google Cloud Platform service has been
+  disabled"** error. Real causes, in order hit: (1) the GCP service was OFF in the
+  Workspace Admin console (turned ON for everyone); (2) the persistent error was
+  actually a missing IAM role — **Organization Administrator does not include
+  `resourcemanager.projects.create`**; granting `atholl@tomlinson.co.za` the
+  **Project Creator** role at the org (then sign-out/in to refresh the permission
+  cache) fixed it. The **Age-based access** theory was a dead end (Education-edition
+  only). All captured in the runbook as "Workspace gotcha #1/#2".
+
+### Outputs (carry forward)
+
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` → VPS `.env` (14.2) + GitHub Secrets (14.3).
+- Production-domain OAuth verification is deferred to **14.4** (first live deploy).
+
+---
