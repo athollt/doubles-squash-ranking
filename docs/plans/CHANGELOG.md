@@ -869,3 +869,68 @@ Manual runbook, no app code change. Runbook: `docs/deployment/01-google-oauth.md
 - Production-domain OAuth verification is deferred to **14.4** (first live deploy).
 
 ---
+
+## Step 14.2 — Fly.io production environment (manual)
+
+**Date**: 2026-06-06
+
+Manual runbook, no app code change. Runbook: `docs/deployment/02-fly.md`.
+
+### Decision: switched hosting from Hetzner to Fly.io (Johannesburg)
+
+The plan's "Hetzner Cloud, Cape Town" was a **wrong fact** — Hetzner has **no South
+Africa datacenter** (only EU/US/Singapore), so it couldn't deliver the ZA latency it
+was chosen for; **CX22 was also discontinued (2026-02-13)**. Fly.io's **jnb**
+(Johannesburg) region is the only option that puts the app in SA (~10–30ms vs
+~150–180ms from Hetzner EU). Switched the deployment plan to Fly. Full reasoning +
+the accepted deprecated-unmanaged-Postgres risk: **ADR-008** in `DECISIONS.md`;
+`RESEARCH-flyio-vs-hetzner.md` carries the correction/reversal. (A short-lived Fly-vs-
+Hetzner research earlier the same day had favoured Hetzner *because* it assumed a ZA
+region existed — overturned once provisioning proved it didn't.)
+
+### Provisioned (all on Fly; state lives on Fly, not in git)
+
+- **App** `bsc-squash-ladder`, `primary_region = jnb`, via `fly launch --no-deploy
+  --no-db`. Always-on corrected in `fly.toml` (`auto_stop_machines = off`,
+  `min_machines_running = 1` — `fly launch` defaulted to scale-to-zero).
+- **Postgres** `bsc-squash-db` (Postgres 17 flex, shared-cpu-1x, 1GB volume,
+  **encrypted**) in jnb; **attached** → `DATABASE_URL` secret set (private `.flycast`
+  network, `sslmode=disable` — internal traffic only).
+- **Secrets** (5, staged for first deploy): `DATABASE_URL` (from attach), `AUTH_URL`
+  (`https://squash.tomlinson.co.za`), fresh `AUTH_SECRET`, `GOOGLE_CLIENT_ID`,
+  `GOOGLE_CLIENT_SECRET`.
+- **Domain + TLS**: shared IPv4 + IPv6 allocated; Route 53 **CNAME** `squash` →
+  `le9dp11.bsc-squash-ladder.fly.dev`; `fly certs` issued a verified Let's Encrypt
+  cert (RSA+ECDSA, auto-renew).
+- **Backups**: volume `pg_data` has scheduled snapshots on, **5-day retention**
+  (first snapshot lands within ~a day). Restore path documented in the runbook.
+- **CI**: deploy-scoped `FLY_API_TOKEN` created (→ GitHub secret in 14.3).
+
+### Deviations / notes
+
+- **`fly launch` generated local files** (`fly.toml`, `Dockerfile`, `docker-entrypoint.js`,
+  `.dockerignore`, `.github/workflows/fly-deploy.yml`) and added `@flydotio/dockerfile`
+  to `package.json` + a `FLY_API_TOKEN` line to `.env.example`. These are **14.4
+  deploy artifacts** — left **uncommitted** in this step; 14.4 reviews/finalises and
+  commits them (only `fly.toml`'s always-on fix was applied now). This 14.2 commit is
+  docs only.
+- Fly account org is `personal` under `atholl@different.co.za` (independent of the
+  `tomlinson.co.za` Google OAuth — fine).
+- Unmanaged Postgres prints a "not supported by Fly" notice on every command — expected
+  (ADR-008 risk, accepted).
+
+### Validation
+
+- `fly status` — app in jnb (`pending`: not yet deployed, correct for 14.2).
+- `fly secrets list` — 5 secrets staged.
+- `fly certs check squash.tomlinson.co.za` — **Issued / verified / active**.
+- `dig +short squash.tomlinson.co.za` — resolves via CNAME → 66.241.125.70.
+- `fly volume show` — scheduled snapshots true, retention 5.
+
+### Outputs (carry forward)
+
+- `FLY_API_TOKEN` (deploy token) → GitHub secret (**14.3**).
+- App `bsc-squash-ladder` / region `jnb` → `fly.toml` finalisation (**14.4**).
+- Production-domain Google sign-in proof → **14.4** (after first deploy).
+
+---

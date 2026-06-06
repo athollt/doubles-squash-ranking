@@ -117,13 +117,17 @@ fly secrets set --app bsc-squash-ladder \
    > real-domain OAuth check) happens in 14.4 after the first deploy makes the app live.
 
 ### 6. Backups — volume snapshots
-Fly automatically snapshots volumes daily with a default retention (≈5 days). Confirm
-and note the restore path:
+Fly automatically snapshots volumes daily; confirm the retention and note the restore
+path:
 ```bash
-fly volumes list --app bsc-squash-db
-fly volumes snapshots list <volume-id>     # see snapshots
-# Restore (disaster recovery): create a new volume from a snapshot, then a new PG machine
-#   fly volumes create --snapshot-id <snap> --region jnb ...
+fly volume show <volume-id> --app bsc-squash-db
+#   → "Scheduled snapshots: true", "Snapshot retention: 5" (days)
+fly volume snapshots list <volume-id> --app bsc-squash-db   # (empty for the first ~day)
+```
+**Restore (disaster recovery)** — new volume from a snapshot, then a new PG machine:
+```bash
+fly volume snapshots list <volume-id> --app bsc-squash-db        # find <snap-id>
+fly volume create pg_data --snapshot-id <snap-id> --region jnb --app bsc-squash-db
 ```
 > For v1 this is the agreed backup strategy. A belt-and-braces `pg_dump`→object-storage
 > cron can be added as a later hardening step if the data justifies it.
