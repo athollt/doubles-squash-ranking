@@ -227,25 +227,28 @@ function Slot({
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5">
-        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((g) => (
-          <button
-            key={g}
-            type="button"
-            aria-label={`${g} wins`}
-            aria-pressed={Number(slot.wins) === g}
-            className={cn(
-              "border-border font-heading h-10 min-w-10 rounded-lg border font-bold tabular-nums",
-              Number(slot.wins) === g
-                ? "border-primary bg-primary text-primary-foreground"
-                : "bg-background",
-            )}
-            onClick={() => onChange({ wins: String(g) })}
-          >
-            {g}
-          </button>
-        ))}
-        <span className="text-muted-foreground ml-1 text-xs">wins</span>
+      <div>
+        <p className="text-muted-foreground mb-1.5 text-xs">wins</p>
+        {/* 0–9 as two rows of five, large thumb targets for courtside entry. */}
+        <div className="grid grid-cols-5 gap-2">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => (
+            <button
+              key={g}
+              type="button"
+              aria-label={`${g} wins`}
+              aria-pressed={Number(slot.wins) === g}
+              className={cn(
+                "border-border font-heading h-12 rounded-lg border text-lg font-bold tabular-nums",
+                Number(slot.wins) === g
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "bg-background",
+              )}
+              onClick={() => onChange({ wins: String(g) })}
+            >
+              {g}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
