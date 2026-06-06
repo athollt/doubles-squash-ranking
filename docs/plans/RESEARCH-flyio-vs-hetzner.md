@@ -4,10 +4,31 @@
 **Question**: Should step 14.2 continue with the planned Hetzner Cloud CX22 setup, or
 switch the deployment plan to Fly.io? App = Next.js 16 standalone + PostgreSQL +
 Auth.js, ZA users, tiny always-on, R50–R400/mo budget.
-**Verdict**: **Stay on Hetzner.** Fly's deploy ergonomics are genuinely nicer, but its
-**Managed Postgres is not available in Johannesburg**, which collapses Fly's main
-advantage (managed DB) into the *same* self-managed-Postgres trade-off Hetzner already
-has — at similar or higher cost and with less control over a single co-located box.
+**Original verdict (2026-06-06, ~14:00)**: Stay on Hetzner.
+
+> ## ⚠️ CORRECTION & REVERSAL (2026-06-06, later same day) — final verdict: **Fly.io (jnb)**
+>
+> The original verdict rested on the project's premise that **Hetzner has a Cape Town
+> (ZA) datacenter**. When we went to provision it, **that premise was false** — Hetzner
+> Cloud has **no South Africa location** (only Falkenstein/Nuremberg/Helsinki EU,
+> Ashburn/Hillsboro US, Singapore; confirmed from Hetzner's own docs). The plan's
+> RESEARCH-tech-stack.md §7 "Cape Town" was a wrong fact. Also: **CX22 was discontinued
+> 2026-02-13** (current entry plan is CX23).
+>
+> This invalidates the comparison below on its key axis. The original doc penalised Fly
+> for "managed Postgres not in ZA (~150ms)" — but **Hetzner-EU is *also* ~150–180ms from
+> ZA users**. So the real choice is: Hetzner-EU app (~150–180ms to users) vs **Fly jnb
+> app (~10–30ms to users)**. For a ZA-user-facing app, Fly wins on the thing users feel.
+>
+> **Final decision: Fly.io, app + unmanaged Postgres both in Johannesburg (jnb)**,
+> always-on single machine, volume snapshots for DR. Trade-off knowingly accepted:
+> **unmanaged Fly Postgres is deprecated/unsupported** by Fly (they push Managed PG,
+> which isn't in jnb and costs $38/mo+). For a small club app with snapshots, acceptable.
+> Plan rewritten accordingly (runbook `02-fly.md`, steps 14.2–14.4). See ADR-008 in
+> `DECISIONS.md`.
+>
+> The Hetzner-vs-Fly table below is **retained for the record** but read it with the two
+> corrected facts above (no Hetzner ZA region; both EU/managed-PG paths are ~150ms).
 
 ---
 

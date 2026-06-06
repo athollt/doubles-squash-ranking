@@ -102,6 +102,22 @@ The project has **no users yet** — the cheapest possible moment to correct fou
 
 ---
 
+## ADR-008: Host on Fly.io (Johannesburg) instead of Hetzner; accept deprecated unmanaged Postgres
+
+**Date**: 2026-06-06
+**Status**: accepted (supersedes the Hetzner/Cape Town hosting choice of RESEARCH-tech-stack.md §7)
+
+**Context**: The plan (RESEARCH-tech-stack.md §7) specified **Hetzner Cloud CX22, Cape Town (ZA)**, chosen explicitly for low ZA latency and a same-box self-hosted Postgres. At provisioning time two premises proved false: (1) **Hetzner has no South Africa datacenter** — its only locations are EU (Falkenstein/Nuremberg/Helsinki), US (Ashburn/Hillsboro), and Singapore; the "Cape Town" fact was wrong from the start; (2) **CX22 was discontinued 2026-02-13**. Hetzner-EU is ~150–180ms from ZA users. A same-day comparison (`RESEARCH-flyio-vs-hetzner.md`) initially favoured Hetzner *because* "Fly's managed Postgres isn't in ZA (~150ms)" — but with no Hetzner ZA region, that penalty applies to Hetzner too. The only option that puts the app physically in South Africa is **Fly.io's `jnb` (Johannesburg)** region (~10–30ms to ZA users).
+
+**Decision**:
+1. **Host on Fly.io, primary region `jnb`.** App as an always-on single machine (`auto_stop_machines = "off"`, `min_machines_running = 1`) — no cold starts for the public ladder.
+2. **Database: unmanaged Fly Postgres, also in `jnb`**, co-located with the app (~0ms app↔DB), attached via `fly postgres attach` (sets `DATABASE_URL`). Backups via Fly **volume snapshots** (daily, ~5-day retention); a `pg_dump`→object-storage cron is a deferred hardening option.
+3. **Deploy via `flyctl deploy`** from GitHub Actions (`FLY_API_TOKEN` only); migrations run through `fly.toml`'s `release_command = "npx prisma migrate deploy"`. This removes the Dockerfile-only-via-GHCR, `docker-compose.prod.yml`, Caddy, and SSH-deploy machinery the Hetzner plan required. Runtime config lives in **Fly secrets**, not a VPS `.env`.
+
+**Consequence**: Users get true in-SA latency — the property the original plan wanted but couldn't deliver on Hetzner. Deploy/TLS are simpler (`fly deploy`, `fly certs`, auto Let's Encrypt). Cost is modestly higher (~R240/mo vs Hetzner-EU ~R110) and there is **medium vendor lock-in** (fly.toml, Machines, flyctl). **Key accepted risk**: Fly has **deprecated and dropped support for unmanaged Postgres** — `fly postgres create` still works but ops/upgrades/DR are entirely ours, and Fly may remove it. Mitigation: it's a small club app; snapshots cover DR; if Fly retires unmanaged PG we migrate to an external managed Postgres (accepting the ~150ms hop) or revisit hosting. The supported alternative (Fly Managed Postgres) was rejected: not in `jnb` (~150ms) and $38/mo+, which defeats both the latency rationale and the budget. Revisit if Fly brings Managed Postgres to `jnb`. Supersedes ADR-nothing in code but overrides RESEARCH-tech-stack.md §7–§9 (hosting/CI/CD/future-proofing) and the step 14.2/14.4 Hetzner specs (rewritten).
+
+---
+
 ## ADR-008: Identity-first, prototype-before-refactor sequencing for the redesign
 
 **Date**: 2026-06-06

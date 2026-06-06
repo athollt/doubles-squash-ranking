@@ -1,8 +1,8 @@
-# Step 14.3: GitHub repo & Actions secrets (manual)
+# Step 14.3: GitHub Actions secret (manual)
 
 ## Objective
-Make the GitHub repo deploy-ready: confirm the remote, enable GHCR write, and populate
-every Actions Secret the deploy workflow (written in 14.4) will read.
+Make the GitHub repo deploy-ready for Fly: add the single `FLY_API_TOKEN` secret the
+deploy workflow (written in 14.4) uses.
 
 ## Type
 **Manual runbook** — no code change. This step file is the plan-level tracker.
@@ -12,15 +12,15 @@ every Actions Secret the deploy workflow (written in 14.4) will read.
 
 ## Context
 - Remote: `github.com/athollt/doubles-squash-ranking` (`origin`).
-- Consumes outputs of 14.1 (Google credentials) and 14.2 (VPS host/SSH key/secrets).
-- The workflow YAML itself is part of **14.4** (code) — this step only provisions the
-  repo settings and secrets it needs.
+- **Fly model is much simpler than the old Hetzner one**: `fly deploy` builds remotely
+  on Fly and reads runtime config from **Fly secrets** (set in 14.2), so GitHub needs
+  **only** a deploy token — no GHCR, no SSH key, no app secrets in GitHub.
+- Consumes the `FLY_API_TOKEN` produced by 14.2. The workflow YAML is part of **14.4**.
 
 ## Completion (acceptance)
 - `git remote -v` confirms the GitHub origin.
-- Workflow permissions set to **Read and write** (GHCR push via `GITHUB_TOKEN`).
-- Repository secrets present: `VPS_HOST`, `VPS_SSH_KEY`, `AUTH_SECRET`, `DATABASE_URL`,
-  `DB_PASSWORD`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- Repository secret **`FLY_API_TOKEN`** present (Settings → Secrets and variables →
+  Actions).
 - `main` confirmed as the deploy-triggering branch.
 
 > No app code or tests change in this step. Record completion in `CHANGELOG.md`.

@@ -133,4 +133,5 @@ If sign-in fails: check the redirect URI matches exactly (port 3001, `https`/`ht
 | `GOOGLE_CLIENT_ID` | VPS `.env`, GitHub Secret (14.3) |
 | `GOOGLE_CLIENT_SECRET` | VPS `.env`, GitHub Secret (14.3) |
 
-Production-domain verification happens in **14.4** once DNS + Caddy TLS are live.
+Production-domain verification happens in **14.4** once DNS + Fly TLS (`fly certs`,
+auto Let's Encrypt) are live.
