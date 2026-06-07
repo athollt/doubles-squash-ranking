@@ -1019,9 +1019,15 @@ the manual merge to `main`.
   slimmed later if size matters.
 - Workflow filename `fly-deploy.yml` (spec said `deploy.yml`) — content matches; name is
   the one 14.2 already used.
-- **Behaviours 5–8 (live deploy + production Google sign-in) are pending the manual merge
-  to `main`** (PLAN forbids the agent merging). This entry will be amended with the live
-  proof (release migration ran, TLS, admin seeded, real Google sign-in) once deployed.
+- **First-deploy seed gotcha (found live):** `prisma db seed` failed in the deployed image
+  with `Cannot find module '../lib/password'` — `prisma/seed.ts` imports `lib/`, which the
+  standalone server bundles but `tsx` (the seed runner) loads from source. The runner image
+  didn't copy `lib/`. **Fixed:** added `COPY --from=build /app/lib ./lib` to the Dockerfile
+  so the documented seed path works on future deploys. For *this* first deploy the admin +
+  15 settings were seeded via a one-off `tsx` script over `fly ssh` (the generated
+  `prisma-client` emits TS, so plain `node` can't require it — must go through `tsx`).
+- The `lib/` fix reaches prod on the **next** merge to `main`; this deploy is already
+  seeded and fully functional.
 
 ### Validation (local — behaviours 1–4)
 
@@ -1036,5 +1042,18 @@ the manual merge to `main`.
 - Workflow YAML — ✅ structural check (push→main, setup-flyctl, `--remote-only`,
   `FLY_API_TOKEN`).
 - `npm run build` — ✅ EXIT 0 · `npm run lint` — ✅ clean · `npm run test` — ✅ 112/112.
+
+### Production verification (live — behaviours 5–8, after merging PR #4)
+
+- **5 — deploy + release migration**: PR #4 merged → GitHub Actions `flyctl deploy` ran;
+  `fly status` shows 2 machines `started` in `jnb`, **health check `1 total, 1 passing`**;
+  the `release_command` created the schema on the empty prod DB.
+- **6 — TLS**: `https://squash.tomlinson.co.za` → HTTP/2 200 over a valid **Let's Encrypt**
+  cert (issuer `CN=YE2`, valid 2026-06-06 → 2026-09-04), served by Fly.
+- **7 — first admin + settings seeded**: `atholl@tomlinson.co.za` (ADMIN) + the 15 default
+  settings present in prod (`SETTINGS_COUNT 15`).
+- **8 — real Google sign-in (live)**: signed in as `atholl@tomlinson.co.za` → landed
+  signed-in with **Admin ▾**; a non-allowlisted Google account → `/unauthorised`
+  ("No access") — the production half of the OAuth proof. ✅
 
 ---

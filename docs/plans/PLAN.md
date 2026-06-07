@@ -89,7 +89,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | complete | 04 |
 | 14.2 | [Fly.io production environment (manual)](steps/step-14.2-fly.md) | complete | 14.1 |
 | 14.3 | [GitHub Actions secret (manual)](steps/step-14.3-github-actions.md) | complete | 14.1, 14.2 |
-| 14.4 | [Deployment setup (Fly.io)](steps/step-14.4-deployment.md) | pending | 14.1, 14.2, 14.3, 13.5 |
+| 14.4 | [Deployment setup (Fly.io)](steps/step-14.4-deployment.md) | complete | 14.1, 14.2, 14.3, 13.5 |
 | 15 | [Update documentation](steps/step-15-update-docs.md) | pending | all prior |
 
 ---

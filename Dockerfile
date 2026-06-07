@@ -60,6 +60,9 @@ COPY --from=build /app/app/generated/prisma ./app/generated/prisma
 # Schema + migrations + config for the release_command and the seed step.
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma.config.ts ./prisma.config.ts
+# The seed (prisma/seed.ts, run by `prisma db seed`) imports ../lib/password —
+# the standalone server bundles lib/ but tsx runs against source, so copy it.
+COPY --from=build /app/lib ./lib
 
 EXPOSE 3000
 ENV PORT=3000
