@@ -42,8 +42,16 @@ function LadderRows({
             {e.rank}
           </TableCell>
           <TableCell>
-            <Link href={`/players/${e.playerId}`} className="font-medium hover:underline">
+            {/* Link-coloured name + chevron — a tap affordance for the trend page
+                (hover underline isn't visible on mobile). */}
+            <Link
+              href={`/players/${e.playerId}`}
+              className="text-primary font-medium hover:underline"
+            >
               {e.name}
+              <span aria-hidden className="ml-0.5">
+                ›
+              </span>
             </Link>
             {e.isProvisional && (
               <Badge variant="new" className="ml-2">
@@ -51,7 +59,8 @@ function LadderRows({
               </Badge>
             )}
           </TableCell>
-          <TableCell className="font-heading text-right font-bold tabular-nums">
+          {/* Score is dropped on very narrow screens so Trend isn't clipped. */}
+          <TableCell className="hidden text-right font-heading font-bold tabular-nums sm:table-cell">
             {Math.round(e.ladderScore)}
           </TableCell>
           <TableCell className="text-center tabular-nums">
@@ -112,7 +121,7 @@ export default async function Home() {
             <TableRow>
               <TableHead>#</TableHead>
               <TableHead>Player</TableHead>
-              <TableHead className="text-right">Score</TableHead>
+              <TableHead className="hidden text-right sm:table-cell">Score</TableHead>
               <TableHead className="text-center">Played</TableHead>
               <TableHead className="text-right">Trend</TableHead>
             </TableRow>

@@ -1172,12 +1172,23 @@ source code, not the PRD/plan (AGENTS.md §8).
 - New `components/account-menu.test.tsx`; E2E (`app-shell`, `player-management`,
   `session-history`) updated to the account-menu + relabelled controls.
 
+**Ladder polish (later same day):**
+
+- **Tap affordance**: player names on the ladder (`app/page.tsx`) now render in the
+  primary link colour with a trailing `›` chevron, so it's clear on mobile (no
+  hover) that tapping a player opens their trend. Chevron is `aria-hidden` so the
+  link's accessible name stays the player name.
+- **Narrow screens**: the **Score** column is hidden below the `sm` breakpoint
+  (`hidden sm:table-cell` on the header + cell) so the Trend column isn't clipped on
+  a phone; it reappears at `sm`+. Order is still conveyed by rank, top-to-bottom.
+- E2E: `ladder.spec.ts` now asserts the player name is a link.
+
 ### Validation
 
 - `npm run build` — ✅
-- `npm run test` — ✅ 126 unit tests pass (119 initial + account-menu + 16.2/16.3)
+- `npm run test` — ✅ 134 unit tests pass
 - `npm run lint` — ✅ clean
-- `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
+- `npm run test:e2e` — ✅ 41/41; teardown left no `[e2e]` data
 
 ---
 

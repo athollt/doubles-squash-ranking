@@ -28,6 +28,8 @@ test("submitted players appear on the ladder, ranked and provisional", async ({
   for (const name of names) {
     await expect(table.getByText(name)).toBeVisible();
   }
+  // Each player name is a link to their trend (the tap affordance, step 16.4 rev).
+  await expect(table.getByRole("link", { name: names[0] })).toBeVisible();
   // First-time players are provisional ("New" badge) and show a NEW trend.
   await expect(
     table.locator("tr", { hasText: names[0] }).getByText("New", { exact: true }),
