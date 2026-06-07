@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PageShell } from "@/components/ui/page-shell";
 import { SettingsClient } from "./settings-client";
+import { RatingExplainer } from "./rating-explainer";
 
 export const metadata = {
   title: "Settings — Doubles Squash @ BSC",
@@ -16,7 +17,10 @@ export default async function AdminSettingsPage() {
 
   return (
     <PageShell title="Settings">
-      <SettingsClient settings={settings} />
+      <div className="space-y-6">
+        <RatingExplainer />
+        <SettingsClient settings={settings} />
+      </div>
     </PageShell>
   );
 }

@@ -1201,3 +1201,41 @@ source code, not the PRD/plan (AGENTS.md §8).
 - `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
 
 ---
+
+## Step 16.3 — Rating-algorithm explainer
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- New `app/admin/settings/rating-explainer.tsx` — a player-facing "How ratings work"
+  card rendered above the settings list on Admin → Rating Algorithm. Covers, in plain
+  English: full recalculation on every change; actual vs expected share of wins; the
+  new/returning-player boost; ladder score = rating + activity bonus; and
+  active/inactive/provisional. Closes the in-app explainer deferred from step 15.
+- `app/admin/settings/page.tsx` renders `<RatingExplainer />` above `<SettingsClient />`.
+
+### Tests
+
+- `app/admin/settings/rating-explainer.test.tsx`: asserts the heading, the core
+  mechanics in the copy, and that tunable values (e.g. 160, 400) are **not** hard-coded
+  into the prose.
+- `e2e/settings.spec.ts`: the view test now also asserts the "How ratings work" heading
+  is visible.
+
+### Notes
+
+- Copy validated against `lib/rating-engine.ts` directly (not general ELO knowledge),
+  cross-checked with `docs/RATING-ALGORITHM.md` (the canonical technical reference it
+  derives from). Refers to settings by name, not value, so it stays true when an admin
+  edits them — and says so explicitly.
+- No engine, settings model, or mutation change — presentational content only.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 125 unit tests pass (+3 rating-explainer)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 39/39
+
+---
