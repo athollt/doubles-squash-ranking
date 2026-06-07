@@ -1068,7 +1068,7 @@ source code, not the PRD/plan (AGENTS.md §8).
 ### Delivered
 
 - **`docs/RATING-ALGORITHM.md`** (new) — technical reference for the rating algorithm, every
-  formula validated from [`lib/rating-engine.ts`](lib/rating-engine.ts) and cross-checked
+  formula validated from [`lib/rating-engine.ts`](../../lib/rating-engine.ts) and cross-checked
   against SPEC §5–7. Documents all 15 settings with their seeded defaults and notes they are
   admin-configurable. Flags that the **player-facing, in-app** version is distilled from this
   doc in step 16 (this stays the canonical source).
@@ -1510,5 +1510,64 @@ fixed. Two items remain *by design*, both accepted decisions, not blockers:
 - `npm run test` — ✅ 141 unit tests pass
 - `npm run lint` — ✅ clean
 - `npm run test:e2e` — ✅ 42/42; teardown left no `[e2e]` data
+
+---
+
+## Step 16.6 — Update documentation (16.x wrap-up)
+
+**Date**: 2026-06-07
+
+Closed the documentation loop for the 16.x testing-feedback round (diff baseline
+= `87e8ca3`, the commit before step 16.1). Validated every change from source code.
+
+### Reconciled — the ADR-010 role change was undocumented doc-debt
+
+The widened role model (ADR-010: scorers manage Players & Sessions and view
+Settings; only Users + Settings-edit stay ADMIN-only) had left two docs describing
+the old "all `/admin/*` is ADMIN-only" model:
+
+- **`OVERVIEW.md`** — summary line (scorer/admin responsibilities) and the auth
+  route-gate bullet (was "`/admin/*` requires `ADMIN`") corrected to "most `/admin/*`
+  require sign-in; only `/admin/users` requires `ADMIN`", with the server-side
+  re-checks (settings-edit, user management, own-sessions-only) spelled out. Both now
+  cite [ADR-010](DECISIONS.md).
+- **`README.md`** — intro line corrected to the same role split.
+
+### DECISIONS.md — no new entries needed
+
+- The two architectural 16.x decisions are already recorded and `accepted`:
+  **ADR-009** (WhatsApp via Web Share API tap-to-share) and **ADR-010** (scorer
+  role widening). No `Promote: candidate` flags anywhere.
+- The 16.1 sign-in-flow split and the 16.2 submit-form rework are presentational/UX
+  reorganisations with no hard-to-reverse trade-off — documented in CHANGELOG
+  16.1/16.2, no ADR warranted.
+
+### RESEARCH-whatsapp-notifications.md — de-staled
+
+- The "Open questions" section (share-sheet behaviour on real devices; plain text
+  vs file share) was resolved when step 16.4 shipped. Replaced with a "Resolved at
+  build (step 16.4 — see ADR-009)" note recording the actual outcomes (coarse-pointer
+  gate; plain-text `buildShareText`, no file share). No stale open-follow-up wording
+  remains; `**Status**: complete` and the verdict already matched the built feature.
+
+### Link verification
+
+- All relative links in the doc set resolve (104 links across 8 docs).
+- **Fixed two pre-existing broken relative links** (caught by the link check, both in
+  docs touched this step): `PLAN.md`'s Agent-notes link (`../AGENT-NOTES.md` →
+  `../../AGENT-NOTES.md`) and the step-15 CHANGELOG entry's rating-engine link
+  (`lib/rating-engine.ts` → `../../lib/rating-engine.ts`). The targets exist; only the
+  relative depth was wrong.
+
+### Notes (out of scope — flagged, not changed, per AGENTS.md §4)
+
+- **Duplicate ADR number:** `DECISIONS.md` has two `## ADR-008` (Fly hosting; redesign
+  sequencing). A pre-existing numbering collision from the redesign band, unrelated to
+  16.x. Left as-is — renumbering an append-only ADR log is a call for the maintainer.
+
+### Validation
+
+- Docs only — no app code, no route changed → **no E2E required**.
+- All doc links resolve (relative); no promote-candidates outstanding.
 
 ---

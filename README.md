@@ -1,8 +1,9 @@
 # BSC Doubles Squash Ladder
 
 A mobile-first PWA for the BSC doubles squash ladder. The public sees rankings, session
-history, and per-player rating trends; **scorers** log results and **admins** manage players,
-users, and the rating settings — all via Google sign-in.
+history, and per-player rating trends; **scorers** log results, manage players, and view the
+rating settings, while **admins** also manage users and edit the settings — all via Google
+sign-in.
 
 **Live:** https://squash.tomlinson.co.za
 

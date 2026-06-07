@@ -7,8 +7,9 @@ built*.
 ## Purpose
 
 A mobile-first PWA for a club doubles-squash ladder. The public sees rankings, session
-history, and per-player rating trends; signed-in **scorers** submit/edit sessions and
-**admins** also manage players, users, and rating settings. Hosted on Fly.io (Johannesburg)
+history, and per-player rating trends; signed-in **scorers** submit/edit their own sessions,
+manage players, and view rating settings; **admins** also manage users and edit the rating
+settings (see [ADR-010](docs/plans/DECISIONS.md)). Hosted on Fly.io (Johannesburg)
 — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
 
 ## Tech stack
@@ -80,8 +81,11 @@ the 15 tunable algorithm parameters. `SessionPlayer` + `RatingsLog` cascade-dele
   present in the `User` table may sign in (others → `/unauthorised`). Role (`ADMIN` /
   `SCORER`) is attached to the JWT.
 - [`proxy.ts`](proxy.ts) gates every request via the pure
-  [`authorizeRoute`](lib/auth-rules.ts): public routes open; `/submit` etc. require sign-in;
-  `/admin/*` requires `ADMIN`. Server Actions **re-check** the role (defence in depth).
+  [`authorizeRoute`](lib/auth-rules.ts): public routes open; `/submit` and most `/admin/*`
+  (Players, Sessions, Settings) require sign-in; only `/admin/users` requires `ADMIN`
+  ([ADR-010](docs/plans/DECISIONS.md)). Server Actions **re-check** the role — settings-edit
+  and user management stay ADMIN-only, and a scorer may edit only their own sessions
+  (defence in depth).
 - A **Credentials provider** exists for local manual testing and E2E only
   ([ADR-006](docs/plans/DECISIONS.md)); production uses Google.
 - Single Auth.js config in `auth.ts` (the earlier Edge/Node split was collapsed —
