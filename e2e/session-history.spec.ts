@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, addNewPlayer, expect } from "./helpers";
+import { signIn, submitNewSession, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
 // /sessions is public — reachable without authentication (behaviour 1).
@@ -27,21 +27,17 @@ test("a submitted session is listed and has a detail page", async ({
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/submit");
-  for (let i = 0; i < 4; i++) {
-    await addNewPlayer(page, i + 1, names[i], wins[i]);
-  }
-  await page.getByRole("button", { name: /log results/i }).click();
+  await submitNewSession(page, names, wins);
   await expect(page).toHaveURL(/\/$/);
 
   // The session shows on the public list with player count and games.
   await page.goto("/sessions");
-  const item = page.locator("details", { hasText: "4 players · 4 games" });
+  const item = page.getByRole("listitem").filter({ hasText: "4 players" });
   await expect(item.first()).toBeVisible();
 
-  // Expanding reveals the players, then the detail page shows full detail.
-  await item.first().locator("summary").click();
+  // Player names are visible inline without expanding anything (step 16.1).
   await expect(item.first().getByText(names[0])).toBeVisible();
-  await item.first().getByRole("link", { name: /view full detail/i }).click();
+  await item.first().getByRole("link", { name: /more details/i }).click();
 
   await expect(page).toHaveURL(/\/sessions\/[^/]+$/);
   await expect(page.getByText(/submitted by/i)).toBeVisible();

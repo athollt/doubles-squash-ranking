@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { buildShareText } from "@/lib/share";
 
 export type Player = { id: string; name: string };
 
@@ -18,30 +19,44 @@ export type SessionFormResult = { ok: true } | { ok: false; error: string };
 
 const NEW = "__new__";
 
+// Persisted shape the edit page passes in (one per existing session player).
 interface SlotState {
   playerId: string; // player id, "" (none), or NEW
   newName: string;
   wins: string;
 }
 
-const emptySlot = (): SlotState => ({ playerId: "", newName: "", wins: "0" });
+// In-form entry: one selected player (existing or new), with a stable key so
+// removing one doesn't reshuffle the others' React state.
+interface Entry {
+  key: number;
+  playerId: string; // a real player id, or NEW for an on-the-fly player
+  newName: string;
+  wins: string;
+}
 
 interface Props {
   players: Player[];
-  // Pre-populated slots/notes for edit; defaults to 4 empty slots for submit.
+  // Pre-populated slots/notes for edit; submit starts with nothing selected.
   initialSlots?: SlotState[];
   initialNotes?: string;
   submitLabel: string;
   onSubmit: (slots: FormSlot[], notes: string) => Promise<SessionFormResult>;
   // Optional delete (edit mode). Receives nothing; parent binds the id.
   onDelete?: () => Promise<SessionFormResult>;
+  // Submit mode only: the public ladder URL. When present (and the device
+  // supports the Web Share API), a successful submit shows a share screen instead
+  // of redirecting (step 16.4). Edit mode omits it, so it always redirects.
+  ladderUrl?: string;
 }
 
-// Courtside doubles capture (step 13.5, per PROTOTYPE-NOTES-ux.md): a flat list of
-// player slots — no teams (the engine infers pairings). Each slot: a tap-to-pick chip
-// picker (with "+ New" for on-the-fly creation) + a segmented 0–7 "wins" selector.
-// The public contract (props + FormSlot payload) is unchanged from the prior form, so
-// both /submit and the edit page reuse it.
+// Courtside doubles capture (step 16.2, rev. single-grid): one "Choose players"
+// grid where the scorer taps to select/unselect any number of players (+ "+ New"
+// for on-the-fly creation). Each selected player gets a score block below, in
+// selection order, with a segmented 0–9 "wins" selector. A flat list, no teams
+// (the engine infers pairings). The public contract (props + FormSlot payload) is
+// unchanged, so both /submit and the edit page reuse it; edit (initialSlots) opens
+// with those players pre-selected.
 export function SessionForm({
   players,
   initialSlots,
@@ -49,35 +64,95 @@ export function SessionForm({
   submitLabel,
   onSubmit,
   onDelete,
+  ladderUrl,
 }: Props) {
   const router = useRouter();
-  const [slots, setSlots] = useState<SlotState[]>(
-    () => initialSlots ?? Array.from({ length: 4 }, emptySlot),
+  const [entries, setEntries] = useState<Entry[]>(() =>
+    (initialSlots ?? []).map((s, i) => ({
+      key: i,
+      playerId: s.playerId,
+      newName: s.newName,
+      wins: s.wins,
+    })),
   );
+  // Monotonic key source for entries added after mount; seeded past the initial
+  // entries' indices. Only touched in event handlers, never during render.
+  const keySeq = useRef((initialSlots?.length ?? 0));
+  const nextKey = () => keySeq.current++;
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Set on a successful submit (submit mode only) — drives the success screen
+  // (step 16.4). Null = stay on the form.
+  const [shareText, setShareText] = useState<string | null>(null);
+  // Guards against a second navigator.share() call while one is still pending
+  // (the API throws InvalidStateError otherwise).
+  const sharing = useRef(false);
 
-  function update(i: number, patch: Partial<SlotState>) {
-    setSlots((s) => s.map((slot, idx) => (idx === i ? { ...slot, ...patch } : slot)));
+  const selectedIds = new Set(
+    entries.filter((e) => e.playerId !== NEW).map((e) => e.playerId),
+  );
+
+  function togglePlayer(id: string) {
+    setEntries((es) =>
+      selectedIds.has(id)
+        ? es.filter((e) => e.playerId !== id)
+        : [...es, { key: nextKey(), playerId: id, newName: "", wins: "0" }],
+    );
+  }
+
+  function addNew() {
+    setEntries((es) => [
+      ...es,
+      { key: nextKey(), playerId: NEW, newName: "", wins: "0" },
+    ]);
+  }
+
+  function patch(key: number, p: Partial<Entry>) {
+    setEntries((es) => es.map((e) => (e.key === key ? { ...e, ...p } : e)));
+  }
+
+  function remove(key: number) {
+    setEntries((es) => es.filter((e) => e.key !== key));
   }
 
   function toPayload(): FormSlot[] {
-    return slots
-      .filter((s) => s.playerId !== "" || s.newName.trim() !== "")
-      .map((s) => ({
-        playerId: s.playerId === NEW ? undefined : s.playerId || undefined,
-        newName: s.playerId === NEW ? s.newName : undefined,
-        wins: Number(s.wins),
+    return entries
+      .filter((e) => e.playerId !== NEW || e.newName.trim() !== "")
+      .map((e) => ({
+        playerId: e.playerId === NEW ? undefined : e.playerId,
+        newName: e.playerId === NEW ? e.newName : undefined,
+        wins: Number(e.wins),
       }));
+  }
+
+  // Display roster (name + wins) for the share text, from current entries.
+  function shareRoster() {
+    return toPayload().map((e) => ({
+      name:
+        e.playerId === undefined
+          ? (e.newName ?? "")
+          : (players.find((p) => p.id === e.playerId)?.name ?? ""),
+      wins: e.wins,
+    }));
   }
 
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
       const result = await onSubmit(toPayload(), notes);
-      if (result.ok) router.push("/");
-      else setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // Submit mode (ladderUrl set) → show the success screen; edit mode → redirect.
+      if (ladderUrl != null) {
+        setShareText(
+          buildShareText({ roster: shareRoster(), date: new Date(), ladderUrl }),
+        );
+      } else {
+        router.push("/");
+      }
     });
   }
 
@@ -91,29 +166,113 @@ export function SessionForm({
     });
   }
 
-  return (
-    <div className="flex flex-col gap-3">
-      {slots.map((slot, i) => (
-        <Slot
-          key={i}
-          n={i + 1}
-          slot={slot}
-          players={players}
-          onChange={(patch) => update(i, patch)}
-        />
-      ))}
+  function handleShare() {
+    if (!shareText || sharing.current) return;
+    sharing.current = true;
+    // The share sheet resolves on send and rejects on cancel — both just end the
+    // in-flight share. Swallow the rejection so a cancel isn't an unhandled error.
+    Promise.resolve(navigator.share({ text: shareText }))
+      .catch(() => {})
+      .finally(() => {
+        sharing.current = false;
+      });
+  }
 
-      {slots.length < 8 && (
+  // Success screen (step 16.4) — shown after a successful submit, in place of the
+  // form. The Share button only appears on a touch-primary device with the Web
+  // Share API (a desktop share sheet can't reach the WhatsApp group); elsewhere
+  // the confirmation + "View ladder" still show. Computed here (client render
+  // only, never SSR) so it reflects the real device.
+  const canShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(pointer: coarse)").matches === true;
+
+  if (shareText !== null) {
+    return (
+      <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-4">
+        <p className="font-heading text-lg font-bold">Session logged ✓</p>
+        {canShare && (
+          <>
+            <p className="text-muted-foreground text-sm">
+              Share the result to the club WhatsApp group.
+            </p>
+            <Button type="button" onClick={handleShare}>
+              Share to WhatsApp
+            </Button>
+          </>
+        )}
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="self-start"
-          onClick={() => setSlots((s) => [...s, emptySlot()])}
+          onClick={() => router.push("/")}
         >
-          + Add player
+          View ladder →
         </Button>
-      )}
+      </div>
+    );
+  }
+
+  // Stable 1-based ordinal for each on-the-fly entry, by creation order — so an
+  // unnamed new block is labelled "New player N" regardless of how many others
+  // are named. (Naming a block just swaps the label to the typed name.)
+  const newOrdinal = new Map<number, number>();
+  let n = 0;
+  for (const e of entries) {
+    if (e.playerId === NEW) newOrdinal.set(e.key, ++n);
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div
+        role="group"
+        aria-label="Choose players"
+        className="bg-card border-border flex flex-col gap-2 rounded-xl border p-3"
+      >
+        <p className="text-muted-foreground text-xs">Choose players</p>
+        <div className="flex flex-wrap gap-2">
+          {players.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              aria-pressed={selectedIds.has(p.id)}
+              className={cn(
+                "border-border rounded-full border px-3 py-2 text-sm font-medium",
+                selectedIds.has(p.id)
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "bg-background",
+              )}
+              onClick={() => togglePlayer(p.id)}
+            >
+              {p.name}
+            </button>
+          ))}
+          <button
+            type="button"
+            className="border-primary text-primary rounded-full border border-dashed px-3 py-2 text-sm font-medium"
+            onClick={addNew}
+          >
+            + New
+          </button>
+        </div>
+      </div>
+
+      {entries.map((e) => {
+        const name =
+          e.playerId === NEW
+            ? e.newName.trim() || `New player ${newOrdinal.get(e.key)}`
+            : (players.find((p) => p.id === e.playerId)?.name ?? "Player");
+        return (
+          <ScoreBlock
+            key={e.key}
+            name={name}
+            entry={e}
+            onChange={(p) => patch(e.key, p)}
+            onRemove={() => remove(e.key)}
+          />
+        );
+      })}
 
       <Input
         aria-label="Notes"
@@ -143,88 +302,42 @@ export function SessionForm({
   );
 }
 
-function Slot({
-  n,
-  slot,
-  players,
+function ScoreBlock({
+  name,
+  entry,
   onChange,
+  onRemove,
 }: {
-  n: number;
-  slot: SlotState;
-  players: Player[];
-  onChange: (patch: Partial<SlotState>) => void;
+  name: string;
+  entry: Entry;
+  onChange: (p: Partial<Entry>) => void;
+  onRemove: () => void;
 }) {
-  const chosen =
-    slot.playerId === NEW
-      ? slot.newName.trim() || "New player"
-      : players.find((p) => p.id === slot.playerId)?.name;
-  const [picking, setPicking] = useState(!slot.playerId);
-
   return (
     <div
       role="group"
-      aria-label={`Player ${n}`}
+      aria-label={name}
       className="bg-card border-border flex flex-col gap-3 rounded-xl border p-3"
     >
       <div className="flex items-center gap-2">
-        <span className="text-muted-foreground font-heading font-black">{n}</span>
-        <span className="flex-1 font-medium">
-          {chosen ?? <span className="text-muted-foreground">Choose a player</span>}
-        </span>
-        {slot.playerId && (
-          <button
-            type="button"
-            className="text-primary text-sm font-bold"
-            onClick={() => setPicking((p) => !p)}
-          >
-            change
-          </button>
-        )}
+        <span className="flex-1 font-medium">{name}</span>
+        <button
+          type="button"
+          className="text-muted-foreground text-sm font-bold"
+          aria-label={`Remove ${name}`}
+          onClick={onRemove}
+        >
+          remove
+        </button>
       </div>
 
-      {(picking || !slot.playerId) && (
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap gap-2">
-            {players.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                aria-pressed={slot.playerId === p.id}
-                className={cn(
-                  "border-border rounded-full border px-3 py-2 text-sm font-medium",
-                  slot.playerId === p.id
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "bg-background",
-                )}
-                onClick={() => {
-                  onChange({ playerId: p.id, newName: "" });
-                  setPicking(false);
-                }}
-              >
-                {p.name}
-              </button>
-            ))}
-            <button
-              type="button"
-              aria-pressed={slot.playerId === NEW}
-              className={cn(
-                "border-primary text-primary rounded-full border border-dashed px-3 py-2 text-sm font-medium",
-                slot.playerId === NEW && "bg-primary/10",
-              )}
-              onClick={() => onChange({ playerId: NEW })}
-            >
-              + New
-            </button>
-          </div>
-          {slot.playerId === NEW && (
-            <Input
-              aria-label={`New player name ${n}`}
-              placeholder="New player name"
-              value={slot.newName}
-              onChange={(e) => onChange({ newName: e.target.value })}
-            />
-          )}
-        </div>
+      {entry.playerId === NEW && (
+        <Input
+          aria-label="New player name"
+          placeholder="New player name"
+          value={entry.newName}
+          onChange={(e) => onChange({ newName: e.target.value })}
+        />
       )}
 
       <div>
@@ -236,10 +349,10 @@ function Slot({
               key={g}
               type="button"
               aria-label={`${g} wins`}
-              aria-pressed={Number(slot.wins) === g}
+              aria-pressed={Number(entry.wins) === g}
               className={cn(
                 "border-border font-heading h-12 rounded-lg border text-lg font-bold tabular-nums",
-                Number(slot.wins) === g
+                Number(entry.wins) === g
                   ? "border-primary bg-primary text-primary-foreground"
                   : "bg-background",
               )}

@@ -11,9 +11,12 @@ import {
 } from "@/lib/players";
 import { prismaPlayerStore } from "@/lib/player-store";
 
-async function requireAdmin(): Promise<void> {
+// Players management is open to any signed-in user (scorers and admins) — the
+// route gate already keeps the public out (step 16.x). Defence in depth: still
+// require a session before mutating.
+async function requireUser(): Promise<void> {
   const session = await auth();
-  if (session?.role !== "ADMIN") {
+  if (!session?.user) {
     throw new Error("Forbidden");
   }
 }
@@ -21,7 +24,7 @@ async function requireAdmin(): Promise<void> {
 export async function createPlayerAction(
   name: string,
 ): Promise<PlayerResult> {
-  await requireAdmin();
+  await requireUser();
   const result = await createPlayer(name, prismaPlayerStore);
   if (result.ok) revalidatePath("/admin/players");
   return result;
@@ -31,7 +34,7 @@ export async function updatePlayerNameAction(
   id: string,
   name: string,
 ): Promise<PlayerResult> {
-  await requireAdmin();
+  await requireUser();
   const result = await updatePlayerName(id, name, prismaPlayerStore);
   if (result.ok) revalidatePath("/admin/players");
   return result;
@@ -41,7 +44,7 @@ export async function updatePlayerStatusAction(
   id: string,
   status: PlayerStatus,
 ): Promise<PlayerResult> {
-  await requireAdmin();
+  await requireUser();
   const result = await updatePlayerStatus(id, status, prismaPlayerStore);
   if (result.ok) revalidatePath("/admin/players");
   return result;

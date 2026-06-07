@@ -35,32 +35,32 @@ export default async function SessionsPage() {
           {sessions.map((s) => (
             <li key={s.id}>
               <Card className="p-3">
-                <details>
-                  <summary className="flex cursor-pointer items-center justify-between gap-2">
-                    <span className="font-medium">
-                      {formatSessionDate(s.timestamp)}
-                    </span>
-                    <span className="text-muted-foreground text-sm">
-                      {s.playerCount} players · {s.inferredGames} games
-                    </span>
-                  </summary>
-                  <ul className="mt-2 flex flex-col gap-1 text-sm">
-                    {s.sessionPlayers.map((sp, i) => (
-                      <li key={i} className="flex justify-between">
-                        <span>{sp.player.name}</span>
-                        <span className="text-muted-foreground tabular-nums">
-                          {sp.wins} won
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href={`/sessions/${s.id}`}
-                    className="text-primary mt-2 inline-block text-sm hover:underline"
-                  >
-                    View full detail →
-                  </Link>
-                </details>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">
+                    {formatSessionDate(s.timestamp)}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    {s.playerCount} players · {s.inferredGames} games
+                  </span>
+                </div>
+                {/* Player names shown inline (step 16.1) so the roster is
+                    visible without opening the session. */}
+                <ul className="mt-2 flex flex-col gap-1 text-sm">
+                  {s.sessionPlayers.map((sp, i) => (
+                    <li key={i} className="flex justify-between">
+                      <span>{sp.player.name}</span>
+                      <span className="text-muted-foreground tabular-nums">
+                        {sp.wins} won
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href={`/sessions/${s.id}`}
+                  className="text-primary mt-2 inline-block text-sm hover:underline"
+                >
+                  More details →
+                </Link>
               </Card>
             </li>
           ))}

@@ -89,8 +89,18 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 14.1 | [Google Cloud OAuth setup (manual)](steps/step-14.1-google-oauth.md) | complete | 04 |
 | 14.2 | [Fly.io production environment (manual)](steps/step-14.2-fly.md) | complete | 14.1 |
 | 14.3 | [GitHub Actions secret (manual)](steps/step-14.3-github-actions.md) | complete | 14.1, 14.2 |
-| 14.4 | [Deployment setup (Fly.io)](steps/step-14.4-deployment.md) | pending | 14.1, 14.2, 14.3, 13.5 |
-| 15 | [Update documentation](steps/step-15-update-docs.md) | pending | all prior |
+| 14.4 | [Deployment setup (Fly.io)](steps/step-14.4-deployment.md) | complete | 14.1, 14.2, 14.3, 13.5 |
+| 15 | [Update documentation](steps/step-15-update-docs.md) | complete | all prior |
+| 16.1 | [UI rework (testing feedback)](steps/step-16.1-ui-rework.md) | complete | 13.5, 14.4 |
+| 16.2 | [Submit-flow rework (pick players, then score)](steps/step-16.2-submit-flow.md) | complete | 13.5 |
+| 16.3 | [Rating-algorithm explainer](steps/step-16.3-algorithm-explainer.md) | complete | 06 |
+| 16.4 | [WhatsApp share on submit (Web Share API)](steps/step-16.4-whatsapp-share.md) | complete | 16.2 |
+| 16.5 | [Cleanup & security review](steps/step-16.5-cleanup-security.md) | pending | 16.1, 16.2, 16.3, 16.4 |
+| 16.6 | [Update documentation (16.x)](steps/step-16.6-update-docs.md) | pending | 16.1–16.5 |
+
+> **WhatsApp notifications** (testing feedback): the research chose the Web Share
+> API tap-to-share direction (see [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md)),
+> now built as step 16.4.
 
 ---
 
@@ -117,3 +127,4 @@ npm run test:e2e
 - **Decisions**: [DECISIONS.md](DECISIONS.md)
 - **Original spec**: [SPEC-original-google-sheets.md](SPEC-original-google-sheets.md)
 - **Tech research**: [RESEARCH-tech-stack.md](RESEARCH-tech-stack.md)
+- **WhatsApp research**: [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md)

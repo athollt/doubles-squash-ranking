@@ -30,6 +30,7 @@ export default async function SubmitPage() {
         players={players}
         submitLabel="Log Results"
         onSubmit={onSubmit}
+        ladderUrl={process.env.AUTH_URL ?? "https://squash.tomlinson.co.za"}
       />
     </PageShell>
   );

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { type Role } from "@/lib/nav";
 import { AdminMenu } from "@/components/admin-menu";
-import { SignOutButton } from "@/components/sign-out-button";
+import { SignInButton } from "@/components/sign-in-button";
+import { AccountMenu } from "@/components/account-menu";
 
 // Slim sticky top bar (step 13.5). Server Component: reads the session for the auth
 // control + Admin menu. Primary navigation (Ladder/Sessions/Submit) lives in the
@@ -20,18 +21,15 @@ export async function SiteHeader() {
           <span className="font-heading">BSC Squash</span>
         </Link>
         <div className="ml-auto flex items-center gap-3">
-          {role === "ADMIN" && <AdminMenu />}
+          {role && <AdminMenu role={role} />}
           {session?.user ? (
-            <>
-              <span className="text-muted-foreground hidden text-sm sm:inline">
-                {session.user.email}
-              </span>
-              <SignOutButton />
-            </>
+            <AccountMenu
+              name={session.user.name}
+              email={session.user.email}
+              image={session.user.image}
+            />
           ) : (
-            <Link href="/signin" className="text-sm font-medium">
-              Sign in
-            </Link>
+            <SignInButton />
           )}
         </div>
       </div>

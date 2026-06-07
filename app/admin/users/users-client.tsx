@@ -46,6 +46,8 @@ export function UsersClient({
   const [addRole, setAddRole] = useState<Role>("SCORER");
   const [addError, setAddError] = useState<string | null>(null);
   const [rowError, setRowError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [editRole, setEditRole] = useState<Role>("SCORER");
 
   function handleAdd() {
     setAddError(null);
@@ -62,12 +64,17 @@ export function UsersClient({
     });
   }
 
-  function handleRoleChange(user: UserRow, role: Role) {
-    if (role === user.role) return;
+  function handleSaveRole() {
+    if (!editing) return;
+    if (editRole === editing.role) {
+      setEditing(null);
+      return;
+    }
     setRowError(null);
     startTransition(async () => {
-      const result = await updateUserRoleAction(user.id, role);
-      if (!result.ok) setRowError(result.error);
+      const result = await updateUserRoleAction(editing.id, editRole);
+      if (result.ok) setEditing(null);
+      else setRowError(result.error);
     });
   }
 
@@ -109,19 +116,22 @@ export function UsersClient({
                       {user.name} · joined {user.created}
                     </p>
                   </div>
-                  <div className="mt-3 flex items-center gap-2 sm:mt-0">
-                    <select
-                      className={ROLE_SELECT_CLASS}
-                      aria-label={`Role for ${user.email}`}
-                      value={user.role}
+                  <div className="mt-3 flex items-center justify-end gap-2 sm:mt-0">
+                    <span className="text-muted-foreground mr-auto text-sm sm:mr-2">
+                      {user.role}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       disabled={isPending}
-                      onChange={(e) =>
-                        handleRoleChange(user, e.target.value as Role)
-                      }
+                      onClick={() => {
+                        setEditing(user);
+                        setEditRole(user.role);
+                        setRowError(null);
+                      }}
                     >
-                      <option value="SCORER">SCORER</option>
-                      <option value="ADMIN">ADMIN</option>
-                    </select>
+                      Edit
+                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -175,6 +185,37 @@ export function UsersClient({
           <DialogFooter>
             <Button onClick={handleAdd} disabled={isPending}>
               Add
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editing !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          {editing && (
+            <p className="text-muted-foreground text-sm">{editing.email}</p>
+          )}
+          <select
+            className={ROLE_SELECT_CLASS}
+            aria-label="Role"
+            value={editRole}
+            disabled={isPending}
+            onChange={(e) => setEditRole(e.target.value as Role)}
+          >
+            <option value="SCORER">SCORER</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+          <DialogFooter>
+            <Button onClick={handleSaveRole} disabled={isPending}>
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1019,9 +1019,15 @@ the manual merge to `main`.
   slimmed later if size matters.
 - Workflow filename `fly-deploy.yml` (spec said `deploy.yml`) — content matches; name is
   the one 14.2 already used.
-- **Behaviours 5–8 (live deploy + production Google sign-in) are pending the manual merge
-  to `main`** (PLAN forbids the agent merging). This entry will be amended with the live
-  proof (release migration ran, TLS, admin seeded, real Google sign-in) once deployed.
+- **First-deploy seed gotcha (found live):** `prisma db seed` failed in the deployed image
+  with `Cannot find module '../lib/password'` — `prisma/seed.ts` imports `lib/`, which the
+  standalone server bundles but `tsx` (the seed runner) loads from source. The runner image
+  didn't copy `lib/`. **Fixed:** added `COPY --from=build /app/lib ./lib` to the Dockerfile
+  so the documented seed path works on future deploys. For *this* first deploy the admin +
+  15 settings were seeded via a one-off `tsx` script over `fly ssh` (the generated
+  `prisma-client` emits TS, so plain `node` can't require it — must go through `tsx`).
+- The `lib/` fix reaches prod on the **next** merge to `main`; this deploy is already
+  seeded and fully functional.
 
 ### Validation (local — behaviours 1–4)
 
@@ -1036,5 +1042,366 @@ the manual merge to `main`.
 - Workflow YAML — ✅ structural check (push→main, setup-flyctl, `--remote-only`,
   `FLY_API_TOKEN`).
 - `npm run build` — ✅ EXIT 0 · `npm run lint` — ✅ clean · `npm run test` — ✅ 112/112.
+
+### Production verification (live — behaviours 5–8, after merging PR #4)
+
+- **5 — deploy + release migration**: PR #4 merged → GitHub Actions `flyctl deploy` ran;
+  `fly status` shows 2 machines `started` in `jnb`, **health check `1 total, 1 passing`**;
+  the `release_command` created the schema on the empty prod DB.
+- **6 — TLS**: `https://squash.tomlinson.co.za` → HTTP/2 200 over a valid **Let's Encrypt**
+  cert (issuer `CN=YE2`, valid 2026-06-06 → 2026-09-04), served by Fly.
+- **7 — first admin + settings seeded**: `atholl@tomlinson.co.za` (ADMIN) + the 15 default
+  settings present in prod (`SETTINGS_COUNT 15`).
+- **8 — real Google sign-in (live)**: signed in as `atholl@tomlinson.co.za` → landed
+  signed-in with **Admin ▾**; a non-allowlisted Google account → `/unauthorised`
+  ("No access") — the production half of the OAuth proof. ✅
+
+---
+
+## Step 15 — Update documentation
+
+**Date**: 2026-06-07
+
+Closed the documentation loop now the app is delivered and live. All content validated from
+source code, not the PRD/plan (AGENTS.md §8).
+
+### Delivered
+
+- **`docs/RATING-ALGORITHM.md`** (new) — technical reference for the rating algorithm, every
+  formula validated from [`lib/rating-engine.ts`](lib/rating-engine.ts) and cross-checked
+  against SPEC §5–7. Documents all 15 settings with their seeded defaults and notes they are
+  admin-configurable. Flags that the **player-facing, in-app** version is distilled from this
+  doc in step 16 (this stays the canonical source).
+- **`OVERVIEW.md`** (new, repo root) — architecture map (the `/update-docs` repo pattern,
+  adapted — no LifeStack central docs): tech stack, pure-core/thin-shell pattern, directory
+  map, key `lib/` modules, data model, auth model, conventions, and domain language.
+- **`README.md`** — full rewrite, newcomer/run focused, no architecture overlap with
+  OVERVIEW. Fixed stale facts: title, `AUTH_SECRET` (was `NEXTAUTH_SECRET`), dev port 3001,
+  `prisma migrate dev` (was `db push` "no tables yet"), Node 22, `--webpack` build note, live
+  URL, demo-seed + E2E notes. Links out to OVERVIEW / RATING-ALGORITHM / DEPLOYMENT / plans.
+- **PRD** — status `ready-for-plan` → **`delivered`** (with date + live URL). (The step
+  assumed `draft`; actual label was `ready-for-plan`.)
+
+### Deviations / notes
+
+- **README ↔ OVERVIEW split** (per the grill): README = purpose/run/links; OVERVIEW =
+  architecture/internals. No duplication beyond one-line pointers.
+- **Friendly algorithm explainer deferred to step 16** (in-app copy), not written as a doc
+  here — the technical reference is the single source it derives from.
+- **DECISIONS.md** — no `Promote: candidate` entries to promote (confirmed); nothing changed.
+
+### Validation
+
+- All relative links in README / OVERVIEW / RATING-ALGORITHM (and DEPLOYMENT) resolve to
+  existing paths — checked.
+- Setup steps verified against `package.json` scripts, `prisma.config.ts`, `docker-compose`,
+  and the migrations dir (migrate-not-push; port 3001; seed via config).
+- Algorithm formulas + the 15 settings reconciled line-by-line with `lib/rating-engine.ts`.
+
+---
+
+## Step 16.1 — UI rework (testing feedback)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- **Sign-in flow**: header "Sign in" is now a button that goes straight to Google
+  (`components/sign-in-button.tsx`, `signIn("google")`); `/signin` is the
+  email/password screen (the Google button removed from `signin-form.tsx` — the
+  header owns Google). Credentials form button shows a pending label
+  ("Signing in…") so the click visibly registers (the reported "doesn't respond" bug).
+- **Header**: Admin dropdown trigger is now a hamburger icon (`MenuIcon`,
+  `aria-label="Admin menu"`) instead of the "Admin ▾" text. Logged-in user shows a
+  circular profile avatar (Google `image`, falling back to the initial) in place of
+  the plaintext email. New `components/ui/avatar.tsx` + pure `lib/avatar.ts`
+  (`avatarInitial`).
+- **Ladder**: removed the "Live doubles rankings · updated after every session"
+  strapline (the "Score ranks…/Played…" footer note stays).
+- **Sessions list**: player names now render inline on each card (no `<details>`
+  disclosure) so the roster is visible without clicking. Games count retained in the
+  count line.
+- **Admin → Players**: re-skinned from a table to the card-per-player layout used by
+  Admin → Users (`role="group"` named by player, Edit + Remove/Reactivate right-aligned).
+- **Admin → Users**: added an Edit button per card (opens a dialog with the role
+  control; the inline role dropdown moved into the dialog); Edit + Remove are
+  right-aligned. Reuses `updateUserRoleAction` — no backend change.
+- **Admin → Sessions**: Edit changed from the `outline` to the lighter `ghost`
+  button variant.
+
+### Tests
+
+- New unit tests: `lib/avatar.test.ts`, `components/ui/avatar.test.tsx`,
+  `components/admin-menu.test.tsx`, `app/signin/signin-form.test.tsx`.
+- E2E updated to the new structure: `helpers.ts` (sign-in button scoped to `main`,
+  as the header now also has a "Sign in" button), `app-shell.spec.ts` (Sign in is a
+  button; "Admin menu" trigger; avatar replaces visible email),
+  `player-management.spec.ts` (card groups, not table cells/rows),
+  `user-management.spec.ts` (role change via the Edit dialog),
+  `session-history.spec.ts` (names visible inline, no expand).
+
+### Notes
+
+- No behaviour, route, mutation, or data-model change — presentation only. The
+  Credentials provider is unchanged (ADR-006/007); the E2E credentials fixture path
+  still works.
+- Avatar uses a plain `<img>` (not `next/image`) so arbitrary Google avatar URLs need
+  no domain allowlist.
+- Admin Users "Edit" exposes the role only (no name/email edit action exists today —
+  not added, to avoid out-of-scope backend work; see step 16.1 spec Q&A).
+
+### Follow-up polish (2026-06-07, second testing round)
+
+- **Account menu**: the avatar is now a tappable account menu (mobile-app pattern) —
+  new `components/account-menu.tsx` shows the email + Sign out. The standalone
+  `SignOutButton` is removed (`components/sign-out-button.tsx` deleted) — sign-out now
+  lives only in the avatar menu, which every signed-in user (admin or scorer) has.
+- **Sign-in button**: header `SignInButton` now uses the design-system `Button` with a
+  "Signing in…" pending state, so the press is visibly acknowledged.
+- **Hamburger popup**: more breathing room above the first item (`sideOffset` 8→10,
+  popup padding `p-1`→`p-1.5`).
+- **Sessions list**: "View full detail →" renamed to "More details →".
+- **Admin Players**: the status toggle reads **Deactivate** / **Reactivate** (was
+  "Remove"/"Reactivate") — it hides from the ladder, it doesn't delete. (Admin Users
+  "Remove" is unchanged — that genuinely deletes a user.)
+- **Admin Sessions**: the sessions table now sits inside a white `Card` surface
+  (matching the "How ratings work" card on Settings), and Edit uses the `outline`
+  button variant — matching the Edit button on the Admin Users card. (16.1 used
+  `ghost`, which read as plain text; a brief `default` filled trial was too loud for a
+  per-row action.)
+- New `components/account-menu.test.tsx`; E2E (`app-shell`, `player-management`,
+  `session-history`) updated to the account-menu + relabelled controls.
+
+**Ladder polish (later same day):**
+
+- **Tap affordance**: player names on the ladder (`app/page.tsx`) now render in the
+  primary link colour with a trailing `›` chevron, so it's clear on mobile (no
+  hover) that tapping a player opens their trend. Chevron is `aria-hidden` so the
+  link's accessible name stays the player name.
+- **Narrow screens**: the **Score** column is hidden below the `sm` breakpoint
+  (`hidden sm:table-cell` on the header + cell) so the Trend column isn't clipped on
+  a phone; it reappears at `sm`+. Order is still conveyed by rank, top-to-bottom.
+- E2E: `ladder.spec.ts` now asserts the player name is a link.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 134 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 41/41; teardown left no `[e2e]` data
+
+---
+
+## Step 16.2 — Submit-flow rework (pick players, then enter scores)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- `components/session-form.tsx` is now a two-phase flow (building on the 13.5
+  courtside form):
+  - **Phase 1 (pick)**: each slot shows only the player chip-picker (+ "+ New" and
+    "+ Add player"); a "Continue to scores" button (disabled until ≥1 player chosen)
+    advances. No wins selectors visible.
+  - **Phase 2 (score)**: only chosen players are listed, each with the segmented
+    0–9 wins selector; an "← Edit players" affordance returns to phase 1 (submit
+    mode only). Notes + submit live here.
+  - **Edit mode** (`initialSlots` present) opens directly in the score phase, since
+    the roster is already chosen; the "Edit players" affordance is hidden there.
+- The public contract is unchanged: `Props`, the `FormSlot[]` payload from
+  `toPayload`, and `onSubmit`/`onDelete` are identical — `/submit` and the edit page
+  reuse the form untouched, and the server actions/validation/recalc are not touched.
+
+### Tests
+
+- New `components/session-form.test.tsx`: pick-then-score phase transition, edit mode
+  starting on scoring, and that the emitted `FormSlot` payload is unchanged.
+- E2E helpers split to match the two phases: `pickNewPlayer` + `continueToScores` +
+  `setSlotWins`, and a `submitNewSession` convenience used across the five specs that
+  submit a full session (`ladder`, `player-trend`, `session-history`, `session-edit`,
+  and `submit`'s `fillFourNewPlayers`). `addNewPlayer` removed.
+
+### Notes
+
+- The 13.5 form already used the chip-picker + wins-selector; 16.2 reorganises those
+  same primitives into two phases — it does not restyle them.
+
+### Revision (2026-06-07, testing feedback) — single-grid select-then-score
+
+The two-phase model was replaced with a single screen, per testing feedback:
+
+- **One "Choose players" grid** of all players (+ "+ New"); tap a chip to
+  select/unselect any number — no fixed slots, no "Continue to scores" or "Edit
+  players" buttons. Unselecting drops the player entirely.
+- **A score block appears below per selected player**, in selection order (name +
+  the 0–9 wins selector). "+ New" adds an on-the-fly entry whose block carries a
+  name field; unnamed new blocks are labelled "New player N" (stable by creation
+  order).
+- The public contract is still unchanged — `Props`, the `FormSlot[]` payload, and
+  `onSubmit`/`onDelete` are identical; edit mode (`initialSlots`) opens with those
+  players pre-selected. Validation stays server-side (even total > 0).
+- `components/session-form.test.tsx` rewritten for the new model; E2E helpers
+  replaced (`addNewPlayer(name, n)` + `setPlayerWins(name, wins)`; `pickNewPlayer`/
+  `continueToScores`/`setSlotWins` removed). Edit specs target score blocks by
+  player name.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 128 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
+
+---
+
+## Step 16.3 — Rating-algorithm explainer
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- New `app/admin/settings/rating-explainer.tsx` — a player-facing "How ratings work"
+  card rendered above the settings list on Admin → Rating Algorithm. Covers, in plain
+  English: full recalculation on every change; actual vs expected share of wins; the
+  new/returning-player boost; ladder score = rating + activity bonus; and
+  active/inactive/provisional. Closes the in-app explainer deferred from step 15.
+- `app/admin/settings/page.tsx` renders `<RatingExplainer />` above `<SettingsClient />`.
+
+### Tests
+
+- `app/admin/settings/rating-explainer.test.tsx`: asserts the heading, the core
+  mechanics in the copy, and that tunable values (e.g. 160, 400) are **not** hard-coded
+  into the prose.
+- `e2e/settings.spec.ts`: the view test now also asserts the "How ratings work" heading
+  is visible.
+
+### Notes
+
+- Copy validated against `lib/rating-engine.ts` directly (not general ELO knowledge),
+  cross-checked with `docs/RATING-ALGORITHM.md` (the canonical technical reference it
+  derives from). Refers to settings by name, not value, so it stays true when an admin
+  edits them — and says so explicitly.
+- No engine, settings model, or mutation change — presentational content only.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 125 unit tests pass (+3 rating-explainer)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 39/39
+
+---
+
+## Step 16.4 — WhatsApp share on submit (Web Share API)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- After a successful **new** session submit, on devices that support the Web Share
+  API the form now shows a **success screen** ("Session logged ✓" + **Share to
+  WhatsApp** + **View ladder →**) instead of redirecting. Tapping Share calls
+  `navigator.share({ text })` with a plain-text result summary; the OS share sheet
+  lets the scorer pick the club WhatsApp group.
+- New pure helper `lib/share.ts` (`buildShareText`) — "Doubles @ BSC — 7 Jun",
+  then "Name wins, …" in roster order, then the public ladder link. UTC date
+  (matches `formatSessionDate`).
+- `components/session-form.tsx`: new optional `ladderUrl` prop (submit mode only).
+  On success, if `ladderUrl` is set the success screen shows; the **Share button**
+  appears only on a touch-primary device with the Web Share API (see the fix
+  below). The edit page omits `ladderUrl`, so editing still redirects to `/`.
+- `app/submit/page.tsx` passes `ladderUrl` from `AUTH_URL` (falling back to the
+  prod URL).
+
+### Fix (2026-06-07, same day — testing on a laptop)
+
+Two bugs the first cut shipped, found immediately on desktop:
+
+- **Share button showed on desktop.** The detection assumed desktop browsers lack
+  `navigator.share` — but macOS Safari/Chrome expose it (only Playwright's headless
+  Chromium doesn't, which is why tests passed). The desktop share sheet offers
+  Mail/Messages, not the WhatsApp group. Fix: gate the **Share button** on
+  `navigator.share` **and** `matchMedia("(pointer: coarse)")` (touch-primary). On
+  desktop the success screen still shows, with **only** "View ladder". Submit no
+  longer auto-redirects — the success screen always shows on submit; "View ladder"
+  leaves it.
+- **`InvalidStateError: An earlier share has not yet completed`.** Tapping Share
+  while a share was pending threw. Fix: `handleShare` guards with a `sharing` ref
+  (ignores re-entry) and swallows the cancel rejection.
+
+### Tests
+
+- `lib/share.test.ts` — the builder's format, order, date, and trailing link.
+- `components/session-form.test.tsx` — share screen shown + `navigator.share` called
+  with the built text when supported; redirect when `navigator.share` absent; never
+  shown in edit mode.
+- `e2e/submit.spec.ts` — touch test stubs `navigator.share` + a coarse pointer via
+  `addInitScript`, asserts the success screen, the share call payload, and "View
+  ladder"; a desktop test asserts the success screen shows **without** a Share
+  button. `submitNewSession` clicks "View ladder" after Log Results (the success
+  screen now always shows).
+
+### Notes
+
+- Per `RESEARCH-whatsapp-notifications.md` + ADR-009: tap-to-share is the only
+  zero-cost, ToS-clean way to reach a group. No Business API, no bridge, no fallback
+  (feature-detected). The post is one tap, not fully automatic.
+- Surgical: the server action, validation, and recalculation are untouched; the
+  `FormSlot` payload and edit-mode contract are unchanged.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 134 unit tests pass (share builder + share-screen incl.
+  desktop-hides-button + double-tap-guard)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 41/41; teardown left no `[e2e]` data
+
+---
+
+## Role access — scorers manage Players & Sessions, view Settings (ADR-010)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- **Route gate** (`lib/auth-rules.ts`): only `/admin/users` is ADMIN-only now;
+  `/admin/players`, `/admin/sessions`, `/admin/settings` are open to any signed-in
+  user. New `isAdminOnly()` replaces the blanket `/admin` ADMIN check.
+- **Menu** (`lib/nav.ts` `adminLinksFor(role)` + `components/admin-menu.tsx` +
+  `site-header.tsx`): the hamburger now shows for **any** signed-in user. Scorers
+  see Players / Sessions / Settings; admins also see Users. Trigger relabelled
+  "Admin menu" → "Menu" (it's no longer admin-only).
+- **Players** (`app/admin/players/actions.ts`): `requireAdmin` → `requireUser` —
+  scorers can add/rename/deactivate players.
+- **Sessions**: unchanged — `canMutateSession` still lets a scorer edit/delete only
+  their **own** sessions (others → `/unauthorised`).
+- **Settings** (`app/admin/settings/{page,settings-client}.tsx`): read-only by
+  default for everyone. An ADMIN gets an **Edit** button → inputs + Save & Recalculate
+  (+ Cancel); scorers never see Edit. The save action still re-checks
+  `role === "ADMIN"` server-side.
+
+### Tests
+
+- Unit: `auth-rules.test.ts` (scorer allowed into Players/Sessions/Settings, denied
+  Users; admin everywhere), `nav.test.ts` (`adminLinksFor`), new
+  `settings-client.test.tsx` (read-only default, Edit only when `canEdit`, inputs
+  after Edit), `admin-menu.test.tsx` updated.
+- E2E: `auth-flow` (scorer reaches + adds a player; denied Users), `app-shell`
+  (scorer menu = Players/Sessions/Settings, no Users; admin menu incl. Users),
+  `settings` (read-only default + admin Edit/Save; scorer view-only, no Edit).
+
+### Notes
+
+- Authorization is enforced at the server action, not just the UI — the Edit button
+  and menu filtering are convenience; `authorizeRoute` + `requireUser`/admin checks
+  are the real gates. See ADR-010.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 141 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 42/42; teardown left no `[e2e]` data
 
 ---

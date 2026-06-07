@@ -141,3 +141,36 @@ Deployment (14.4) depends on 13.5 so it ships the finished design. Prototype cod
 - *Fix the skills up front* — rejected: would encode an unvalidated convention; 13.6 codifies what actually worked.
 
 **Consequence**: The redesign is five tracked steps instead of one, with a clear decision→build boundary and no speculative component extraction. The cost is more plan ceremony and two prototype phases before any production code changes. The "refactor for consistency" work is reframed as 13.4 + 13.5 (implementation of a decided design), not an end-of-plan cleanup. The skill fix (13.6) makes the design-system-first convention the default for future features, so this inconsistency should not recur. A future reader asking "why is the redesign five steps / why CI before UX?" finds the answer here.
+
+---
+
+## ADR-009: WhatsApp results via the Web Share API (tap-to-share), not the Business API or a bridge
+
+**Date**: 2026-06-07
+**Status**: accepted
+
+**Context**: Testing feedback asked for session results to land in the club's **WhatsApp group** cheaply, ideally automatically. The research ([`RESEARCH-whatsapp-notifications.md`](RESEARCH-whatsapp-notifications.md)) found no cheap *automated* post-to-group path exists: the official Cloud API sends 1:1 template messages and cannot post to a normal group (the 2025 Groups API caps at 8 participants and needs a Business account + provider); `wa.me` pre-fill is 1:1 only; and unofficial bridges (whatsapp-web.js, Baileys, …) are a flagrant ToS violation that gets the account banned in ~2–8 weeks. The only zero-cost, zero-infra, ToS-clean way to reach a group is to have the human post it.
+
+**Decision**: After a successful **new** session submit, show a success screen ("Session logged ✓" + "View ladder"). On a **touch-primary device** that supports the Web Share API — `navigator.share` is a function **and** `matchMedia("(pointer: coarse)")` matches — the screen also shows a **Share to WhatsApp** button that calls `navigator.share({ text })` with a plain-text summary (date, each player + games won, public ladder link); the OS share sheet then lets the scorer pick the club group. On desktop (fine pointer) the Share button is hidden, because the desktop share sheet offers Mail/Messages and can't usefully reach the WhatsApp group — the confirmation + "View ladder" still show. The ladder URL is passed into the form from the server page (reusing `AUTH_URL`); the share text is built by a pure helper (`lib/share.ts`). The edit flow is unchanged (it redirects to `/`). No WhatsApp Business account, BSP, per-message fee, credentials, or new infrastructure.
+
+**Consequence**: On a phone, results reach the group with one tap and the message is pre-written — but the post is **not fully automatic** (the scorer picks the group in the share sheet, the only ToS-clean option). On desktop it's just a confirmation. Cost and infra are R0. The `pointer: coarse` gate is a heuristic, not a WhatsApp check — it hides Share where the sheet is least useful. If WhatsApp ever ships a usable group-broadcast API for normal groups, revisit. Rationale and the rejected directions live in the research doc.
+
+(The first cut of step 16.4 wrongly assumed desktop browsers lack `navigator.share`; they don't — corrected same day with the coarse-pointer gate and a re-entrancy guard on the share call.)
+
+---
+
+## ADR-010: Scorers may manage Players & Sessions and view Settings; only Users and Settings-edit stay ADMIN-only
+
+**Date**: 2026-06-07
+**Status**: accepted (widens the ADMIN-only `/admin/*` gate of step 04)
+
+**Context**: Originally every `/admin/*` route was ADMIN-only (`authorizeRoute` gated the whole prefix; the hamburger showed only to admins). In practice the club's scorers do the day-to-day data entry — adding players and logging sessions — so funnelling all of that through a single admin was friction. The ask: let scorers manage Players & Sessions and *see* the rating Settings, while keeping the genuinely sensitive surfaces admin-only.
+
+**Decision**:
+1. **Route gate** (`authorizeRoute`): `/admin/players`, `/admin/sessions`, `/admin/settings` are open to any signed-in user; only `/admin/users` (login accounts + roles) stays ADMIN-only. A new `isAdminOnly()` replaces the blanket `/admin` check.
+2. **Menu** (`adminLinksFor(role)`): scorers see Players / Sessions / Settings in the hamburger; admins also see Users. The hamburger now shows for any signed-in user.
+3. **Players actions**: `requireAdmin` → `requireUser` (any session) — scorers can add/rename/deactivate players.
+4. **Sessions**: unchanged ownership rule — `canMutateSession` still lets a scorer edit/delete only their **own** sessions (others → `/unauthorised`). Scorers see the full list but can't alter another scorer's results.
+5. **Settings**: read-only by default for everyone. An ADMIN gets an **Edit** button that reveals the inputs + Save; scorers never see Edit. The save action (`saveAndRecalculateAction`) still re-checks `role === "ADMIN"` — the Edit button is UI gating, the server is the real gate.
+
+**Consequence**: Scorers can do the routine data entry without an admin; account/role management and rating-parameter changes remain admin-only, defended at the server action (not just the UI). The route gate and the menu are kept in sync deliberately (`isAdminOnly` ↔ `adminLinksFor`). A future reader asking "why can a scorer open /admin/players?" finds it here. If the club later wants scorers to edit any session (not just their own), revisit point 4 (`canMutateSession`).

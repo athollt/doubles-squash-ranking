@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, addNewPlayer, expect } from "./helpers";
+import { signIn, submitNewSession, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
 // The public ladder (home page) — no auth required to view (behaviour 1).
@@ -19,10 +19,7 @@ test("submitted players appear on the ladder, ranked and provisional", async ({
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/submit");
-  for (let i = 0; i < 4; i++) {
-    await addNewPlayer(page, i + 1, names[i], wins[i]);
-  }
-  await page.getByRole("button", { name: /log results/i }).click();
+  await submitNewSession(page, names, wins);
   await expect(page).toHaveURL(/\/$/);
 
   // The freshly submitted players are now on the ladder. Each is provisional
@@ -31,6 +28,8 @@ test("submitted players appear on the ladder, ranked and provisional", async ({
   for (const name of names) {
     await expect(table.getByText(name)).toBeVisible();
   }
+  // Each player name is a link to their trend (the tap affordance, step 16.4 rev).
+  await expect(table.getByRole("link", { name: names[0] })).toBeVisible();
   // First-time players are provisional ("New" badge) and show a NEW trend.
   await expect(
     table.locator("tr", { hasText: names[0] }).getByText("New", { exact: true }),

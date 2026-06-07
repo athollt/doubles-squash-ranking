@@ -3,14 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -79,29 +72,27 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
         <Button onClick={() => setAddOpen(true)}>Add Player</Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {players.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={4} className="text-muted-foreground text-center">
-                No players yet.
-              </TableCell>
-            </TableRow>
-          ) : (
-            players.map((player) => (
-              <TableRow key={player.id}>
-                <TableCell>{player.name}</TableCell>
-                <TableCell>{player.status}</TableCell>
-                <TableCell>{player.created}</TableCell>
-                <TableCell className="flex justify-end gap-2">
+      {/* Card per player (step 16.1) — same layout as Admin → Users: a
+          role="group" named by the player so it stays addressable, with the
+          actions right-aligned. */}
+      {players.length === 0 ? (
+        <p className="text-muted-foreground">No players yet.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {players.map((player) => (
+            <li key={player.id}>
+              <Card
+                role="group"
+                aria-label={player.name}
+                className="p-3 sm:flex sm:items-center sm:gap-4"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{player.name}</p>
+                  <p className="text-muted-foreground text-sm">
+                    {player.status} · added {player.created}
+                  </p>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2 sm:mt-0">
                   <Button
                     variant="outline"
                     size="sm"
@@ -120,14 +111,14 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
                     disabled={isPending}
                     onClick={() => handleToggleStatus(player)}
                   >
-                    {player.status === "ACTIVE" ? "Remove" : "Reactivate"}
+                    {player.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
                   </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>

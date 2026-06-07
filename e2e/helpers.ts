@@ -13,7 +13,12 @@ export async function signIn(
   await page.goto("/signin");
   await page.getByPlaceholder("Email").fill(email);
   await page.getByPlaceholder("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  // Scope to the form (main) — the global header now also has a "Sign in" button
+  // (step 16.1: header → Google), so match the credentials submit specifically.
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
   if (opts.expectError) {
     await expect(page.getByText(/invalid email or password/i)).toBeVisible();
   } else {
@@ -22,30 +27,51 @@ export async function signIn(
   }
 }
 
-// Drive the redesigned session form (step 13.5): per slot, scoped via the `Player N`
-// group, tap "+ New", type the name, then tap the segmented `wins` button.
+// Drive the single-grid session form (step 16.2 rev). Add an on-the-fly player:
+// tap "+ New" in the "Choose players" grid, then name the new score block (the
+// nth new block added so far) — naming it relabels the block to that name.
 export async function addNewPlayer(
   page: Page,
-  n: number,
+  name: string,
+  newBlockIndex: number,
+): Promise<void> {
+  await page
+    .getByRole("group", { name: "Choose players" })
+    .getByRole("button", { name: "+ New" })
+    .click();
+  await page
+    .getByRole("group", { name: `New player ${newBlockIndex}` })
+    .getByRole("textbox", { name: "New player name" })
+    .fill(name);
+}
+
+// Set the wins for the score block named `name` via the segmented buttons.
+export async function setPlayerWins(
+  page: Page,
   name: string,
   wins: number,
 ): Promise<void> {
-  const slot = page.getByRole("group", { name: `Player ${n}` });
-  await slot.getByRole("button", { name: "+ New" }).click();
-  await slot.getByRole("textbox", { name: `New player name ${n}` }).fill(name);
-  await slot.getByRole("button", { name: `${wins} wins`, exact: true }).click();
-}
-
-// Set the wins for an existing slot (edit flow) via the segmented buttons.
-export async function setSlotWins(
-  page: Page,
-  n: number,
-  wins: number,
-): Promise<void> {
   await page
-    .getByRole("group", { name: `Player ${n}` })
+    .getByRole("group", { name })
     .getByRole("button", { name: `${wins} wins`, exact: true })
     .click();
+}
+
+// Submit a full session of N on-the-fly new players via the single-grid form:
+// add + name each, set their wins, then Log Results. A successful submit lands on
+// the "Session logged ✓" success screen (step 16.4); this clicks "View ladder" to
+// reach the ladder. Assumes the caller is on /submit; `names.length` == `wins.length`.
+export async function submitNewSession(
+  page: Page,
+  names: string[],
+  wins: number[],
+): Promise<void> {
+  for (let i = 0; i < names.length; i++) {
+    await addNewPlayer(page, names[i], i + 1);
+    await setPlayerWins(page, names[i], wins[i]);
+  }
+  await page.getByRole("button", { name: /log results/i }).click();
+  await page.getByRole("button", { name: /view ladder/i }).click();
 }
 
 export { expect };

@@ -37,19 +37,19 @@ test("admin can add scorer and admin users, change role, and delete (b1-4)", asy
   await addUser(page, scorer, `[e2e] ${token} Scorer`, "SCORER");
   const scorerRow = userRow(page, scorer);
   await expect(scorerRow).toBeVisible();
-  await expect(scorerRow.getByRole("combobox")).toHaveValue("SCORER");
+  await expect(scorerRow).toContainText("SCORER");
 
   // Behaviour 2: add an Admin.
   await addUser(page, adminUser, `[e2e] ${token} Admin`, "ADMIN");
-  await expect(userRow(page, adminUser).getByRole("combobox")).toHaveValue("ADMIN");
+  await expect(userRow(page, adminUser)).toContainText("ADMIN");
 
-  // Behaviour 3: promote the scorer to admin. Wait for the role change to settle
-  // (the select reflects the new value after the server action re-renders the row)
-  // *before* reloading, so the assertion isn't racing the in-flight transition.
-  await scorerRow.getByRole("combobox").selectOption("ADMIN");
-  await expect(scorerRow.getByRole("combobox")).toHaveValue("ADMIN");
+  // Behaviour 3: promote the scorer to admin via the Edit dialog (step 16.1).
+  await scorerRow.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("combobox", { name: "Role" }).selectOption("ADMIN");
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(scorerRow).toContainText("ADMIN");
   await page.reload();
-  await expect(userRow(page, scorer).getByRole("combobox")).toHaveValue("ADMIN");
+  await expect(userRow(page, scorer)).toContainText("ADMIN");
 
   // Behaviour 4: delete the (now-admin) user — others remain, so it is allowed.
   await userRow(page, scorer).getByRole("button", { name: "Remove" }).click();

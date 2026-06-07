@@ -1,8 +1,13 @@
-# Doubles Squash @ BSC
+# BSC Doubles Squash Ladder
 
-A mobile-first web app for the BSC doubles squash ladder. Publicly displays player rankings and session history. Admins and scorers log in with Google to submit and manage sessions.
+A mobile-first PWA for the BSC doubles squash ladder. The public sees rankings, session
+history, and per-player rating trends; **scorers** log results and **admins** manage players,
+users, and the rating settings — all via Google sign-in.
 
-Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, Prisma, and PostgreSQL.
+**Live:** https://squash.tomlinson.co.za
+
+Built with Next.js 16 (App Router), TypeScript, Prisma 7 / PostgreSQL, Auth.js v5, Tailwind
+v4, and Serwist (PWA).
 
 ---
 
@@ -10,17 +15,28 @@ Built with Next.js 16 (App Router), TypeScript, Tailwind CSS, Prisma, and Postgr
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - Docker (for local Postgres)
 
 ### Setup
 
 ```bash
-cp .env.example .env        # fill in NEXTAUTH_SECRET and Google OAuth credentials
+cp .env.example .env     # fill in AUTH_SECRET (openssl rand -base64 32) + Google OAuth creds
 npm install
-docker compose up -d postgres
-npx prisma db push          # apply schema to local DB (no tables yet in step 01)
-npm run dev                 # http://localhost:3000
+docker compose up -d postgres        # Postgres on localhost:5433
+npx prisma migrate dev               # apply migrations + seed (15 settings + admin)
+npm run dev                          # http://localhost:3001
+```
+
+> **Sign-in locally:** production uses Google only, but a Credentials provider is enabled for
+> local/E2E. The seed creates admin `atholl@tomlinson.co.za` with the password from
+> `SEED_ADMIN_PASSWORD` (default `localdev`). Google OAuth also works locally if you set the
+> client id/secret.
+
+Optional demo data (deterministic sample roster + sessions):
+
+```bash
+npm run seed:sample
 ```
 
 ---
@@ -28,36 +44,43 @@ npm run dev                 # http://localhost:3000
 ## Tests
 
 ```bash
-# Unit / integration tests (Vitest)
-npm run test
-
-# Watch mode
-npm run test:watch
-
-# E2E tests (Playwright) — requires dev server running
-npm run test:e2e
+npm run test         # unit / integration (Vitest)
+npm run test:watch   # watch mode
+npm run test:e2e     # E2E (Playwright) — needs local Postgres up + migrated
+npm run lint         # ESLint
 ```
+
+E2E creates and tears down its own ephemeral users/data; it leaves the seeded admin and any
+sample data intact.
 
 ---
 
 ## Build
 
 ```bash
-npm run build
+npm run build        # next build --webpack (emits the Serwist service worker)
 npm run start
 ```
 
+The production build **must** use `--webpack` (the `build` script does) — the Serwist PWA
+plugin is a webpack plugin and is skipped by the default builder.
+
 ---
 
-## Tech stack
+## Deployment
 
-| Layer | Choice |
-|---|---|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 + shadcn/ui |
-| ORM | Prisma 7 |
-| Database | PostgreSQL 16 |
-| Auth | Auth.js v5 (NextAuth) + Google OAuth |
-| Unit tests | Vitest + Testing Library |
-| E2E tests | Playwright |
+Deployed to Fly.io (Johannesburg) — push to `main` triggers a `flyctl deploy`. Full runtime
+guide (release migrations, first-admin seed, logs, rollback, backups):
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md). One-time account/infra setup:
+[`docs/deployment/`](docs/deployment/).
+
+---
+
+## Documentation
+
+- [`OVERVIEW.md`](OVERVIEW.md) — architecture, directory map, data model, conventions.
+- [`docs/RATING-ALGORITHM.md`](docs/RATING-ALGORITHM.md) — how ratings, the ladder, and
+  active/inactive status are computed (every setting explained).
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — production runtime guide.
+- [`docs/plans/`](docs/plans/) — design documents: PRD, plan, decisions (ADRs), changelog,
+  and the original Google Sheets spec.
