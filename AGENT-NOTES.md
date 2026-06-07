@@ -23,6 +23,11 @@ curl -X POST \
 
 The `GITHUB_TOKEN` is stored in `.env` file. Load it with: `export GITHUB_TOKEN=$(grep GITHUB_TOKEN .env | cut -d '=' -f2)`
 
+**Easier:** invoke the **`/create-pr`** skill (`.claude/skills/create-pr/`), which
+automates this — it checks the branch is clean + pushed, runs build/test/lint
+(+ e2e if routes changed), then POSTs via `scripts/open-pr.sh` and returns the PR
+URL. Merging the PR to `main` auto-deploys to prod (Fly GitHub Actions).
+
 ## Project Structure
 
 - `docs/plans/` — BR, PRD, PLAN, DECISIONS, CHANGELOG, and step files
