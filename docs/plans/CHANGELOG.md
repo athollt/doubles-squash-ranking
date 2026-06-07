@@ -1150,10 +1150,29 @@ source code, not the PRD/plan (AGENTS.md §8).
 - Admin Users "Edit" exposes the role only (no name/email edit action exists today —
   not added, to avoid out-of-scope backend work; see step 16.1 spec Q&A).
 
+### Follow-up polish (2026-06-07, second testing round)
+
+- **Account menu**: the avatar is now a tappable account menu (mobile-app pattern) —
+  new `components/account-menu.tsx` shows the email + Sign out. The standalone
+  `SignOutButton` is removed (`components/sign-out-button.tsx` deleted) — sign-out now
+  lives only in the avatar menu, which every signed-in user (admin or scorer) has.
+- **Sign-in button**: header `SignInButton` now uses the design-system `Button` with a
+  "Signing in…" pending state, so the press is visibly acknowledged.
+- **Hamburger popup**: more breathing room above the first item (`sideOffset` 8→10,
+  popup padding `p-1`→`p-1.5`).
+- **Sessions list**: "View full detail →" renamed to "More details →".
+- **Admin Players**: the status toggle reads **Deactivate** / **Reactivate** (was
+  "Remove"/"Reactivate") — it hides from the ladder, it doesn't delete. (Admin Users
+  "Remove" is unchanged — that genuinely deletes a user.)
+- **Admin Sessions**: Edit reverted from `ghost` back to `outline` — the borderless
+  ghost read as not-a-button; outline is clearly a button.
+- New `components/account-menu.test.tsx`; E2E (`app-shell`, `player-management`,
+  `session-history`) updated to the account-menu + relabelled controls.
+
 ### Validation
 
 - `npm run build` — ✅
-- `npm run test` — ✅ 119 unit tests pass
+- `npm run test` — ✅ 126 unit tests pass (119 initial + account-menu + 16.2/16.3)
 - `npm run lint` — ✅ clean
 - `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
 

@@ -111,7 +111,7 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
                     disabled={isPending}
                     onClick={() => handleToggleStatus(player)}
                   >
-                    {player.status === "ACTIVE" ? "Remove" : "Reactivate"}
+                    {player.status === "ACTIVE" ? "Deactivate" : "Reactivate"}
                   </Button>
                 </div>
               </Card>

@@ -59,7 +59,7 @@ export default async function SessionsPage() {
                   href={`/sessions/${s.id}`}
                   className="text-primary mt-2 inline-block text-sm hover:underline"
                 >
-                  View full detail →
+                  More details →
                 </Link>
               </Card>
             </li>

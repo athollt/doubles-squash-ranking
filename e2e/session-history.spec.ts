@@ -37,7 +37,7 @@ test("a submitted session is listed and has a detail page", async ({
 
   // Player names are visible inline without expanding anything (step 16.1).
   await expect(item.first().getByText(names[0])).toBeVisible();
-  await item.first().getByRole("link", { name: /view full detail/i }).click();
+  await item.first().getByRole("link", { name: /more details/i }).click();
 
   await expect(page).toHaveURL(/\/sessions\/[^/]+$/);
   await expect(page.getByText(/submitted by/i)).toBeVisible();

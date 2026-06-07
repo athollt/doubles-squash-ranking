@@ -54,7 +54,7 @@ test("admin removes then reactivates a player", async ({ page }) => {
   const card = playerCard(page, name);
   await expect(card).toBeVisible();
 
-  await card.getByRole("button", { name: "Remove" }).click();
+  await card.getByRole("button", { name: "Deactivate" }).click();
   await expect(card.getByText("REMOVED")).toBeVisible();
 
   await card.getByRole("button", { name: "Reactivate" }).click();

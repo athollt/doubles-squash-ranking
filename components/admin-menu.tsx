@@ -17,8 +17,8 @@ export function AdminMenu() {
         <MenuIcon className="size-5" />
       </Menu.Trigger>
       <Menu.Portal>
-        <Menu.Positioner sideOffset={8} align="start">
-          <Menu.Popup className="bg-popover text-popover-foreground z-50 min-w-36 rounded-md border p-1 shadow-md outline-none">
+        <Menu.Positioner sideOffset={10} align="start">
+          <Menu.Popup className="bg-popover text-popover-foreground z-50 min-w-36 rounded-md border p-1.5 shadow-md outline-none">
             {adminLinks.map((link) => (
               <Menu.Item
                 key={link.href}
