@@ -1158,3 +1158,46 @@ source code, not the PRD/plan (AGENTS.md §8).
 - `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
 
 ---
+
+## Step 16.2 — Submit-flow rework (pick players, then enter scores)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- `components/session-form.tsx` is now a two-phase flow (building on the 13.5
+  courtside form):
+  - **Phase 1 (pick)**: each slot shows only the player chip-picker (+ "+ New" and
+    "+ Add player"); a "Continue to scores" button (disabled until ≥1 player chosen)
+    advances. No wins selectors visible.
+  - **Phase 2 (score)**: only chosen players are listed, each with the segmented
+    0–9 wins selector; an "← Edit players" affordance returns to phase 1 (submit
+    mode only). Notes + submit live here.
+  - **Edit mode** (`initialSlots` present) opens directly in the score phase, since
+    the roster is already chosen; the "Edit players" affordance is hidden there.
+- The public contract is unchanged: `Props`, the `FormSlot[]` payload from
+  `toPayload`, and `onSubmit`/`onDelete` are identical — `/submit` and the edit page
+  reuse the form untouched, and the server actions/validation/recalc are not touched.
+
+### Tests
+
+- New `components/session-form.test.tsx`: pick-then-score phase transition, edit mode
+  starting on scoring, and that the emitted `FormSlot` payload is unchanged.
+- E2E helpers split to match the two phases: `pickNewPlayer` + `continueToScores` +
+  `setSlotWins`, and a `submitNewSession` convenience used across the five specs that
+  submit a full session (`ladder`, `player-trend`, `session-history`, `session-edit`,
+  and `submit`'s `fillFourNewPlayers`). `addNewPlayer` removed.
+
+### Notes
+
+- The 13.5 form already used the chip-picker + wins-selector; 16.2 reorganises those
+  same primitives into two phases — it does not restyle them.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 122 unit tests pass (+3 session-form)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
+
+---

@@ -1,23 +1,27 @@
 import { test } from "@playwright/test";
-import { signIn, expect } from "./helpers";
+import {
+  signIn,
+  pickNewPlayer,
+  continueToScores,
+  setSlotWins,
+  expect,
+} from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
-// Fill the four default slots as on-the-fly new players (also exercises
-// behaviour 8), driving the redesigned form (step 13.5): per slot, tap "+ New",
-// type the name, then tap the segmented `wins` button. Slots are scoped via the
-// `Player N` group. `wins` total must be even and > 0.
+// Drive the two-phase form (step 16.2): pick all four players as on-the-fly new
+// players, continue to scores, then set each slot's wins. `wins` total must be
+// even and > 0.
 async function fillFourNewPlayers(
   page: import("@playwright/test").Page,
   token: string,
   wins: [number, number, number, number],
 ) {
   for (let i = 0; i < 4; i++) {
-    const slot = page.getByRole("group", { name: `Player ${i + 1}` });
-    await slot.getByRole("button", { name: "+ New" }).click();
-    await slot
-      .getByRole("textbox", { name: `New player name ${i + 1}` })
-      .fill(`[e2e] ${token} P${i}`);
-    await slot.getByRole("button", { name: `${wins[i]} wins`, exact: true }).click();
+    await pickNewPlayer(page, i + 1, `[e2e] ${token} P${i}`);
+  }
+  await continueToScores(page);
+  for (let i = 0; i < 4; i++) {
+    await setSlotWins(page, i + 1, wins[i]);
   }
 }
 

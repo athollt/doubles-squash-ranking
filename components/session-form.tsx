@@ -37,11 +37,12 @@ interface Props {
   onDelete?: () => Promise<SessionFormResult>;
 }
 
-// Courtside doubles capture (step 13.5, per PROTOTYPE-NOTES-ux.md): a flat list of
-// player slots — no teams (the engine infers pairings). Each slot: a tap-to-pick chip
-// picker (with "+ New" for on-the-fly creation) + a segmented 0–7 "wins" selector.
-// The public contract (props + FormSlot payload) is unchanged from the prior form, so
-// both /submit and the edit page reuse it.
+// Courtside doubles capture (step 16.2, building on 13.5): a two-phase flow — first
+// pick every player (tap-to-pick chip picker with "+ New" for on-the-fly creation),
+// then enter the games each won (segmented 0–9 "wins" selector). A flat list of slots,
+// no teams (the engine infers pairings). The public contract (props + FormSlot payload)
+// is unchanged, so both /submit and the edit page reuse it; edit mode (initialSlots)
+// starts directly in the scoring phase since the roster is already chosen.
 export function SessionForm({
   players,
   initialSlots,
@@ -57,6 +58,10 @@ export function SessionForm({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Edit (initialSlots) opens on scoring — the players are already chosen.
+  const [phase, setPhase] = useState<"pick" | "score">(
+    initialSlots ? "score" : "pick",
+  );
 
   function update(i: number, patch: Partial<SlotState>) {
     setSlots((s) => s.map((slot, idx) => (idx === i ? { ...slot, ...patch } : slot)));
@@ -91,54 +96,89 @@ export function SessionForm({
     });
   }
 
+  // A slot counts as chosen once a player (existing or new-with-name) is picked.
+  const isChosen = (s: SlotState) =>
+    (s.playerId !== "" && s.playerId !== NEW) || s.newName.trim() !== "";
+  const chosenCount = slots.filter(isChosen).length;
+
   return (
     <div className="flex flex-col gap-3">
-      {slots.map((slot, i) => (
-        <Slot
-          key={i}
-          n={i + 1}
-          slot={slot}
-          players={players}
-          onChange={(patch) => update(i, patch)}
-        />
-      ))}
-
-      {slots.length < 8 && (
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="self-start"
-          onClick={() => setSlots((s) => [...s, emptySlot()])}
-        >
-          + Add player
-        </Button>
+      {slots.map((slot, i) =>
+        // Scoring shows only chosen players; empty slots stay in the pick phase.
+        phase === "score" && !isChosen(slot) ? null : (
+          <Slot
+            key={i}
+            n={i + 1}
+            slot={slot}
+            players={players}
+            phase={phase}
+            onChange={(patch) => update(i, patch)}
+          />
+        ),
       )}
 
-      <Input
-        aria-label="Notes"
-        placeholder="Notes (optional)"
-        value={notes}
-        onChange={(e) => setNotes(e.target.value)}
-      />
+      {phase === "pick" ? (
+        <>
+          {slots.length < 8 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={() => setSlots((s) => [...s, emptySlot()])}
+            >
+              + Add player
+            </Button>
+          )}
 
-      {error && <p className="text-destructive text-sm">{error}</p>}
-
-      <div className="flex gap-3">
-        <Button onClick={handleSubmit} disabled={pending} className="flex-1">
-          {submitLabel}
-        </Button>
-        {onDelete && (
           <Button
             type="button"
-            variant="destructive"
-            disabled={pending}
-            onClick={handleDelete}
+            onClick={() => setPhase("score")}
+            disabled={chosenCount === 0}
           >
-            Delete
+            Continue to scores
           </Button>
-        )}
-      </div>
+        </>
+      ) : (
+        <>
+          {!initialSlots && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={() => setPhase("pick")}
+            >
+              ← Edit players
+            </Button>
+          )}
+
+          <Input
+            aria-label="Notes"
+            placeholder="Notes (optional)"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+
+          {error && <p className="text-destructive text-sm">{error}</p>}
+
+          <div className="flex gap-3">
+            <Button onClick={handleSubmit} disabled={pending} className="flex-1">
+              {submitLabel}
+            </Button>
+            {onDelete && (
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={pending}
+                onClick={handleDelete}
+              >
+                Delete
+              </Button>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -147,18 +187,23 @@ function Slot({
   n,
   slot,
   players,
+  phase,
   onChange,
 }: {
   n: number;
   slot: SlotState;
   players: Player[];
+  phase: "pick" | "score";
   onChange: (patch: Partial<SlotState>) => void;
 }) {
   const chosen =
     slot.playerId === NEW
       ? slot.newName.trim() || "New player"
       : players.find((p) => p.id === slot.playerId)?.name;
+  // In the pick phase, the picker is open until a player is chosen; the "change"
+  // toggle lets the scorer re-open it. The score phase never shows the picker.
   const [picking, setPicking] = useState(!slot.playerId);
+  const showPicker = phase === "pick" && (picking || !slot.playerId);
 
   return (
     <div
@@ -171,7 +216,7 @@ function Slot({
         <span className="flex-1 font-medium">
           {chosen ?? <span className="text-muted-foreground">Choose a player</span>}
         </span>
-        {slot.playerId && (
+        {phase === "pick" && slot.playerId && (
           <button
             type="button"
             className="text-primary text-sm font-bold"
@@ -182,7 +227,7 @@ function Slot({
         )}
       </div>
 
-      {(picking || !slot.playerId) && (
+      {showPicker && (
         <div className="flex flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             {players.map((p) => (
@@ -227,29 +272,31 @@ function Slot({
         </div>
       )}
 
-      <div>
-        <p className="text-muted-foreground mb-1.5 text-xs">wins</p>
-        {/* 0–9 as two rows of five, large thumb targets for courtside entry. */}
-        <div className="grid grid-cols-5 gap-2">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => (
-            <button
-              key={g}
-              type="button"
-              aria-label={`${g} wins`}
-              aria-pressed={Number(slot.wins) === g}
-              className={cn(
-                "border-border font-heading h-12 rounded-lg border text-lg font-bold tabular-nums",
-                Number(slot.wins) === g
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "bg-background",
-              )}
-              onClick={() => onChange({ wins: String(g) })}
-            >
-              {g}
-            </button>
-          ))}
+      {phase === "score" && (
+        <div>
+          <p className="text-muted-foreground mb-1.5 text-xs">wins</p>
+          {/* 0–9 as two rows of five, large thumb targets for courtside entry. */}
+          <div className="grid grid-cols-5 gap-2">
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((g) => (
+              <button
+                key={g}
+                type="button"
+                aria-label={`${g} wins`}
+                aria-pressed={Number(slot.wins) === g}
+                className={cn(
+                  "border-border font-heading h-12 rounded-lg border text-lg font-bold tabular-nums",
+                  Number(slot.wins) === g
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "bg-background",
+                )}
+                onClick={() => onChange({ wins: String(g) })}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,16 +1,13 @@
 import { test } from "@playwright/test";
-import { signIn, addNewPlayer, setSlotWins, expect } from "./helpers";
+import { signIn, submitNewSession, setSlotWins, expect } from "./helpers";
 import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 import type { Page } from "@playwright/test";
 
 // Submit a session of four on-the-fly [e2e] players as the signed-in user.
 async function submitSession(page: Page, token: string) {
   await page.goto("/submit");
-  const wins = [3, 3, 1, 1];
-  for (let i = 0; i < 4; i++) {
-    await addNewPlayer(page, i + 1, `[e2e] ${token} P${i}`, wins[i]);
-  }
-  await page.getByRole("button", { name: /log results/i }).click();
+  const names = [0, 1, 2, 3].map((i) => `[e2e] ${token} P${i}`);
+  await submitNewSession(page, names, [3, 3, 1, 1]);
   await expect(page).toHaveURL(/\/$/);
 }
 

@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, addNewPlayer, expect } from "./helpers";
+import { signIn, submitNewSession, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
 // /sessions is public — reachable without authentication (behaviour 1).
@@ -27,10 +27,7 @@ test("a submitted session is listed and has a detail page", async ({
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/submit");
-  for (let i = 0; i < 4; i++) {
-    await addNewPlayer(page, i + 1, names[i], wins[i]);
-  }
-  await page.getByRole("button", { name: /log results/i }).click();
+  await submitNewSession(page, names, wins);
   await expect(page).toHaveURL(/\/$/);
 
   // The session shows on the public list with player count and games.

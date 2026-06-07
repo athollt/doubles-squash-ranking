@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, addNewPlayer, expect } from "./helpers";
+import { signIn, submitNewSession, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
 // An unknown player id returns 404 (behaviour 4).
@@ -20,10 +20,7 @@ test("a player's page is public and shows their rating trend", async ({
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/submit");
-  for (let i = 0; i < 4; i++) {
-    await addNewPlayer(page, i + 1, names[i], wins[i]);
-  }
-  await page.getByRole("button", { name: /log results/i }).click();
+  await submitNewSession(page, names, wins);
   await expect(page).toHaveURL(/\/$/);
 
   // Reach the player page by clicking their name on the ladder.
