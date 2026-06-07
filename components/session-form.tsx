@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildShareText } from "@/lib/share";
 
@@ -148,7 +149,7 @@ export function SessionForm({
       // Submit mode (ladderUrl set) → show the success screen; edit mode → redirect.
       if (ladderUrl != null) {
         setShareText(
-          buildShareText({ roster: shareRoster(), date: new Date(), ladderUrl }),
+          buildShareText({ roster: shareRoster(), ladderUrl, notes }),
         );
       } else {
         router.push("/");
@@ -274,9 +275,10 @@ export function SessionForm({
         );
       })}
 
-      <Input
+      <Textarea
         aria-label="Notes"
         placeholder="Notes (optional)"
+        rows={4}
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
       />

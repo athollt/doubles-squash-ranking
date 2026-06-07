@@ -10,7 +10,7 @@ export interface NavLink {
 export const adminLinks: NavLink[] = [
   { href: "/admin/players", label: "Players" },
   { href: "/admin/sessions", label: "Sessions" },
-  { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/settings", label: "Ratings" },
   { href: "/admin/users", label: "Users" },
 ];
 

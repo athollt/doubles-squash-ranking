@@ -114,13 +114,17 @@ The scorer taps once and picks the club group in the share sheet.
 - The feature degrades to **"build the message + one tap"**, which is genuinely all the
   app can safely do. Manage expectations: it is not a fully automatic post.
 
-## Open questions
+## Resolved at build (step 16.4 — see [ADR-009](DECISIONS.md))
 
-- Exact share-sheet behaviour on the specific Android phones the club's scorers use
-  (whether WhatsApp surfaces *groups* directly or only contacts in the first share-sheet
-  screen) — verify on a real device during build; minor.
-- Whether a richer share (score table as an image/file via `navigator.share({ files })`)
-  is wanted, or plain text + ladder link is enough. Decide at build time.
+The tap-to-share direction was built in step 16.4; the two build-time questions are settled:
+
+- **Share-sheet behaviour on real devices** — the Share button is gated on
+  `navigator.share` **and** a coarse pointer (`matchMedia("(pointer: coarse)")`), so it
+  shows only on touch-primary devices where the OS share sheet can reach the group; on
+  desktop the success screen shows "View ladder" only.
+- **Plain text, not files** — the share payload is plain text (`buildShareText` in
+  [`../../lib/share.ts`](../../lib/share.ts)): date, each player + games won, and the
+  public ladder link. No image/file share.
 
 ## Notes for the agent
 

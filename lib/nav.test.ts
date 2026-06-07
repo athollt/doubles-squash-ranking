@@ -41,7 +41,7 @@ describe("adminLinksFor", () => {
     ]);
   });
 
-  it("gives a scorer Players, Sessions and Settings but not Users", () => {
+  it("gives a scorer Players, Sessions and Ratings but not Users", () => {
     expect(adminLinksFor("SCORER").map((l) => l.href)).toEqual([
       "/admin/players",
       "/admin/sessions",

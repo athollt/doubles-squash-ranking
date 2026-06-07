@@ -8,15 +8,13 @@ describe("buildShareText", () => {
     { name: "Dave", wins: 1 },
   ];
 
-  it("lists each player with their wins, the date, and the ladder link", () => {
+  it("is just the scores line and the ladder link when there are no notes", () => {
     const text = buildShareText({
       roster,
-      date: new Date("2026-06-07T18:30:00Z"),
       ladderUrl: "https://squash.example/",
     });
     expect(text).toBe(
-      "Doubles @ BSC — 7 Jun\n\n" +
-        "Alice 3, Bob 2, Carol 2, Dave 1\n\n" +
+      "Scores: Alice 3, Bob 2, Carol 2, Dave 1\n" +
         "Ladder: https://squash.example/",
     );
   });
@@ -27,10 +25,31 @@ describe("buildShareText", () => {
         { name: "Zara", wins: 1 },
         { name: "Amy", wins: 5 },
       ],
-      date: new Date("2026-01-02T08:00:00Z"),
       ladderUrl: "https://x/",
     });
-    expect(text).toContain("Zara 1, Amy 5");
-    expect(text).toContain("2 Jan");
+    expect(text).toContain("Scores: Zara 1, Amy 5");
+  });
+
+  it("puts the notes on the first line, above the scores", () => {
+    const text = buildShareText({
+      roster,
+      ladderUrl: "https://squash.example/",
+      notes: "Great squash today guys",
+    });
+    expect(text).toBe(
+      "Great squash today guys\n" +
+        "Scores: Alice 3, Bob 2, Carol 2, Dave 1\n" +
+        "Ladder: https://squash.example/",
+    );
+  });
+
+  it("omits the notes line entirely when notes are absent or blank", () => {
+    const expected =
+      "Scores: Alice 3, Bob 2, Carol 2, Dave 1\n" +
+      "Ladder: https://squash.example/";
+    const base = { roster, ladderUrl: "https://squash.example/" };
+    expect(buildShareText(base)).toBe(expected);
+    expect(buildShareText({ ...base, notes: "" })).toBe(expected);
+    expect(buildShareText({ ...base, notes: "   " })).toBe(expected);
   });
 });

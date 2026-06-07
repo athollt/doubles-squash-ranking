@@ -183,4 +183,4 @@ Per row the engine also derives:
   `LadderSnapshot`): [`lib/recalc.ts`](../lib/recalc.ts) over a store port, with the
   Prisma-backed store in [`lib/recalc-store.ts`](../lib/recalc-store.ts).
 - Triggered by every session submit/edit/delete and by **Save & Recalculate** on the admin
-  Settings page.
+  Ratings page (`/admin/settings`).
