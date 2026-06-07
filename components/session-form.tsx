@@ -82,9 +82,12 @@ export function SessionForm({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  // Set on a successful submit when the device supports the Web Share API — drives
-  // the success/share screen (step 16.4). Null = stay on the form.
+  // Set on a successful submit (submit mode only) — drives the success screen
+  // (step 16.4). Null = stay on the form.
   const [shareText, setShareText] = useState<string | null>(null);
+  // Guards against a second navigator.share() call while one is still pending
+  // (the API throws InvalidStateError otherwise).
+  const sharing = useRef(false);
 
   const selectedIds = new Set(
     entries.filter((e) => e.playerId !== NEW).map((e) => e.playerId),
@@ -142,19 +145,10 @@ export function SessionForm({
         setError(result.error);
         return;
       }
-      // Submit mode + a share-capable device → show the share screen; otherwise
-      // redirect as before. navigator is client-only, so guard for SSR/edit.
-      const canShare =
-        ladderUrl != null &&
-        typeof navigator !== "undefined" &&
-        typeof navigator.share === "function";
-      if (canShare) {
+      // Submit mode (ladderUrl set) → show the success screen; edit mode → redirect.
+      if (ladderUrl != null) {
         setShareText(
-          buildShareText({
-            roster: shareRoster(),
-            date: new Date(),
-            ladderUrl,
-          }),
+          buildShareText({ roster: shareRoster(), date: new Date(), ladderUrl }),
         );
       } else {
         router.push("/");
@@ -173,21 +167,42 @@ export function SessionForm({
   }
 
   function handleShare() {
-    if (shareText) void navigator.share({ text: shareText });
+    if (!shareText || sharing.current) return;
+    sharing.current = true;
+    // The share sheet resolves on send and rejects on cancel — both just end the
+    // in-flight share. Swallow the rejection so a cancel isn't an unhandled error.
+    Promise.resolve(navigator.share({ text: shareText }))
+      .catch(() => {})
+      .finally(() => {
+        sharing.current = false;
+      });
   }
 
-  // Success/share screen (step 16.4) — shown after a successful submit on a
-  // share-capable device, in place of the form.
+  // Success screen (step 16.4) — shown after a successful submit, in place of the
+  // form. The Share button only appears on a touch-primary device with the Web
+  // Share API (a desktop share sheet can't reach the WhatsApp group); elsewhere
+  // the confirmation + "View ladder" still show. Computed here (client render
+  // only, never SSR) so it reflects the real device.
+  const canShare =
+    typeof navigator !== "undefined" &&
+    typeof navigator.share === "function" &&
+    typeof window !== "undefined" &&
+    window.matchMedia?.("(pointer: coarse)").matches === true;
+
   if (shareText !== null) {
     return (
       <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-4">
         <p className="font-heading text-lg font-bold">Session logged ✓</p>
-        <p className="text-muted-foreground text-sm">
-          Share the result to the club WhatsApp group.
-        </p>
-        <Button type="button" onClick={handleShare}>
-          Share to WhatsApp
-        </Button>
+        {canShare && (
+          <>
+            <p className="text-muted-foreground text-sm">
+              Share the result to the club WhatsApp group.
+            </p>
+            <Button type="button" onClick={handleShare}>
+              Share to WhatsApp
+            </Button>
+          </>
+        )}
         <Button
           type="button"
           variant="outline"

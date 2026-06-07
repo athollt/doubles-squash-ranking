@@ -119,6 +119,7 @@ describe("SessionForm single-grid select-then-score", () => {
 
 describe("SessionForm WhatsApp share (step 16.4)", () => {
   const originalShare = Object.getOwnPropertyDescriptor(navigator, "share");
+  const originalMatchMedia = window.matchMedia;
 
   beforeEach(() => {
     push.mockReset();
@@ -128,10 +129,13 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
     push.mockReset();
     if (originalShare) Object.defineProperty(navigator, "share", originalShare);
     else delete (navigator as unknown as { share?: unknown }).share;
+    window.matchMedia = originalMatchMedia;
   });
 
-  function mockShare(present: boolean) {
-    if (present) {
+  // Configure the environment: whether navigator.share exists, and whether the
+  // device is touch-primary (coarse pointer). The Share button needs both.
+  function setEnv({ share, coarse }: { share: boolean; coarse: boolean }) {
+    if (share) {
       Object.defineProperty(navigator, "share", {
         value: vi.fn(() => Promise.resolve()),
         configurable: true,
@@ -139,19 +143,15 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
     } else {
       delete (navigator as unknown as { share?: unknown }).share;
     }
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("coarse") ? coarse : false,
+      media: query,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    })) as unknown as typeof window.matchMedia;
   }
 
-  it("shows a success screen and shares when navigator.share is available", async () => {
-    mockShare(true);
-    render(
-      <SessionForm
-        players={PLAYERS}
-        submitLabel="Log Results"
-        ladderUrl="https://squash.example/"
-        onSubmit={noop}
-      />,
-    );
-
+  async function submitOneSession() {
     fireEvent.click(chip("Alice"));
     fireEvent.click(
       within(screen.getByRole("group", { name: "Alice" })).getByRole("button", {
@@ -159,20 +159,11 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
       }),
     );
     fireEvent.click(screen.getByRole("button", { name: "Log Results" }));
+    return screen.findByText(/session logged/i);
+  }
 
-    // Success screen instead of an immediate redirect.
-    const share = await screen.findByRole("button", { name: /share to whatsapp/i });
-    expect(push).not.toHaveBeenCalled();
-
-    fireEvent.click(share);
-    expect(navigator.share).toHaveBeenCalledTimes(1);
-    const text = (navigator.share as ReturnType<typeof vi.fn>).mock.calls[0][0].text;
-    expect(text).toContain("Alice 3");
-    expect(text).toContain("Ladder: https://squash.example/");
-  });
-
-  it("redirects to / when navigator.share is unavailable", async () => {
-    mockShare(false);
+  it("shows the Share button and shares on a touch device with Web Share", async () => {
+    setEnv({ share: true, coarse: true });
     render(
       <SessionForm
         players={PLAYERS}
@@ -181,17 +172,65 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
         onSubmit={noop}
       />,
     );
-    fireEvent.click(chip("Alice"));
-    fireEvent.click(screen.getByRole("button", { name: "Log Results" }));
+    await submitOneSession();
+    expect(push).not.toHaveBeenCalled();
 
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+    fireEvent.click(screen.getByRole("button", { name: /share to whatsapp/i }));
+    expect(navigator.share).toHaveBeenCalledTimes(1);
+    const text = (navigator.share as ReturnType<typeof vi.fn>).mock.calls[0][0].text;
+    expect(text).toContain("Alice 3");
+    expect(text).toContain("Ladder: https://squash.example/");
+  });
+
+  it("shows the success screen WITHOUT a Share button on desktop (fine pointer)", async () => {
+    // Desktop browsers expose navigator.share but the share sheet can't reach the
+    // WhatsApp group — so the button is hidden; the confirmation still shows.
+    setEnv({ share: true, coarse: false });
+    render(
+      <SessionForm
+        players={PLAYERS}
+        submitLabel="Log Results"
+        ladderUrl="https://squash.example/"
+        onSubmit={noop}
+      />,
+    );
+    await submitOneSession();
     expect(
       screen.queryByRole("button", { name: /share to whatsapp/i }),
     ).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /view ladder/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not throw if Share is tapped twice while a share is pending", async () => {
+    // Regression: navigator.share throws InvalidStateError if called again before
+    // the previous call resolves. The handler must guard against that.
+    let resolveShare: () => void = () => {};
+    setEnv({ share: true, coarse: true });
+    Object.defineProperty(navigator, "share", {
+      value: vi.fn(() => new Promise<void>((r) => (resolveShare = r))),
+      configurable: true,
+    });
+    render(
+      <SessionForm
+        players={PLAYERS}
+        submitLabel="Log Results"
+        ladderUrl="https://squash.example/"
+        onSubmit={noop}
+      />,
+    );
+    await submitOneSession();
+
+    const share = screen.getByRole("button", { name: /share to whatsapp/i });
+    fireEvent.click(share);
+    fireEvent.click(share); // second tap before the first resolves
+    expect(navigator.share).toHaveBeenCalledTimes(1);
+    resolveShare();
   });
 
   it("never shows the share screen in edit mode (no ladderUrl)", async () => {
-    mockShare(true);
+    setEnv({ share: true, coarse: true });
     render(
       <SessionForm
         players={PLAYERS}
@@ -204,8 +243,6 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
-    expect(
-      screen.queryByRole("button", { name: /share to whatsapp/i }),
-    ).toBeNull();
+    expect(screen.queryByText(/session logged/i)).toBeNull();
   });
 });

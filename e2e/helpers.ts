@@ -58,8 +58,9 @@ export async function setPlayerWins(
 }
 
 // Submit a full session of N on-the-fly new players via the single-grid form:
-// add + name each, set their wins, then Log Results. Assumes the caller is on
-// /submit. `names.length` must equal `wins.length`.
+// add + name each, set their wins, then Log Results. A successful submit lands on
+// the "Session logged ✓" success screen (step 16.4); this clicks "View ladder" to
+// reach the ladder. Assumes the caller is on /submit; `names.length` == `wins.length`.
 export async function submitNewSession(
   page: Page,
   names: string[],
@@ -70,6 +71,7 @@ export async function submitNewSession(
     await setPlayerWins(page, names[i], wins[i]);
   }
   await page.getByRole("button", { name: /log results/i }).click();
+  await page.getByRole("button", { name: /view ladder/i }).click();
 }
 
 export { expect };

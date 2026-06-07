@@ -1296,11 +1296,27 @@ The two-phase model was replaced with a single screen, per testing feedback:
   then "Name wins, …" in roster order, then the public ladder link. UTC date
   (matches `formatSessionDate`).
 - `components/session-form.tsx`: new optional `ladderUrl` prop (submit mode only).
-  On success, if `ladderUrl` is set **and** `navigator.share` is a function, render
-  the share screen; otherwise redirect to `/` as before. SSR-guarded
-  (`typeof navigator !== "undefined"`).
+  On success, if `ladderUrl` is set the success screen shows; the **Share button**
+  appears only on a touch-primary device with the Web Share API (see the fix
+  below). The edit page omits `ladderUrl`, so editing still redirects to `/`.
 - `app/submit/page.tsx` passes `ladderUrl` from `AUTH_URL` (falling back to the
-  prod URL). The edit page does **not** pass it, so editing still always redirects.
+  prod URL).
+
+### Fix (2026-06-07, same day — testing on a laptop)
+
+Two bugs the first cut shipped, found immediately on desktop:
+
+- **Share button showed on desktop.** The detection assumed desktop browsers lack
+  `navigator.share` — but macOS Safari/Chrome expose it (only Playwright's headless
+  Chromium doesn't, which is why tests passed). The desktop share sheet offers
+  Mail/Messages, not the WhatsApp group. Fix: gate the **Share button** on
+  `navigator.share` **and** `matchMedia("(pointer: coarse)")` (touch-primary). On
+  desktop the success screen still shows, with **only** "View ladder". Submit no
+  longer auto-redirects — the success screen always shows on submit; "View ladder"
+  leaves it.
+- **`InvalidStateError: An earlier share has not yet completed`.** Tapping Share
+  while a share was pending threw. Fix: `handleShare` guards with a `sharing` ref
+  (ignores re-entry) and swallows the cancel rejection.
 
 ### Tests
 
@@ -1308,10 +1324,11 @@ The two-phase model was replaced with a single screen, per testing feedback:
 - `components/session-form.test.tsx` — share screen shown + `navigator.share` called
   with the built text when supported; redirect when `navigator.share` absent; never
   shown in edit mode.
-- `e2e/submit.spec.ts` — new test stubs `navigator.share` via `addInitScript`,
-  asserts the success screen, that Share calls `navigator.share` with the result
-  text, and that "View ladder" goes to `/`. Existing submit/edit journeys (no share
-  support in Chromium) keep redirecting unchanged.
+- `e2e/submit.spec.ts` — touch test stubs `navigator.share` + a coarse pointer via
+  `addInitScript`, asserts the success screen, the share call payload, and "View
+  ladder"; a desktop test asserts the success screen shows **without** a Share
+  button. `submitNewSession` clicks "View ladder" after Log Results (the success
+  screen now always shows).
 
 ### Notes
 
@@ -1324,8 +1341,9 @@ The two-phase model was replaced with a single screen, per testing feedback:
 ### Validation
 
 - `npm run build` — ✅
-- `npm run test` — ✅ 133 unit tests pass (+5: share builder + 3 share-screen + reorg)
+- `npm run test` — ✅ 134 unit tests pass (share builder + share-screen incl.
+  desktop-hides-button + double-tap-guard)
 - `npm run lint` — ✅ clean
-- `npm run test:e2e` — ✅ 40/40; teardown left no `[e2e]` data
+- `npm run test:e2e` — ✅ 41/41; teardown left no `[e2e]` data
 
 ---
