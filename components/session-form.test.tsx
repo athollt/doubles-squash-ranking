@@ -1,7 +1,8 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { vi } from "vitest";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 import { SessionForm, type FormSlot } from "./session-form";
 
@@ -113,5 +114,98 @@ describe("SessionForm single-grid select-then-score", () => {
       within(block).getByRole("button", { name: "3 wins" }),
     ).toHaveAttribute("aria-pressed", "true");
     expect(chip("Alice")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("SessionForm WhatsApp share (step 16.4)", () => {
+  const originalShare = Object.getOwnPropertyDescriptor(navigator, "share");
+
+  beforeEach(() => {
+    push.mockReset();
+  });
+
+  afterEach(() => {
+    push.mockReset();
+    if (originalShare) Object.defineProperty(navigator, "share", originalShare);
+    else delete (navigator as unknown as { share?: unknown }).share;
+  });
+
+  function mockShare(present: boolean) {
+    if (present) {
+      Object.defineProperty(navigator, "share", {
+        value: vi.fn(() => Promise.resolve()),
+        configurable: true,
+      });
+    } else {
+      delete (navigator as unknown as { share?: unknown }).share;
+    }
+  }
+
+  it("shows a success screen and shares when navigator.share is available", async () => {
+    mockShare(true);
+    render(
+      <SessionForm
+        players={PLAYERS}
+        submitLabel="Log Results"
+        ladderUrl="https://squash.example/"
+        onSubmit={noop}
+      />,
+    );
+
+    fireEvent.click(chip("Alice"));
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Alice" })).getByRole("button", {
+        name: "3 wins",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Log Results" }));
+
+    // Success screen instead of an immediate redirect.
+    const share = await screen.findByRole("button", { name: /share to whatsapp/i });
+    expect(push).not.toHaveBeenCalled();
+
+    fireEvent.click(share);
+    expect(navigator.share).toHaveBeenCalledTimes(1);
+    const text = (navigator.share as ReturnType<typeof vi.fn>).mock.calls[0][0].text;
+    expect(text).toContain("Alice 3");
+    expect(text).toContain("Ladder: https://squash.example/");
+  });
+
+  it("redirects to / when navigator.share is unavailable", async () => {
+    mockShare(false);
+    render(
+      <SessionForm
+        players={PLAYERS}
+        submitLabel="Log Results"
+        ladderUrl="https://squash.example/"
+        onSubmit={noop}
+      />,
+    );
+    fireEvent.click(chip("Alice"));
+    fireEvent.click(screen.getByRole("button", { name: "Log Results" }));
+
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+    expect(
+      screen.queryByRole("button", { name: /share to whatsapp/i }),
+    ).toBeNull();
+  });
+
+  it("never shows the share screen in edit mode (no ladderUrl)", async () => {
+    mockShare(true);
+    render(
+      <SessionForm
+        players={PLAYERS}
+        initialSlots={[{ playerId: "p1", newName: "", wins: "3" }]}
+        submitLabel="Save"
+        onSubmit={noop}
+        onDelete={noop}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/"));
+    expect(
+      screen.queryByRole("button", { name: /share to whatsapp/i }),
+    ).toBeNull();
   });
 });

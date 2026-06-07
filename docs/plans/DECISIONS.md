@@ -141,3 +141,16 @@ Deployment (14.4) depends on 13.5 so it ships the finished design. Prototype cod
 - *Fix the skills up front* — rejected: would encode an unvalidated convention; 13.6 codifies what actually worked.
 
 **Consequence**: The redesign is five tracked steps instead of one, with a clear decision→build boundary and no speculative component extraction. The cost is more plan ceremony and two prototype phases before any production code changes. The "refactor for consistency" work is reframed as 13.4 + 13.5 (implementation of a decided design), not an end-of-plan cleanup. The skill fix (13.6) makes the design-system-first convention the default for future features, so this inconsistency should not recur. A future reader asking "why is the redesign five steps / why CI before UX?" finds the answer here.
+
+---
+
+## ADR-009: WhatsApp results via the Web Share API (tap-to-share), not the Business API or a bridge
+
+**Date**: 2026-06-07
+**Status**: accepted
+
+**Context**: Testing feedback asked for session results to land in the club's **WhatsApp group** cheaply, ideally automatically. The research ([`RESEARCH-whatsapp-notifications.md`](RESEARCH-whatsapp-notifications.md)) found no cheap *automated* post-to-group path exists: the official Cloud API sends 1:1 template messages and cannot post to a normal group (the 2025 Groups API caps at 8 participants and needs a Business account + provider); `wa.me` pre-fill is 1:1 only; and unofficial bridges (whatsapp-web.js, Baileys, …) are a flagrant ToS violation that gets the account banned in ~2–8 weeks. The only zero-cost, zero-infra, ToS-clean way to reach a group is to have the human post it.
+
+**Decision**: After a successful **new** session submit, on devices that support the Web Share API (`navigator.share`), show a success screen with a **Share to WhatsApp** button. The button calls `navigator.share({ text })` with a plain-text summary (date, each player + games won, public ladder link); the OS share sheet then lets the scorer pick the club group. Feature-detected with **no fallback** — where `navigator.share` is absent (most desktop browsers), submit redirects to `/` exactly as before. The ladder URL is passed into the form from the server page (reusing `AUTH_URL`); the share text is built by a pure helper (`lib/share.ts`). The edit flow is unchanged. No WhatsApp Business account, BSP, per-message fee, credentials, or new infrastructure.
+
+**Consequence**: Results reach the group with one tap and the message is pre-written, but the post is **not fully automatic** — the scorer picks the group in the share sheet (the only ToS-clean option). Cost and infra are R0. If WhatsApp ever ships a usable group-broadcast API for normal groups, revisit. Rationale and the rejected directions live in the research doc.

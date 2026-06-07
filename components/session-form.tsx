@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { buildShareText } from "@/lib/share";
 
 export type Player = { id: string; name: string };
 
@@ -43,6 +44,10 @@ interface Props {
   onSubmit: (slots: FormSlot[], notes: string) => Promise<SessionFormResult>;
   // Optional delete (edit mode). Receives nothing; parent binds the id.
   onDelete?: () => Promise<SessionFormResult>;
+  // Submit mode only: the public ladder URL. When present (and the device
+  // supports the Web Share API), a successful submit shows a share screen instead
+  // of redirecting (step 16.4). Edit mode omits it, so it always redirects.
+  ladderUrl?: string;
 }
 
 // Courtside doubles capture (step 16.2, rev. single-grid): one "Choose players"
@@ -59,6 +64,7 @@ export function SessionForm({
   submitLabel,
   onSubmit,
   onDelete,
+  ladderUrl,
 }: Props) {
   const router = useRouter();
   const [entries, setEntries] = useState<Entry[]>(() =>
@@ -76,6 +82,9 @@ export function SessionForm({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Set on a successful submit when the device supports the Web Share API — drives
+  // the success/share screen (step 16.4). Null = stay on the form.
+  const [shareText, setShareText] = useState<string | null>(null);
 
   const selectedIds = new Set(
     entries.filter((e) => e.playerId !== NEW).map((e) => e.playerId),
@@ -114,12 +123,42 @@ export function SessionForm({
       }));
   }
 
+  // Display roster (name + wins) for the share text, from current entries.
+  function shareRoster() {
+    return toPayload().map((e) => ({
+      name:
+        e.playerId === undefined
+          ? (e.newName ?? "")
+          : (players.find((p) => p.id === e.playerId)?.name ?? ""),
+      wins: e.wins,
+    }));
+  }
+
   function handleSubmit() {
     setError(null);
     startTransition(async () => {
       const result = await onSubmit(toPayload(), notes);
-      if (result.ok) router.push("/");
-      else setError(result.error);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // Submit mode + a share-capable device → show the share screen; otherwise
+      // redirect as before. navigator is client-only, so guard for SSR/edit.
+      const canShare =
+        ladderUrl != null &&
+        typeof navigator !== "undefined" &&
+        typeof navigator.share === "function";
+      if (canShare) {
+        setShareText(
+          buildShareText({
+            roster: shareRoster(),
+            date: new Date(),
+            ladderUrl,
+          }),
+        );
+      } else {
+        router.push("/");
+      }
     });
   }
 
@@ -131,6 +170,33 @@ export function SessionForm({
       if (result.ok) router.push("/");
       else setError(result.error);
     });
+  }
+
+  function handleShare() {
+    if (shareText) void navigator.share({ text: shareText });
+  }
+
+  // Success/share screen (step 16.4) — shown after a successful submit on a
+  // share-capable device, in place of the form.
+  if (shareText !== null) {
+    return (
+      <div className="bg-card border-border flex flex-col gap-4 rounded-xl border p-4">
+        <p className="font-heading text-lg font-bold">Session logged ✓</p>
+        <p className="text-muted-foreground text-sm">
+          Share the result to the club WhatsApp group.
+        </p>
+        <Button type="button" onClick={handleShare}>
+          Share to WhatsApp
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push("/")}
+        >
+          View ladder →
+        </Button>
+      </div>
+    );
   }
 
   // Stable 1-based ordinal for each on-the-fly entry, by creation order — so an

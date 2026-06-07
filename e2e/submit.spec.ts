@@ -44,3 +44,42 @@ test("an unauthenticated user cannot reach /submit", async ({ page }) => {
   await page.goto("/submit");
   await expect(page).toHaveURL(/\/signin/);
 });
+
+// Step 16.4: on a share-capable device, a successful submit shows the success
+// screen and the Share button calls navigator.share. Playwright Chromium has no
+// real Web Share API, so stub it (and capture the shared text). The native sheet
+// itself isn't driveable — we assert up to the navigator.share call.
+test("a share-capable device shows the success screen and shares the result", async ({
+  page,
+}) => {
+  await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
+  await page.addInitScript(() => {
+    (window as unknown as { __shared: string[] }).__shared = [];
+    // @ts-expect-error - defining the API jsdom/Chromium doesn't provide
+    navigator.share = (data: { text: string }) => {
+      (window as unknown as { __shared: string[] }).__shared.push(data.text);
+      return Promise.resolve();
+    };
+  });
+  await page.goto("/submit");
+
+  const token = `share-${Date.now()}`;
+  await fillFourNewPlayers(page, token, [3, 3, 1, 1]);
+  await page.getByRole("button", { name: /log results/i }).click();
+
+  // Success screen, not a redirect.
+  await expect(page.getByText(/session logged/i)).toBeVisible();
+  await expect(page).toHaveURL(/\/submit/);
+
+  await page.getByRole("button", { name: /share to whatsapp/i }).click();
+  const shared = await page.evaluate(
+    () => (window as unknown as { __shared: string[] }).__shared,
+  );
+  expect(shared).toHaveLength(1);
+  expect(shared[0]).toContain(`[e2e] ${token} P0 3`);
+  expect(shared[0]).toContain("Ladder:");
+
+  // "View ladder" leaves the success screen for the ladder.
+  await page.getByRole("button", { name: /view ladder/i }).click();
+  await expect(page).toHaveURL(/\/$/);
+});

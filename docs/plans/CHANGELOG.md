@@ -1280,3 +1280,52 @@ The two-phase model was replaced with a single screen, per testing feedback:
 - `npm run test:e2e` — ✅ 39/39
 
 ---
+
+## Step 16.4 — WhatsApp share on submit (Web Share API)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- After a successful **new** session submit, on devices that support the Web Share
+  API the form now shows a **success screen** ("Session logged ✓" + **Share to
+  WhatsApp** + **View ladder →**) instead of redirecting. Tapping Share calls
+  `navigator.share({ text })` with a plain-text result summary; the OS share sheet
+  lets the scorer pick the club WhatsApp group.
+- New pure helper `lib/share.ts` (`buildShareText`) — "Doubles @ BSC — 7 Jun",
+  then "Name wins, …" in roster order, then the public ladder link. UTC date
+  (matches `formatSessionDate`).
+- `components/session-form.tsx`: new optional `ladderUrl` prop (submit mode only).
+  On success, if `ladderUrl` is set **and** `navigator.share` is a function, render
+  the share screen; otherwise redirect to `/` as before. SSR-guarded
+  (`typeof navigator !== "undefined"`).
+- `app/submit/page.tsx` passes `ladderUrl` from `AUTH_URL` (falling back to the
+  prod URL). The edit page does **not** pass it, so editing still always redirects.
+
+### Tests
+
+- `lib/share.test.ts` — the builder's format, order, date, and trailing link.
+- `components/session-form.test.tsx` — share screen shown + `navigator.share` called
+  with the built text when supported; redirect when `navigator.share` absent; never
+  shown in edit mode.
+- `e2e/submit.spec.ts` — new test stubs `navigator.share` via `addInitScript`,
+  asserts the success screen, that Share calls `navigator.share` with the result
+  text, and that "View ladder" goes to `/`. Existing submit/edit journeys (no share
+  support in Chromium) keep redirecting unchanged.
+
+### Notes
+
+- Per `RESEARCH-whatsapp-notifications.md` + ADR-009: tap-to-share is the only
+  zero-cost, ToS-clean way to reach a group. No Business API, no bridge, no fallback
+  (feature-detected). The post is one tap, not fully automatic.
+- Surgical: the server action, validation, and recalculation are untouched; the
+  `FormSlot` payload and edit-mode contract are unchanged.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 133 unit tests pass (+5: share builder + 3 share-screen + reorg)
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 40/40; teardown left no `[e2e]` data
+
+---
