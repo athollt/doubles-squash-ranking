@@ -1057,3 +1057,45 @@ the manual merge to `main`.
   ("No access") — the production half of the OAuth proof. ✅
 
 ---
+
+## Step 15 — Update documentation
+
+**Date**: 2026-06-07
+
+Closed the documentation loop now the app is delivered and live. All content validated from
+source code, not the PRD/plan (AGENTS.md §8).
+
+### Delivered
+
+- **`docs/RATING-ALGORITHM.md`** (new) — technical reference for the rating algorithm, every
+  formula validated from [`lib/rating-engine.ts`](lib/rating-engine.ts) and cross-checked
+  against SPEC §5–7. Documents all 15 settings with their seeded defaults and notes they are
+  admin-configurable. Flags that the **player-facing, in-app** version is distilled from this
+  doc in step 16 (this stays the canonical source).
+- **`OVERVIEW.md`** (new, repo root) — architecture map (the `/update-docs` repo pattern,
+  adapted — no LifeStack central docs): tech stack, pure-core/thin-shell pattern, directory
+  map, key `lib/` modules, data model, auth model, conventions, and domain language.
+- **`README.md`** — full rewrite, newcomer/run focused, no architecture overlap with
+  OVERVIEW. Fixed stale facts: title, `AUTH_SECRET` (was `NEXTAUTH_SECRET`), dev port 3001,
+  `prisma migrate dev` (was `db push` "no tables yet"), Node 22, `--webpack` build note, live
+  URL, demo-seed + E2E notes. Links out to OVERVIEW / RATING-ALGORITHM / DEPLOYMENT / plans.
+- **PRD** — status `ready-for-plan` → **`delivered`** (with date + live URL). (The step
+  assumed `draft`; actual label was `ready-for-plan`.)
+
+### Deviations / notes
+
+- **README ↔ OVERVIEW split** (per the grill): README = purpose/run/links; OVERVIEW =
+  architecture/internals. No duplication beyond one-line pointers.
+- **Friendly algorithm explainer deferred to step 16** (in-app copy), not written as a doc
+  here — the technical reference is the single source it derives from.
+- **DECISIONS.md** — no `Promote: candidate` entries to promote (confirmed); nothing changed.
+
+### Validation
+
+- All relative links in README / OVERVIEW / RATING-ALGORITHM (and DEPLOYMENT) resolve to
+  existing paths — checked.
+- Setup steps verified against `package.json` scripts, `prisma.config.ts`, `docker-compose`,
+  and the migrations dir (migrate-not-push; port 3001; seed via config).
+- Algorithm formulas + the 15 settings reconciled line-by-line with `lib/rating-engine.ts`.
+
+---

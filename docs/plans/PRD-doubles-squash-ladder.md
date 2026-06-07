@@ -1,7 +1,7 @@
 # PRD — BSC Doubles Squash Ladder
 
 *Date: 2026-06-05*
-*Status: ready-for-plan*
+*Status: delivered (2026-06-07) — live at https://squash.tomlinson.co.za*
 *Repo: https://github.com/athollt/doubles-squash-ranking*
 
 ---
