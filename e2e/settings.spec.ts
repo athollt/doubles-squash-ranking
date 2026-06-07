@@ -7,7 +7,7 @@ test("settings are read-only by default, with an Edit button for an admin", asyn
 }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   await page.goto("/admin/settings");
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ratings", exact: true })).toBeVisible();
   // The rating-algorithm explainer is shown above the settings (step 16.3).
   await expect(
     page.getByRole("heading", { name: /how ratings work/i }),
@@ -46,7 +46,7 @@ test("an admin can edit a setting and save & recalculate", async ({ page }) => {
 test("a scorer can view settings but has no Edit button", async ({ page }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/admin/settings");
-  await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Ratings", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
   await expect(page.getByRole("spinbutton", { name: "KFactor" })).toHaveCount(0);
 });

@@ -182,6 +182,34 @@ describe("SessionForm WhatsApp share (step 16.4)", () => {
     expect(text).toContain("Ladder: https://squash.example/");
   });
 
+  it("includes the entered notes in the shared text", async () => {
+    setEnv({ share: true, coarse: true });
+    render(
+      <SessionForm
+        players={PLAYERS}
+        submitLabel="Log Results"
+        ladderUrl="https://squash.example/"
+        onSubmit={noop}
+      />,
+    );
+    fireEvent.click(chip("Alice"));
+    fireEvent.click(
+      within(screen.getByRole("group", { name: "Alice" })).getByRole("button", {
+        name: "3 wins",
+      }),
+    );
+    fireEvent.change(screen.getByLabelText("Notes"), {
+      target: { value: "Great squash today guys" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Log Results" }));
+    await screen.findByText(/session logged/i);
+
+    fireEvent.click(screen.getByRole("button", { name: /share to whatsapp/i }));
+    const text = (navigator.share as ReturnType<typeof vi.fn>).mock.calls[0][0]
+      .text;
+    expect(text).toContain("Great squash today guys");
+  });
+
   it("shows the success screen WITHOUT a Share button on desktop (fine pointer)", async () => {
     // Desktop browsers expose navigator.share but the share sheet can't reach the
     // WhatsApp group — so the button is hidden; the confirmation still shows.

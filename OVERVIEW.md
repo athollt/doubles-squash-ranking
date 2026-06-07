@@ -82,7 +82,7 @@ the 15 tunable algorithm parameters. `SessionPlayer` + `RatingsLog` cascade-dele
   `SCORER`) is attached to the JWT.
 - [`proxy.ts`](proxy.ts) gates every request via the pure
   [`authorizeRoute`](lib/auth-rules.ts): public routes open; `/submit` and most `/admin/*`
-  (Players, Sessions, Settings) require sign-in; only `/admin/users` requires `ADMIN`
+  (Players, Sessions, Ratings) require sign-in; only `/admin/users` requires `ADMIN`
   ([ADR-010](docs/plans/DECISIONS.md)). Server Actions **re-check** the role — settings-edit
   and user management stay ADMIN-only, and a scorer may edit only their own sessions
   (defence in depth).

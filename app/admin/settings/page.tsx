@@ -5,7 +5,7 @@ import { SettingsClient } from "./settings-client";
 import { RatingExplainer } from "./rating-explainer";
 
 export const metadata = {
-  title: "Settings — Doubles Squash @ BSC",
+  title: "Ratings — Doubles Squash @ BSC",
 };
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function AdminSettingsPage() {
   });
 
   return (
-    <PageShell title="Settings">
+    <PageShell title="Ratings">
       <div className="space-y-6">
         <RatingExplainer />
         <SettingsClient settings={settings} canEdit={canEdit} />

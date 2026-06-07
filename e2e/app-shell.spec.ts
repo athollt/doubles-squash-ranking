@@ -30,14 +30,14 @@ test("admin menu links to every management page incl. Users", async ({ page }) =
   await expect(bar.getByRole("button", { name: "Account" })).toBeVisible();
 
   await bar.getByRole("button", { name: "Menu" }).click();
-  for (const label of ["Players", "Sessions", "Settings", "Users"]) {
+  for (const label of ["Players", "Sessions", "Ratings", "Users"]) {
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
-  await page.getByRole("menuitem", { name: "Settings" }).click();
+  await page.getByRole("menuitem", { name: "Ratings" }).click();
   await expect(page).toHaveURL(/\/admin\/settings/);
 });
 
-test("scorer menu shows Players/Sessions/Settings but not Users", async ({
+test("scorer menu shows Players/Sessions/Ratings but not Users", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
@@ -49,9 +49,9 @@ test("scorer menu shows Players/Sessions/Settings but not Users", async ({
   const bar = page.getByRole("banner");
   await expect(bar.getByRole("button", { name: "Account" })).toBeVisible();
 
-  // The scorer has the Menu, with Players/Sessions/Settings but no Users.
+  // The scorer has the Menu, with Players/Sessions/Ratings but no Users.
   await bar.getByRole("button", { name: "Menu" }).click();
-  for (const label of ["Players", "Sessions", "Settings"]) {
+  for (const label of ["Players", "Sessions", "Ratings"]) {
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
   await expect(page.getByRole("menuitem", { name: "Users" })).toHaveCount(0);
