@@ -39,7 +39,7 @@ export default async function AdminSessionsPage() {
               <TableHead>Date</TableHead>
               <TableHead>Submitter</TableHead>
               <TableHead>Players</TableHead>
-              <TableHead>Total wins</TableHead>
+              <TableHead>Wins</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
