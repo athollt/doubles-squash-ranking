@@ -30,14 +30,27 @@ describe("authorizeRoute", () => {
     expect(authorizeRoute("/submit", { role: "SCORER" })).toBe("allow");
   });
 
-  it("denies an authenticated scorer access to an admin route", () => {
-    expect(authorizeRoute("/admin/players", { role: "SCORER" })).toBe(
+  it("allows a scorer into Players, Sessions and Settings admin screens", () => {
+    expect(authorizeRoute("/admin/players", { role: "SCORER" })).toBe("allow");
+    expect(authorizeRoute("/admin/sessions", { role: "SCORER" })).toBe("allow");
+    expect(authorizeRoute("/admin/settings", { role: "SCORER" })).toBe("allow");
+  });
+
+  it("denies a scorer the admin Users screen", () => {
+    expect(authorizeRoute("/admin/users", { role: "SCORER" })).toBe(
       "unauthorised",
     );
   });
 
-  it("allows an authenticated admin to access an admin route", () => {
+  it("redirects an unauthenticated visitor away from an admin screen to sign-in", () => {
+    expect(authorizeRoute("/admin/players", null)).toBe("signin");
+    expect(authorizeRoute("/admin/users", null)).toBe("signin");
+  });
+
+  it("allows an admin into every admin screen", () => {
     expect(authorizeRoute("/admin/players", { role: "ADMIN" })).toBe("allow");
+    expect(authorizeRoute("/admin/users", { role: "ADMIN" })).toBe("allow");
+    expect(authorizeRoute("/admin/settings", { role: "ADMIN" })).toBe("allow");
   });
 
   it("allows the auth API routes through without a session", () => {

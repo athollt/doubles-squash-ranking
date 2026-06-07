@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { adminLinks, navLinksFor } from "@/lib/nav";
+import { adminLinks, adminLinksFor, navLinksFor } from "@/lib/nav";
 
 function hrefs(role: "ADMIN" | "SCORER" | undefined): string[] {
   return navLinksFor(role).map((l) => l.href);
@@ -27,6 +27,25 @@ describe("adminLinks", () => {
       "/admin/sessions",
       "/admin/settings",
       "/admin/users",
+    ]);
+  });
+});
+
+describe("adminLinksFor", () => {
+  it("gives an admin every admin page", () => {
+    expect(adminLinksFor("ADMIN").map((l) => l.href)).toEqual([
+      "/admin/players",
+      "/admin/sessions",
+      "/admin/settings",
+      "/admin/users",
+    ]);
+  });
+
+  it("gives a scorer Players, Sessions and Settings but not Users", () => {
+    expect(adminLinksFor("SCORER").map((l) => l.href)).toEqual([
+      "/admin/players",
+      "/admin/sessions",
+      "/admin/settings",
     ]);
   });
 });

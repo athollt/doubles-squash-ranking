@@ -12,16 +12,32 @@ test("a non-allowlisted account is denied at sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/signin/);
 });
 
-// Step 04 — a scorer is authenticated but lacks admin role.
-test("a scorer is redirected to /unauthorised from an admin route", async ({
+// A scorer is authenticated but lacks admin role — Users stays ADMIN-only
+// (step 16.x: Players/Sessions/Settings opened to scorers, Users did not).
+test("a scorer is redirected to /unauthorised from the Users admin screen", async ({
+  page,
+}) => {
+  await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
+  await page.goto("/admin/users");
+  await expect(page).toHaveURL(/\/unauthorised/);
+});
+
+// A scorer may now reach the Players admin screen and edit it (step 16.x).
+test("a scorer can reach and add a player on the players admin screen", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto("/admin/players");
-  await expect(page).toHaveURL(/\/unauthorised/);
+  await expect(page.getByRole("heading", { name: "Players" })).toBeVisible();
+
+  const name = `[e2e] scorer-add ${Date.now()}`;
+  await page.getByRole("button", { name: "Add Player" }).click();
+  await page.getByPlaceholder("Player name").fill(name);
+  await page.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(page.getByRole("group", { name })).toBeVisible();
 });
 
-// Step 04/05 — an admin reaches the admin players page.
+// An admin reaches the admin players page.
 test("an admin can reach the players admin page", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   await page.goto("/admin/players");

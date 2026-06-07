@@ -2,11 +2,11 @@ import { test } from "@playwright/test";
 import { signIn, expect } from "./helpers";
 import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 
-// App shell after the 16.1 polish: primary links (Ladder/Sessions/Submit) live in
-// the bottom tab bar (<nav aria-label="Primary">); the top bar (<header> / banner)
-// carries identity + account. Signed in, the account control is the avatar
-// "Account" button — a menu holding Sign out (step 16.1 follow-up: mobile-app
-// pattern, no standalone Sign out button). Admins also get an "Admin menu" hamburger.
+// App shell: primary links (Ladder/Sessions/Submit) live in the bottom tab bar
+// (<nav aria-label="Primary">); the top bar (<header> / banner) carries identity +
+// account. Signed in, the account control is the avatar "Account" button — a menu
+// holding Sign out. Any signed-in user also gets a "Menu" hamburger of management
+// pages: scorers see Players/Sessions/Settings; admins also see Users (step 16.x).
 
 test("logged-out shell shows public tabs and Sign in, not the account menu", async ({
   page,
@@ -21,16 +21,15 @@ test("logged-out shell shows public tabs and Sign in, not the account menu", asy
   // Header "Sign in" is now a button (→ Google directly, step 16.1).
   await expect(bar.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(bar.getByRole("button", { name: "Account" })).toHaveCount(0);
-  await expect(bar.getByRole("button", { name: "Admin menu" })).toHaveCount(0);
+  await expect(bar.getByRole("button", { name: "Menu" })).toHaveCount(0);
 });
 
-test("admin Admin menu links to every admin page", async ({ page }) => {
+test("admin menu links to every management page incl. Users", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   const bar = page.getByRole("banner");
   await expect(bar.getByRole("button", { name: "Account" })).toBeVisible();
 
-  // The hamburger menu is the only navigation to settings/sessions/users.
-  await bar.getByRole("button", { name: "Admin menu" }).click();
+  await bar.getByRole("button", { name: "Menu" }).click();
   for (const label of ["Players", "Sessions", "Settings", "Users"]) {
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
@@ -38,7 +37,7 @@ test("admin Admin menu links to every admin page", async ({ page }) => {
   await expect(page).toHaveURL(/\/admin\/settings/);
 });
 
-test("scorer shell shows Submit tab + account menu, but no Admin menu", async ({
+test("scorer menu shows Players/Sessions/Settings but not Users", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
@@ -49,7 +48,13 @@ test("scorer shell shows Submit tab + account menu, but no Admin menu", async ({
   ).toBeVisible();
   const bar = page.getByRole("banner");
   await expect(bar.getByRole("button", { name: "Account" })).toBeVisible();
-  await expect(bar.getByRole("button", { name: "Admin menu" })).toHaveCount(0);
+
+  // The scorer has the Menu, with Players/Sessions/Settings but no Users.
+  await bar.getByRole("button", { name: "Menu" }).click();
+  for (const label of ["Players", "Sessions", "Settings"]) {
+    await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
+  }
+  await expect(page.getByRole("menuitem", { name: "Users" })).toHaveCount(0);
 
   // Sign out lives inside the account menu (works for scorers too).
   await bar.getByRole("button", { name: "Account" }).click();

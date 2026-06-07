@@ -23,13 +23,20 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
+// Admin screens a non-admin (scorer) may NOT reach. Players, Sessions and
+// Settings are open to any signed-in user (step 16.x); Users — which manages
+// login accounts and roles — stays ADMIN-only.
+function isAdminOnly(pathname: string): boolean {
+  return pathname === "/admin/users" || pathname.startsWith("/admin/users/");
+}
+
 export function authorizeRoute(
   pathname: string,
   auth: RouteAuth | null,
 ): RouteDecision {
   if (isPublicRoute(pathname)) return "allow";
   if (!auth) return "signin";
-  if (pathname.startsWith("/admin") && auth.role !== "ADMIN") {
+  if (isAdminOnly(pathname) && auth.role !== "ADMIN") {
     return "unauthorised";
   }
   return "allow";

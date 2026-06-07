@@ -1358,3 +1358,50 @@ Two bugs the first cut shipped, found immediately on desktop:
 - `npm run test:e2e` — ✅ 41/41; teardown left no `[e2e]` data
 
 ---
+
+## Role access — scorers manage Players & Sessions, view Settings (ADR-010)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- **Route gate** (`lib/auth-rules.ts`): only `/admin/users` is ADMIN-only now;
+  `/admin/players`, `/admin/sessions`, `/admin/settings` are open to any signed-in
+  user. New `isAdminOnly()` replaces the blanket `/admin` ADMIN check.
+- **Menu** (`lib/nav.ts` `adminLinksFor(role)` + `components/admin-menu.tsx` +
+  `site-header.tsx`): the hamburger now shows for **any** signed-in user. Scorers
+  see Players / Sessions / Settings; admins also see Users. Trigger relabelled
+  "Admin menu" → "Menu" (it's no longer admin-only).
+- **Players** (`app/admin/players/actions.ts`): `requireAdmin` → `requireUser` —
+  scorers can add/rename/deactivate players.
+- **Sessions**: unchanged — `canMutateSession` still lets a scorer edit/delete only
+  their **own** sessions (others → `/unauthorised`).
+- **Settings** (`app/admin/settings/{page,settings-client}.tsx`): read-only by
+  default for everyone. An ADMIN gets an **Edit** button → inputs + Save & Recalculate
+  (+ Cancel); scorers never see Edit. The save action still re-checks
+  `role === "ADMIN"` server-side.
+
+### Tests
+
+- Unit: `auth-rules.test.ts` (scorer allowed into Players/Sessions/Settings, denied
+  Users; admin everywhere), `nav.test.ts` (`adminLinksFor`), new
+  `settings-client.test.tsx` (read-only default, Edit only when `canEdit`, inputs
+  after Edit), `admin-menu.test.tsx` updated.
+- E2E: `auth-flow` (scorer reaches + adds a player; denied Users), `app-shell`
+  (scorer menu = Players/Sessions/Settings, no Users; admin menu incl. Users),
+  `settings` (read-only default + admin Edit/Save; scorer view-only, no Edit).
+
+### Notes
+
+- Authorization is enforced at the server action, not just the UI — the Edit button
+  and menu filtering are convenience; `authorizeRoute` + `requireUser`/admin checks
+  are the real gates. See ADR-010.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 141 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 42/42; teardown left no `[e2e]` data
+
+---

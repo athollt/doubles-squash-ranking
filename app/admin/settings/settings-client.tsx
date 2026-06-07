@@ -8,7 +8,17 @@ import { saveAndRecalculateAction } from "./actions";
 
 type SettingRow = { key: string; value: number; description: string | null };
 
-export function SettingsClient({ settings }: { settings: SettingRow[] }) {
+// Settings are read-only by default. An ADMIN (canEdit) gets an "Edit" button
+// that reveals the inputs + "Save & Recalculate"; scorers only ever view. The
+// save action re-checks the role server-side (actions.ts) — this is UI gating.
+export function SettingsClient({
+  settings,
+  canEdit,
+}: {
+  settings: SettingRow[];
+  canEdit: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
   const [values, setValues] = useState<Record<string, string>>(
     Object.fromEntries(settings.map((s) => [s.key, String(s.value)])),
   );
@@ -25,16 +35,34 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
     }));
     startTransition(async () => {
       const result = await saveAndRecalculateAction(updates);
-      if (result.ok) setDone(true);
-      else setError(result.error);
+      if (result.ok) {
+        setDone(true);
+        setEditing(false);
+      } else {
+        setError(result.error);
+      }
     });
+  }
+
+  function handleCancel() {
+    // Discard edits, back to the stored values.
+    setValues(Object.fromEntries(settings.map((s) => [s.key, String(s.value)])));
+    setError(null);
+    setEditing(false);
   }
 
   return (
     <div className="space-y-4">
-      {/* Card per setting — name + description stacked, value input full-width below.
-          Replaces the 3-column table that clipped the input on a phone (step 13.5
-          follow-up). On wider screens the value sits beside the label. */}
+      {canEdit && !editing && (
+        <div className="flex justify-end">
+          <Button variant="outline" onClick={() => setEditing(true)}>
+            Edit
+          </Button>
+        </div>
+      )}
+
+      {/* Card per setting — name + description, value on the right. Read-only by
+          default (plain value); in edit mode the value is an input. */}
       <ul className="flex flex-col gap-3">
         {settings.map((s) => (
           <li key={s.key}>
@@ -45,16 +73,22 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
                   <p className="text-muted-foreground text-sm">{s.description}</p>
                 )}
               </div>
-              <Input
-                type="number"
-                step="any"
-                aria-label={s.key}
-                className="w-20 shrink-0 text-center tabular-nums"
-                value={values[s.key]}
-                onChange={(e) =>
-                  setValues((v) => ({ ...v, [s.key]: e.target.value }))
-                }
-              />
+              {editing ? (
+                <Input
+                  type="number"
+                  step="any"
+                  aria-label={s.key}
+                  className="w-20 shrink-0 text-center tabular-nums"
+                  value={values[s.key]}
+                  onChange={(e) =>
+                    setValues((v) => ({ ...v, [s.key]: e.target.value }))
+                  }
+                />
+              ) : (
+                <p className="font-heading w-20 shrink-0 text-center font-bold tabular-nums">
+                  {s.value}
+                </p>
+              )}
             </Card>
           </li>
         ))}
@@ -63,9 +97,16 @@ export function SettingsClient({ settings }: { settings: SettingRow[] }) {
       {error && <p className="text-destructive text-sm">{error}</p>}
       {done && <p className="text-sm">Saved and recalculated.</p>}
 
-      <Button onClick={handleSave} disabled={pending}>
-        Save &amp; Recalculate
-      </Button>
+      {editing && (
+        <div className="flex gap-3">
+          <Button onClick={handleSave} disabled={pending}>
+            Save &amp; Recalculate
+          </Button>
+          <Button variant="outline" onClick={handleCancel} disabled={pending}>
+            Cancel
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

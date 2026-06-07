@@ -21,7 +21,7 @@ export async function SiteHeader() {
           <span className="font-heading">BSC Squash</span>
         </Link>
         <div className="ml-auto flex items-center gap-3">
-          {role === "ADMIN" && <AdminMenu />}
+          {role && <AdminMenu role={role} />}
           {session?.user ? (
             <AccountMenu
               name={session.user.name}
