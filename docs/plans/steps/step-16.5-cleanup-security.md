@@ -1,4 +1,4 @@
-# Step 16.4: Cleanup & security review (public-repo readiness)
+# Step 16.5: Cleanup & security review (public-repo readiness)
 
 ## Objective
 Make a defensible "is this safe to be a public repo?" pass: remove dead code,
@@ -65,5 +65,5 @@ npm run lint
 ## Completion
 1. Update `CHANGELOG.md` (the findings + verdict are the deliverable).
 2. Mark step complete in `PLAN.md`.
-3. Commit `step-16.4: cleanup & security review`.
+3. Commit `step-16.5: cleanup & security review`.
 4. Push `at-wip`.

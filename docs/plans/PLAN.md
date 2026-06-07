@@ -94,11 +94,13 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 16.1 | [UI rework (testing feedback)](steps/step-16.1-ui-rework.md) | complete | 13.5, 14.4 |
 | 16.2 | [Submit-flow rework (pick players, then score)](steps/step-16.2-submit-flow.md) | complete | 13.5 |
 | 16.3 | [Rating-algorithm explainer](steps/step-16.3-algorithm-explainer.md) | complete | 06 |
-| 16.4 | [Cleanup & security review](steps/step-16.4-cleanup-security.md) | pending | 16.1, 16.2, 16.3 |
-| 16.5 | [Update documentation (16.x)](steps/step-16.5-update-docs.md) | pending | 16.1–16.4 |
+| 16.4 | [WhatsApp share on submit (Web Share API)](steps/step-16.4-whatsapp-share.md) | pending | 16.2 |
+| 16.5 | [Cleanup & security review](steps/step-16.5-cleanup-security.md) | pending | 16.1, 16.2, 16.3, 16.4 |
+| 16.6 | [Update documentation (16.x)](steps/step-16.6-update-docs.md) | pending | 16.1–16.5 |
 
-> **WhatsApp notifications** (testing feedback) are tracked as a research task,
-> not a build step — see [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md).
+> **WhatsApp notifications** (testing feedback): the research chose the Web Share
+> API tap-to-share direction (see [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md)),
+> now built as step 16.4.
 
 ---
 
