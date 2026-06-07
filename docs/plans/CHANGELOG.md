@@ -1405,3 +1405,110 @@ Two bugs the first cut shipped, found immediately on desktop:
 - `npm run test:e2e` — ✅ 42/42; teardown left no `[e2e]` data
 
 ---
+
+## Step 16.5 — Cleanup & security review (public-repo readiness)
+
+**Date**: 2026-06-07
+
+A defensible "is this safe to be a public repo?" pass. The findings + verdict are
+the deliverable; the only code change is the `*.key` ignore gap below.
+
+### 1. Automated security review (`/security-review`)
+
+Ran the `/security-review` skill over `git diff main...at-wip` (the 16.x band).
+**No HIGH- or MEDIUM-confidence vulnerabilities** were introduced by the branch.
+Key surfaces audited, all sound:
+
+- **ADR-010 authorization narrowing** (`lib/auth-rules.ts`): `isAdminOnly` gates
+  only `/admin/users*`; every now-scorer-reachable surface still enforces writes
+  server-side — Users actions re-check `ADMIN`, Settings save re-checks `ADMIN`
+  (the `canEdit` prop is cosmetic), Players actions intentionally drop to
+  `requireUser()` per ADR-010, and `canMutateSession` still restricts session
+  edit/delete to admin-or-owner. Only allowlisted accounts ever receive a session
+  (`resolveSignIn` unchanged), so `session.user` remains a valid trust boundary.
+- **`lib/share.ts`** (`buildShareText`): interpolates player names into plain text
+  for `navigator.share({ text })` — not an HTML sink; `ladderUrl` comes from
+  `process.env.AUTH_URL`, not user input. No injection.
+- **`lib/avatar.ts` / `components/ui/avatar.tsx`**: `<img src>` of the user's own
+  Google avatar URL; a URL `src` cannot execute script. No XSS.
+- **`components/session-form.tsx`**: client component, all user data via
+  auto-escaped JSX; the only sink is `navigator.share` (plain text).
+- **Sink sweep**: no `dangerouslySetInnerHTML`, `innerHTML`, `eval`, `new Function`
+  in app code; the only `child_process` use is test-only `execFileSync` with fixed
+  args (`e2e/global-setup`/`-teardown`).
+- **CI / Docker / env**: workflow uses `secrets.FLY_API_TOKEN`; `Dockerfile` has no
+  embedded secrets; `.env.example` holds placeholders only.
+
+**Findings status**: 0 fixed (none found), 0 deferred from the automated review.
+
+### 2. Secret scan — clean
+
+- No secret file ever tracked, in the working tree or in history (checked
+  `.env`, `*.pem`, `*.key`, `*.p12`, `*.pfx` via `git log --all --diff-filter=A`).
+  `.env` exists locally but is untracked (gitignored).
+- No hardcoded credentials in tracked source: no Google/GitHub/Fly/OpenAI/Slack
+  token patterns, no `BEGIN PRIVATE KEY`, no literal `password=`/`secret=`
+  assignments beyond `process.env`.
+- **Seed password is env-driven** (ADR-006): `prisma/seed.ts` reads
+  `SEED_ADMIN_PASSWORD`, falling back to the local-only literal `"localdev"` (used
+  only against the local docker Postgres; production signs in via Google). No seed
+  password is committed.
+- E2E fixtures (`e2e/fixtures.ts`: `test-admin-pw`, etc.) are ephemeral test-user
+  passwords created in global setup and deleted in teardown — not production
+  credentials, by design.
+
+**Fix applied — `*.key` was not git-ignored.** `.gitignore`/`.dockerignore`
+covered `.env*` and `*.pem` but not `*.key`; a stray TLS/private key would not have
+been ignored. Added `*.key` to both. (Nothing of the sort is currently in the tree;
+this closes the gap the step asked to verify.)
+
+### 3. Public-repo posture — safe
+
+- The only hostnames/IPs in the tree are the **public** production host
+  `squash.tomlinson.co.za` and Fly's public anycast IP `66.241.125.70` (both
+  already public via DNS + the live README), plus local dev addresses
+  (`localhost:3001`, `localhost:5433`). No private/internal hostnames leak —
+  `.flycast`/`.internal` appear only as concepts in deployment docs, never as a
+  resolvable secret.
+- No committed infra secrets: Fly token + GitHub Actions secrets live in their
+  respective secret stores (ADR-008), not the repo.
+- README/docs reviewed: safe for public view.
+
+### 4. Dead-code removal
+
+- **No files orphaned by 16.1–16.3.** A reference sweep over `components/` and
+  `lib/` found every file imported somewhere. The components the UI rework removed
+  (`sign-out-button.tsx`) were already deleted in their own steps.
+- **No `console.log`/`debugger`/`.only`/`TODO`/`FIXME`** left in app code
+  (`app`, `components`, `lib`).
+- **Note (predates this round — not deleted, per AGENTS.md §4):** the five
+  `create-next-app` scaffold SVGs (`public/file.svg`, `globe.svg`, `next.svg`,
+  `vercel.svg`, `window.svg`) remain unreferenced. They were already flagged once
+  (this CHANGELOG, step note above) and are unrelated to the 16.x changes, so they
+  stay flagged-not-deleted.
+
+### 5. Housekeeping
+
+Lint clean, no stray debug/TODO markers (above). No other tidy fell out.
+
+### Verdict
+
+**The repo is safe to be public.** No secrets are committed (tree or history),
+the authorization model is enforced server-side at every privilege boundary, and
+no committed infra credentials exist. The one gap found — `*.key` not ignored — is
+fixed. Two items remain *by design*, both accepted decisions, not blockers:
+
+- The **Credentials provider** is enabled in production (ADR-006/007). Its
+  mitigation holds: the UI is hidden on the public sign-in screen, the seed
+  password is env-driven, and the allowlist/role callbacks gate every account. It
+  is an accepted, documented trade-off — not undone here, per the step's constraint.
+- The five **scaffold SVGs** are harmless unreferenced assets, left per §4.
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 141 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 42/42; teardown left no `[e2e]` data
+
+---
