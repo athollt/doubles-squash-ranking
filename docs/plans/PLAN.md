@@ -91,6 +91,14 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 14.3 | [GitHub Actions secret (manual)](steps/step-14.3-github-actions.md) | complete | 14.1, 14.2 |
 | 14.4 | [Deployment setup (Fly.io)](steps/step-14.4-deployment.md) | complete | 14.1, 14.2, 14.3, 13.5 |
 | 15 | [Update documentation](steps/step-15-update-docs.md) | complete | all prior |
+| 16.1 | [UI rework (testing feedback)](steps/step-16.1-ui-rework.md) | pending | 13.5, 14.4 |
+| 16.2 | [Submit-flow rework (pick players, then score)](steps/step-16.2-submit-flow.md) | pending | 13.5 |
+| 16.3 | [Rating-algorithm explainer](steps/step-16.3-algorithm-explainer.md) | pending | 06 |
+| 16.4 | [Cleanup & security review](steps/step-16.4-cleanup-security.md) | pending | 16.1, 16.2, 16.3 |
+| 16.5 | [Update documentation (16.x)](steps/step-16.5-update-docs.md) | pending | 16.1–16.4 |
+
+> **WhatsApp notifications** (testing feedback) are tracked as a research task,
+> not a build step — see [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md).
 
 ---
 
@@ -117,3 +125,4 @@ npm run test:e2e
 - **Decisions**: [DECISIONS.md](DECISIONS.md)
 - **Original spec**: [SPEC-original-google-sheets.md](SPEC-original-google-sheets.md)
 - **Tech research**: [RESEARCH-tech-stack.md](RESEARCH-tech-stack.md)
+- **WhatsApp research**: [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md)
