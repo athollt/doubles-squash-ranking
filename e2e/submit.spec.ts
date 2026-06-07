@@ -1,27 +1,18 @@
 import { test } from "@playwright/test";
-import {
-  signIn,
-  pickNewPlayer,
-  continueToScores,
-  setSlotWins,
-  expect,
-} from "./helpers";
+import { signIn, addNewPlayer, setPlayerWins, expect } from "./helpers";
 import { TEST_SCORER } from "./fixtures";
 
-// Drive the two-phase form (step 16.2): pick all four players as on-the-fly new
-// players, continue to scores, then set each slot's wins. `wins` total must be
-// even and > 0.
+// Drive the single-grid form (step 16.2 rev): add four on-the-fly new players and
+// set each one's wins (but do not submit). `wins` total must be even and > 0.
 async function fillFourNewPlayers(
   page: import("@playwright/test").Page,
   token: string,
   wins: [number, number, number, number],
 ) {
   for (let i = 0; i < 4; i++) {
-    await pickNewPlayer(page, i + 1, `[e2e] ${token} P${i}`);
-  }
-  await continueToScores(page);
-  for (let i = 0; i < 4; i++) {
-    await setSlotWins(page, i + 1, wins[i]);
+    const name = `[e2e] ${token} P${i}`;
+    await addNewPlayer(page, name, i + 1);
+    await setPlayerWins(page, name, wins[i]);
   }
 }
 

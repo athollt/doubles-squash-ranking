@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import { signIn, submitNewSession, setSlotWins, expect } from "./helpers";
+import { signIn, submitNewSession, setPlayerWins, expect } from "./helpers";
 import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 import type { Page } from "@playwright/test";
 
@@ -33,8 +33,9 @@ test("a scorer can edit their own session", async ({ page }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await page.goto(href);
   await expect(page.getByRole("heading", { name: "Edit session" })).toBeVisible();
-  await setSlotWins(page, 1, 5);
-  await setSlotWins(page, 3, 3);
+  // Edit two players' wins, keeping the total even (3+3+1+1 → 5+3+3+1 = 12).
+  await setPlayerWins(page, `[e2e] ${token} P0`, 5);
+  await setPlayerWins(page, `[e2e] ${token} P2`, 3);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page).toHaveURL(/\/$/);
 });
@@ -54,15 +55,16 @@ test("a scorer is redirected from another user's session edit page", async ({
 });
 
 test("an admin can edit any session and save", async ({ page }) => {
+  const token = `admin-edit-${Date.now()}`;
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
-  await submitSession(page, `admin-edit-${Date.now()}`);
+  await submitSession(page, token);
   const href = await newestEditHref(page);
 
   await page.goto(href);
   await expect(page.getByRole("heading", { name: "Edit session" })).toBeVisible();
-  // Change a win value (keep total even) and save.
-  await setSlotWins(page, 1, 5);
-  await setSlotWins(page, 3, 3);
+  // Change two players' wins, keeping the total even, and save.
+  await setPlayerWins(page, `[e2e] ${token} P0`, 5);
+  await setPlayerWins(page, `[e2e] ${token} P2`, 3);
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page).toHaveURL(/\/$/);
 });

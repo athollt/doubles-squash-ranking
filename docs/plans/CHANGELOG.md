@@ -1215,10 +1215,29 @@ source code, not the PRD/plan (AGENTS.md §8).
 - The 13.5 form already used the chip-picker + wins-selector; 16.2 reorganises those
   same primitives into two phases — it does not restyle them.
 
+### Revision (2026-06-07, testing feedback) — single-grid select-then-score
+
+The two-phase model was replaced with a single screen, per testing feedback:
+
+- **One "Choose players" grid** of all players (+ "+ New"); tap a chip to
+  select/unselect any number — no fixed slots, no "Continue to scores" or "Edit
+  players" buttons. Unselecting drops the player entirely.
+- **A score block appears below per selected player**, in selection order (name +
+  the 0–9 wins selector). "+ New" adds an on-the-fly entry whose block carries a
+  name field; unnamed new blocks are labelled "New player N" (stable by creation
+  order).
+- The public contract is still unchanged — `Props`, the `FormSlot[]` payload, and
+  `onSubmit`/`onDelete` are identical; edit mode (`initialSlots`) opens with those
+  players pre-selected. Validation stays server-side (even total > 0).
+- `components/session-form.test.tsx` rewritten for the new model; E2E helpers
+  replaced (`addNewPlayer(name, n)` + `setPlayerWins(name, wins)`; `pickNewPlayer`/
+  `continueToScores`/`setSlotWins` removed). Edit specs target score blocks by
+  player name.
+
 ### Validation
 
 - `npm run build` — ✅
-- `npm run test` — ✅ 122 unit tests pass (+3 session-form)
+- `npm run test` — ✅ 128 unit tests pass
 - `npm run lint` — ✅ clean
 - `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
 

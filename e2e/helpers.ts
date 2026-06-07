@@ -27,49 +27,47 @@ export async function signIn(
   }
 }
 
-// Drive the two-phase session form (step 16.2). Phase 1 (pick): in slot N, tap
-// "+ New" and type the name. Scores are entered in phase 2 (after continueToScores).
-export async function pickNewPlayer(
+// Drive the single-grid session form (step 16.2 rev). Add an on-the-fly player:
+// tap "+ New" in the "Choose players" grid, then name the new score block (the
+// nth new block added so far) — naming it relabels the block to that name.
+export async function addNewPlayer(
   page: Page,
-  n: number,
   name: string,
+  newBlockIndex: number,
 ): Promise<void> {
-  const slot = page.getByRole("group", { name: `Player ${n}` });
-  await slot.getByRole("button", { name: "+ New" }).click();
-  await slot.getByRole("textbox", { name: `New player name ${n}` }).fill(name);
+  await page
+    .getByRole("group", { name: "Choose players" })
+    .getByRole("button", { name: "+ New" })
+    .click();
+  await page
+    .getByRole("group", { name: `New player ${newBlockIndex}` })
+    .getByRole("textbox", { name: "New player name" })
+    .fill(name);
 }
 
-// Advance from the pick phase to the score phase.
-export async function continueToScores(page: Page): Promise<void> {
-  await page.getByRole("button", { name: /continue to scores/i }).click();
-}
-
-// Set the wins for a slot in the score phase via the segmented buttons.
-export async function setSlotWins(
+// Set the wins for the score block named `name` via the segmented buttons.
+export async function setPlayerWins(
   page: Page,
-  n: number,
+  name: string,
   wins: number,
 ): Promise<void> {
   await page
-    .getByRole("group", { name: `Player ${n}` })
+    .getByRole("group", { name })
     .getByRole("button", { name: `${wins} wins`, exact: true })
     .click();
 }
 
-// Submit a full session of N on-the-fly new players via the two-phase form
-// (step 16.2): pick everyone, continue, score each, then Log Results. Assumes
-// the caller is already on /submit. `names.length` must equal `wins.length`.
+// Submit a full session of N on-the-fly new players via the single-grid form:
+// add + name each, set their wins, then Log Results. Assumes the caller is on
+// /submit. `names.length` must equal `wins.length`.
 export async function submitNewSession(
   page: Page,
   names: string[],
   wins: number[],
 ): Promise<void> {
   for (let i = 0; i < names.length; i++) {
-    await pickNewPlayer(page, i + 1, names[i]);
-  }
-  await continueToScores(page);
-  for (let i = 0; i < wins.length; i++) {
-    await setSlotWins(page, i + 1, wins[i]);
+    await addNewPlayer(page, names[i], i + 1);
+    await setPlayerWins(page, names[i], wins[i]);
   }
   await page.getByRole("button", { name: /log results/i }).click();
 }
