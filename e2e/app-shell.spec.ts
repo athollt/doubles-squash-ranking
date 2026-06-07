@@ -16,19 +16,19 @@ test("logged-out shell shows public tabs and Sign in, not Sign out", async ({
   await expect(tabs.getByRole("link", { name: /submit/i })).toHaveCount(0);
 
   const bar = page.getByRole("banner");
-  await expect(bar.getByRole("link", { name: "Sign in" })).toBeVisible();
+  // Header "Sign in" is now a button (→ Google directly, step 16.1).
+  await expect(bar.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(bar.getByRole("button", { name: "Sign out" })).toHaveCount(0);
-  await expect(bar.getByRole("button", { name: "Admin" })).toHaveCount(0);
+  await expect(bar.getByRole("button", { name: "Admin menu" })).toHaveCount(0);
 });
 
 test("admin Admin menu links to every admin page", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   const bar = page.getByRole("banner");
-  await expect(bar.getByText(TEST_ADMIN.email)).toBeVisible();
   await expect(bar.getByRole("button", { name: "Sign out" })).toBeVisible();
 
-  // The dropdown is the only navigation to settings/sessions/users.
-  await bar.getByRole("button", { name: "Admin" }).click();
+  // The hamburger menu is the only navigation to settings/sessions/users.
+  await bar.getByRole("button", { name: "Admin menu" }).click();
   for (const label of ["Players", "Sessions", "Settings", "Users"]) {
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
@@ -47,13 +47,13 @@ test("scorer shell shows Submit tab + Sign out, but no Admin menu", async ({
   ).toBeVisible();
   const bar = page.getByRole("banner");
   await expect(bar.getByRole("button", { name: "Sign out" })).toBeVisible();
-  await expect(bar.getByRole("button", { name: "Admin" })).toHaveCount(0);
+  await expect(bar.getByRole("button", { name: "Admin menu" })).toHaveCount(0);
 });
 
 test("signing out returns to a logged-out shell", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   const bar = page.getByRole("banner");
   await bar.getByRole("button", { name: "Sign out" }).click();
-  await expect(bar.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(bar.getByRole("button", { name: "Sign in" })).toBeVisible();
   await expect(bar.getByRole("button", { name: "Sign out" })).toHaveCount(0);
 });

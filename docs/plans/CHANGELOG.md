@@ -1099,3 +1099,62 @@ source code, not the PRD/plan (AGENTS.md §8).
 - Algorithm formulas + the 15 settings reconciled line-by-line with `lib/rating-engine.ts`.
 
 ---
+
+## Step 16.1 — UI rework (testing feedback)
+
+**Date**: 2026-06-07
+
+### Delivered
+
+- **Sign-in flow**: header "Sign in" is now a button that goes straight to Google
+  (`components/sign-in-button.tsx`, `signIn("google")`); `/signin` is the
+  email/password screen (the Google button removed from `signin-form.tsx` — the
+  header owns Google). Credentials form button shows a pending label
+  ("Signing in…") so the click visibly registers (the reported "doesn't respond" bug).
+- **Header**: Admin dropdown trigger is now a hamburger icon (`MenuIcon`,
+  `aria-label="Admin menu"`) instead of the "Admin ▾" text. Logged-in user shows a
+  circular profile avatar (Google `image`, falling back to the initial) in place of
+  the plaintext email. New `components/ui/avatar.tsx` + pure `lib/avatar.ts`
+  (`avatarInitial`).
+- **Ladder**: removed the "Live doubles rankings · updated after every session"
+  strapline (the "Score ranks…/Played…" footer note stays).
+- **Sessions list**: player names now render inline on each card (no `<details>`
+  disclosure) so the roster is visible without clicking. Games count retained in the
+  count line.
+- **Admin → Players**: re-skinned from a table to the card-per-player layout used by
+  Admin → Users (`role="group"` named by player, Edit + Remove/Reactivate right-aligned).
+- **Admin → Users**: added an Edit button per card (opens a dialog with the role
+  control; the inline role dropdown moved into the dialog); Edit + Remove are
+  right-aligned. Reuses `updateUserRoleAction` — no backend change.
+- **Admin → Sessions**: Edit changed from the `outline` to the lighter `ghost`
+  button variant.
+
+### Tests
+
+- New unit tests: `lib/avatar.test.ts`, `components/ui/avatar.test.tsx`,
+  `components/admin-menu.test.tsx`, `app/signin/signin-form.test.tsx`.
+- E2E updated to the new structure: `helpers.ts` (sign-in button scoped to `main`,
+  as the header now also has a "Sign in" button), `app-shell.spec.ts` (Sign in is a
+  button; "Admin menu" trigger; avatar replaces visible email),
+  `player-management.spec.ts` (card groups, not table cells/rows),
+  `user-management.spec.ts` (role change via the Edit dialog),
+  `session-history.spec.ts` (names visible inline, no expand).
+
+### Notes
+
+- No behaviour, route, mutation, or data-model change — presentation only. The
+  Credentials provider is unchanged (ADR-006/007); the E2E credentials fixture path
+  still works.
+- Avatar uses a plain `<img>` (not `next/image`) so arbitrary Google avatar URLs need
+  no domain allowlist.
+- Admin Users "Edit" exposes the role only (no name/email edit action exists today —
+  not added, to avoid out-of-scope backend work; see step 16.1 spec Q&A).
+
+### Validation
+
+- `npm run build` — ✅
+- `npm run test` — ✅ 119 unit tests pass
+- `npm run lint` — ✅ clean
+- `npm run test:e2e` — ✅ 39/39; teardown left no `[e2e]` data
+
+---

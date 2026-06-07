@@ -1,17 +1,20 @@
 "use client";
 
 import { Menu } from "@base-ui/react/menu";
-import { ChevronDownIcon } from "lucide-react";
+import { MenuIcon } from "lucide-react";
 import { adminLinks } from "@/lib/nav";
 
-// "Admin" dropdown in the global header (ADMIN only). Lists every admin page —
-// the only navigation to /admin/sessions, /admin/settings and /admin/users.
+// Admin menu in the global header (ADMIN only). A hamburger trigger that opens
+// every admin page — the only navigation to /admin/sessions, /admin/settings
+// and /admin/users.
 export function AdminMenu() {
   return (
     <Menu.Root>
-      <Menu.Trigger className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm">
-        Admin
-        <ChevronDownIcon className="size-3.5" />
+      <Menu.Trigger
+        aria-label="Admin menu"
+        className="text-muted-foreground hover:text-foreground flex items-center"
+      >
+        <MenuIcon className="size-5" />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner sideOffset={8} align="start">

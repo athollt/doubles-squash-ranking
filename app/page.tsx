@@ -100,7 +100,7 @@ export default async function Home() {
   const lastUpdated = lastUpdatedFrom(sessions);
 
   return (
-    <PageShell title="Ladder" subtitle="Live doubles rankings · updated after every session">
+    <PageShell title="Ladder">
       {ladder.length === 0 ? (
         <p className="text-muted-foreground">
           No sessions recorded yet. The ladder appears once the first session is

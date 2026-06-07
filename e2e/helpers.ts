@@ -13,7 +13,12 @@ export async function signIn(
   await page.goto("/signin");
   await page.getByPlaceholder("Email").fill(email);
   await page.getByPlaceholder("Password").fill(password);
-  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  // Scope to the form (main) — the global header now also has a "Sign in" button
+  // (step 16.1: header → Google), so match the credentials submit specifically.
+  await page
+    .getByRole("main")
+    .getByRole("button", { name: "Sign in", exact: true })
+    .click();
   if (opts.expectError) {
     await expect(page.getByText(/invalid email or password/i)).toBeVisible();
   } else {

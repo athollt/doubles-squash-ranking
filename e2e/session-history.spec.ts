@@ -35,11 +35,10 @@ test("a submitted session is listed and has a detail page", async ({
 
   // The session shows on the public list with player count and games.
   await page.goto("/sessions");
-  const item = page.locator("details", { hasText: "4 players · 4 games" });
+  const item = page.getByRole("listitem").filter({ hasText: "4 players" });
   await expect(item.first()).toBeVisible();
 
-  // Expanding reveals the players, then the detail page shows full detail.
-  await item.first().locator("summary").click();
+  // Player names are visible inline without expanding anything (step 16.1).
   await expect(item.first().getByText(names[0])).toBeVisible();
   await item.first().getByRole("link", { name: /view full detail/i }).click();
 

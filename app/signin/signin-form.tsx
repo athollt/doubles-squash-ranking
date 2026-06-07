@@ -57,18 +57,9 @@ export function SignInForm() {
         />
         {error && <p className="text-destructive text-sm">{error}</p>}
         <Button type="submit" className="w-full" disabled={pending}>
-          Sign in
+          {pending ? "Signing in…" : "Sign in"}
         </Button>
       </form>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={() => signIn("google", { callbackUrl })}
-      >
-        Sign in with Google
-      </Button>
     </div>
   );
 }

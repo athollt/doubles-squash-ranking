@@ -58,7 +58,7 @@ export default async function AdminSessionsPage() {
                 <TableCell className="text-right">
                   <Link
                     href={`/sessions/${s.id}/edit`}
-                    className={buttonVariants({ variant: "outline", size: "sm" })}
+                    className={buttonVariants({ variant: "ghost", size: "sm" })}
                   >
                     Edit
                   </Link>
