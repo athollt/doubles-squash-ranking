@@ -1164,8 +1164,9 @@ source code, not the PRD/plan (AGENTS.md §8).
 - **Admin Players**: the status toggle reads **Deactivate** / **Reactivate** (was
   "Remove"/"Reactivate") — it hides from the ladder, it doesn't delete. (Admin Users
   "Remove" is unchanged — that genuinely deletes a user.)
-- **Admin Sessions**: Edit reverted from `ghost` back to `outline` — the borderless
-  ghost read as not-a-button; outline is clearly a button.
+- **Admin Sessions**: Edit is now the filled `default` button variant — `ghost`
+  (16.1) then `outline` both read as plain text against the light table; the solid
+  primary button is unmistakable.
 - New `components/account-menu.test.tsx`; E2E (`app-shell`, `player-management`,
   `session-history`) updated to the account-menu + relabelled controls.
 
