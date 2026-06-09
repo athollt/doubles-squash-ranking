@@ -174,3 +174,87 @@ Deployment (14.4) depends on 13.5 so it ships the finished design. Prototype cod
 5. **Settings**: read-only by default for everyone. An ADMIN gets an **Edit** button that reveals the inputs + Save; scorers never see Edit. The save action (`saveAndRecalculateAction`) still re-checks `role === "ADMIN"` — the Edit button is UI gating, the server is the real gate.
 
 **Consequence**: Scorers can do the routine data entry without an admin; account/role management and rating-parameter changes remain admin-only, defended at the server action (not just the UI). The route gate and the menu are kept in sync deliberately (`isAdminOnly` ↔ `adminLinksFor`). A future reader asking "why can a scorer open /admin/players?" finds it here. If the club later wants scorers to edit any session (not just their own), revisit point 4 (`canMutateSession`).
+
+> Note: there are two ADRs numbered **008** above (Fly hosting, and redesign sequencing). Pre-existing — left as-is rather than renumber an append-only log. Rungs ADRs continue from 010, i.e. start at **011**.
+
+---
+
+## ADR-011: League is the single tenant; the app becomes multi-tenant ("Rungs")
+
+**Date**: 2026-06-09
+**Status**: proposed (Rungs PRD input — not yet built)
+
+**Context**: The app is being generalised from the single BSC doubles-squash ladder into **Rungs**, a multi-tenant product that hosts many independent ladders. The grill weighed multi-deploy (one app per club) vs multi-tenant (one app, many leagues) and chose multi-tenant — the data-isolation cost is comparable, but multi-tenant gives per-league URLs, shared ops, and one deploy. A Club/Org hierarchy was considered and rejected as speculative.
+
+**Decision**: **League is the single, flat tenant boundary.** Every domain row carries `leagueId`: `Player`, `Session`, `Setting`, `RatingsLog`, `LadderSnapshot`. A Player belongs to exactly one League (no cross-league player identity — ratings are inherently per-ladder). No Club/Org layer. The rating engine is unchanged: it already takes a session as a flat `{ playerId, wins }[]` and rates individuals, so it is format-agnostic and needs no rewrite.
+
+**Consequence**: Every query becomes league-scoped; ADR-001's full-recalc becomes **per-league** recalc; ADR-002's request-time aggregation scopes to one league. The "same person in two leagues" need is *not* solved by the data model — it is deferred to a future Follow feature (see ADR-013 out-of-scope). Migrating existing BSC data is ADR-015. Revisit the flat model only if a real customer needs a shared cross-league roster (a Club layer).
+
+Promote: candidate → architecture/ADR.md
+
+---
+
+## ADR-012: Staff-only authentication with an admin-managed allowlist; global admin + per-league scorer grants
+
+**Date**: 2026-06-09
+**Status**: proposed (Rungs PRD input — not yet built)
+
+**Context**: With many leagues, the single global `User.role` (ADR-004/010) no longer fits — a scorer for league A should have no power over league B. The grill also established that the *only* reason to log in is to be staff (the Follow feature, which would have given players a reason to sign in, is out of scope for v1).
+
+**Decision**:
+1. **`User` table = staff only.** A global **ADMIN** can see/administer all leagues, create leagues, assign scorers, and score in any league. A **SCORER** has no power on its own — authority comes entirely from per-league grants in a new **`LeagueScorer(userId, leagueId)`** table.
+2. **Login is staff-only**, gated by the existing admin-managed allowlist (ADR-006's mechanism, retained): a Google account can sign in as staff only if an admin has created its `User` row. Assigning a scorer *is* the act of adding them to the allowlist.
+3. **Session ownership is unchanged** (ADR-010 pt 4): a scorer edits/deletes only their own sessions, now within their granted league; the global admin edits any.
+4. A non-staff Google sign-in lands on a dead-end "scorers/admins only" page (see ADR-014).
+
+**Consequence**: Per-league authority replaces the global role; the `User` table stays free of junk rows from curious sign-ins (the door Follow would have opened stays shut). Earlier musing about "anyone can sign in, authz by membership" is **withdrawn** — it only made sense with Followers. Revisit if Follow (and player logins) come into scope.
+
+Promote: candidate → architecture/ADR.md
+
+---
+
+## ADR-013: Path-prefix routing (`/l/{slug}`); public per-league ladder; single shared PWA identity
+
+**Date**: 2026-06-09
+**Status**: proposed (Rungs PRD input — not yet built)
+
+**Context**: "Each league its own URL." Options were path-prefix, subdomain (wildcard DNS + cert), or custom domain per league (per-tenant cert). The PWA also has *one* manifest per origin by default, which collides with per-league branding.
+
+**Decision**:
+1. **Path-prefix URLs:** `/l/{slug}/...` for each league's ladder/submit/history/admin. One domain, one cert (no wildcard DNS). The per-league public ladder (`/l/{slug}`) stays **publicly viewable without login**, preserving today's public-ladder property. `/` becomes a signed-out landing / staff entry.
+2. **Slug:** suggested by slugifying the league name, editable at creation, unique, **immutable after creation** (changing it breaks shared/bookmarked ladder links — ADR-009's share text embeds the URL).
+3. **Single shared PWA identity** ("Rungs", neutral icon/palette) for v1 — installing from any league page gives the same app; the league is content within it.
+
+**Consequence**: Lowest infra; shareable public ladders preserved. **Out of scope (v2+):** subdomains, custom domains, per-league branding/logos/manifests, and slug rename/redirects. Revisit subdomains/custom domains if a paying club wants its own identity on the home screen.
+
+Promote: candidate → architecture/ADR.md
+
+---
+
+## ADR-014: In-app access requests, no email infrastructure (extends ADR-009's no-outbound-messaging stance)
+
+**Date**: 2026-06-09
+**Status**: proposed (Rungs PRD input — not yet built)
+
+**Context**: A non-staff Google user who signs in needs a way to ask to become a scorer. The instinct ("email all admins") would drag a transactional email provider (sender domain, API key, new failure mode) into a project that has *deliberately* avoided outbound messaging — ADR-009 chose the Web Share API precisely to avoid send infrastructure.
+
+**Decision**: The "scorers/admins only" page shows a **Request scorer access** button that writes an in-app **`AccessRequest(email, name, leagueId, status, createdAt)`** row; the requester picks which league (public ladders are browseable). A global admin reviews pending requests on an admin page and **approves** (→ creates the `User` + the `LeagueScorer` grant) or **dismisses**. **No email in v1.** Notification is "the already-logged-in admin sees the queue."
+
+**Consequence**: Satisfies the access-request need with zero new infra, consistent with ADR-009. Email/push notification of new requests is a clean, well-fenced **v2** add-on (its own "notifications" increment, which might also revisit WhatsApp). The `mailto:` alternative was rejected (leaks admin emails, depends on a configured mail client).
+
+Promote: candidate → architecture/ADR.md
+
+---
+
+## ADR-015: Adopt existing BSC data into a seed league on migration
+
+**Date**: 2026-06-09
+**Status**: proposed (Rungs PRD input — not yet built)
+
+**Context**: There is live production data (the BSC ladder). The multi-tenant migration adds `leagueId` to every domain table (ADR-011); existing rows must be adopted into a league, not orphaned.
+
+**Decision**: The migration **creates a default "BSC Doubles Squash" league** and back-fills `leagueId` on all existing rows (`Player`, `Session`, `Setting`, `RatingsLog`, `LadderSnapshot`), seeds that league's settings from the current global `Setting` values, assigns it a slug (`bsc-doubles-squash`), and attaches the current admin + scorers as its members (`LeagueScorer` grants; the admin stays global ADMIN). Per-league settings are split off from the current single global `Setting` table at this point.
+
+**Consequence**: No data loss; the BSC ladder becomes "just another league" with continuity of ratings and history. This is the riskiest single migration in the Rungs plan (touches every table + prod data) and warrants its own plan step with a verified backup taken first (ties to step-17 backup verification). Revisit nothing — this is a one-time adoption.
+
+Promote: candidate → architecture/ADR.md
