@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { requireLeagueScorer } from "@/lib/league-access";
 import { PageShell } from "@/components/ui/page-shell";
 import { PlayersClient } from "./players-client";
 
@@ -6,11 +7,19 @@ export const metadata = {
   title: "Players — Doubles Squash @ BSC",
 };
 
-// Player data is live and admin-only; never prerender or cache at build time.
+// Player data is live and staff-only; never prerender or cache at build time.
 export const dynamic = "force-dynamic";
 
-export default async function AdminPlayersPage() {
+export default async function AdminPlayersPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { league } = await requireLeagueScorer(slug);
+
   const players = await prisma.player.findMany({
+    where: { leagueId: league.id },
     orderBy: { name: "asc" },
     select: { id: true, name: true, status: true, createdAt: true },
   });
@@ -24,7 +33,7 @@ export default async function AdminPlayersPage() {
 
   return (
     <PageShell title="Players">
-      <PlayersClient players={rows} />
+      <PlayersClient players={rows} slug={slug} />
     </PageShell>
   );
 }

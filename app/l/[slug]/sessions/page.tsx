@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getDefaultLeagueId } from "@/lib/league";
+import { resolveLeagueOr404 } from "@/lib/league-access";
 import { formatSessionDate } from "@/lib/session-history";
 import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
@@ -9,13 +9,18 @@ export const metadata = {
   title: "Session history — Doubles Squash @ BSC",
 };
 
-// Public, no auth (auth-rules allows /sessions). Derived view, not cached.
+// Public, no auth (auth-rules allows /l/{slug}/sessions). Derived view, not cached.
 export const dynamic = "force-dynamic";
 
-export default async function SessionsPage() {
-  const leagueId = await getDefaultLeagueId();
+export default async function SessionsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const league = await resolveLeagueOr404(slug);
   const sessions = await prisma.session.findMany({
-    where: { leagueId },
+    where: { leagueId: league.id },
     orderBy: { timestamp: "desc" },
     select: {
       id: true,
@@ -59,7 +64,7 @@ export default async function SessionsPage() {
                   ))}
                 </ul>
                 <Link
-                  href={`/sessions/${s.id}`}
+                  href={`/l/${slug}/sessions/${s.id}`}
                   className="text-primary mt-2 inline-block text-sm hover:underline"
                 >
                   More details →

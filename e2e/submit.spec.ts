@@ -20,7 +20,7 @@ test("a scorer submits a valid session and lands on the ladder", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   await fillFourNewPlayers(page, `ok-${Date.now()}`, [3, 3, 1, 1]);
   await page.getByRole("button", { name: /log results/i }).click();
@@ -28,12 +28,12 @@ test("a scorer submits a valid session and lands on the ladder", async ({
   // Success screen, then "View ladder" lands on the ladder (home).
   await expect(page.getByText(/session logged/i)).toBeVisible();
   await page.getByRole("button", { name: /view ladder/i }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });
 
 test("a session with an odd total of wins is rejected", async ({ page }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   await fillFourNewPlayers(page, `odd-${Date.now()}`, [3, 3, 1, 2]);
   await page.getByRole("button", { name: /log results/i }).click();
@@ -46,7 +46,7 @@ test("adding a new player via the + New chip names its score block", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   const name = `[e2e] chip-${Date.now()}`;
   await addNewPlayer(page, name);
@@ -56,7 +56,7 @@ test("adding a new player via the + New chip names its score block", async ({
 
 test("the + New chip rejects a name already on the list", async ({ page }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   const name = `[e2e] dup-${Date.now()}`;
   await addNewPlayer(page, name);
@@ -70,7 +70,7 @@ test("the + New chip rejects a name already on the list", async ({ page }) => {
 });
 
 test("an unauthenticated user cannot reach /submit", async ({ page }) => {
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
   await expect(page).toHaveURL(/\/signin/);
 });
 
@@ -101,7 +101,7 @@ test("a touch device shows the success screen and shares the result", async ({
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
   await stubTouchShare(page);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   const token = `share-${Date.now()}`;
   await fillFourNewPlayers(page, token, [3, 3, 1, 1]);
@@ -121,7 +121,7 @@ test("a touch device shows the success screen and shares the result", async ({
 
   // "View ladder" leaves the success screen for the ladder.
   await page.getByRole("button", { name: /view ladder/i }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });
 
 // On desktop (default Chromium: fine pointer), the success screen shows but the
@@ -130,7 +130,7 @@ test("desktop shows the success screen without a Share button", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
 
   await fillFourNewPlayers(page, `desk-${Date.now()}`, [3, 3, 1, 1]);
   await page.getByRole("button", { name: /log results/i }).click();
@@ -140,5 +140,5 @@ test("desktop shows the success screen without a Share button", async ({
     page.getByRole("button", { name: /share to whatsapp/i }),
   ).toHaveCount(0);
   await page.getByRole("button", { name: /view ladder/i }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });

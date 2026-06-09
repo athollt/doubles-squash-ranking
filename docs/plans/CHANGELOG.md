@@ -1853,3 +1853,81 @@ is untouched this step.
   fixture setup runs idempotently with the new grant.
 
 ---
+
+## Step 21 — Path-prefix routing: /l/{slug} + slug lifecycle
+
+**Date**: 2026-06-09
+
+The big routing move (ADR-013): every league-scoped page now lives under
+`/l/{slug}/...`, public league ladders stay login-free, and the slug lifecycle
+(suggest / validate / immutable) lands as pure helpers. **First visible front-end
+change** — URLs are now per-league. `/` is a placeholder redirect until step 22's
+real landing.
+
+### Routing move
+
+- Pages relocated under **`app/l/[slug]/`**: ladder (`/l/{slug}`), `sessions`,
+  `sessions/[id]`, `players/[id]` (public); `submit`, `sessions/[id]/edit` (scorer);
+  `admin/{players,sessions,settings}` (per-league). `git mv` preserved history.
+- **`/admin/users` stays top-level** — global account/role management, not
+  league-scoped (unchanged ADR-010 gate).
+- **`/` → redirect to `/l/bsc-doubles-squash`** (placeholder; step 22 replaces it
+  with the landing / league switcher). Preserves existing bookmarks to `/`.
+
+### Gate at the page boundary (not the proxy)
+
+- `proxy.ts` is **unchanged** — it gates on route *shape* only (DB-free, ADR-007's
+  lean proxy kept). `isPublicRoute` now recognises the `/l/{slug}` public shapes
+  (ladder / sessions / session-detail / player); scorer/admin shapes fall through to
+  the auth gate.
+- New `lib/league-access.ts`: `resolveLeagueOr404(slug)` (unknown slug → 404) and
+  `requireLeagueScorer(slug)` (resolve league, signin if logged out, **unauthorised if
+  no LeagueScorer grant** — ADR-012). Every league page calls one of these; the
+  scorer actions (submit/edit/admin-players) re-check server-side (defence in depth).
+- New `lib/league.ts` → `leagueBySlug(slug)`; `getDefaultLeagueId` retained for the
+  few non-slug callers.
+
+### Slug lifecycle (pure helpers, ADR-013)
+
+- `lib/slug.ts`: `suggestSlug(name)` (slugify; "BSC Doubles Squash" →
+  `bsc-doubles-squash`; drops apostrophes; collapses/trims separators),
+  `isValidSlug`, and `validateNewSlug(slug, {taken})` (format + uniqueness). **No
+  rename path** — slugs are immutable (the creation form is step 22).
+
+### Share / links / nav
+
+- `lib/share.ts` → `ladderUrlForSlug(slug)`: the absolute per-league ladder URL
+  (`AUTH_URL` + `/l/{slug}`) embedded in the WhatsApp share text (ADR-009) — slug
+  immutability is what keeps these links stable.
+- `SessionForm` gained `ladderHref` (post-submit "View ladder" + redirect go to the
+  league ladder, not `/`).
+- `lib/nav.ts`: `navLinksFor(role, slug)` / `adminLinksFor(role, slug)` build
+  league-relative hrefs; `slugFromPathname` lets the shared chrome (BottomNav,
+  AdminMenu — both client) scope their links to the current league and hide league
+  nav off a league route. `Users` is appended (admin) as the one global link.
+- All internal hrefs / `redirect` / `revalidatePath` rewired to `/l/{slug}/...`.
+
+### Tests
+
+- Unit (**194 pass**): `suggestSlug`/`isValidSlug`/`validateNewSlug`;
+  `authorizeRoute` over `/l/{slug}` shapes (public allow, scorer/admin → auth);
+  `slugFromPathname`; `ladderUrlForSlug`; nav builders slug-aware; BottomNav/AdminMenu
+  re-pointed. The `bsc-adoption` "no orphans" check was re-scoped to the BSC league's
+  own counts so it's robust to the new DB-backed tests' ephemeral leagues running
+  concurrently.
+- E2E (**48 pass**): all journeys re-pointed to `/l/{slug}`; a second ephemeral
+  league (`e2e-other-league`, no grant for the test scorer) added to global setup.
+  New cases — a granted scorer opens their league's submit page; a scorer **without a
+  grant is bounced to `/unauthorised`** from another league's submit; an **unknown
+  slug 404s**.
+
+### Validation
+
+- `npm run build` ✅ (TypeScript clean across the relocated tree). `npm run test`:
+  **194/194**. `npm run test:e2e`: **48/48** against the migrated single-League DB +
+  the ephemeral second league.
+
+> `/` is a placeholder redirect to the BSC ladder until **step 22** builds the real
+> landing + league switcher + creation form (which consumes `suggestSlug`/`validateNewSlug`).
+
+---

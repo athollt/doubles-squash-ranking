@@ -1,7 +1,8 @@
 import { redirect, notFound } from "next/navigation";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { canMutateSession } from "@/lib/session-authz";
+import { requireLeagueScorer } from "@/lib/league-access";
+import { prismaLeagueScorerStore } from "@/lib/league-scorer-store";
 import { SessionForm, type FormSlot } from "@/components/session-form";
 import { PageShell } from "@/components/ui/page-shell";
 import { updateSessionAction, deleteSessionAction } from "./actions";
@@ -15,19 +16,12 @@ export const dynamic = "force-dynamic";
 export default async function EditSessionPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  const { id } = await params;
-
-  const session = await auth();
-  const email = session?.user?.email;
-  if (!email) redirect("/signin");
-
-  const user = await prisma.user.findUnique({
-    where: { email },
-    select: { id: true },
-  });
-  if (!user) redirect("/signin");
+  const { slug, id } = await params;
+  // League gate (404 unknown slug, signin if logged out, unauthorised if no
+  // grant for this league).
+  const { league, userId, role } = await requireLeagueScorer(slug);
 
   const target = await prisma.session.findUnique({
     where: { id },
@@ -35,23 +29,30 @@ export default async function EditSessionPage({
       id: true,
       notes: true,
       submittedById: true,
+      leagueId: true,
       sessionPlayers: { select: { playerId: true, wins: true } },
     },
   });
-  if (!target) notFound();
+  // Unknown session, or one from another league.
+  if (!target || target.leagueId !== league.id) notFound();
 
-  // Ownership gate (behaviour 2): scorers may only edit their own sessions.
+  // Ownership + league-scope gate (ADR-010/012): scorers edit only their own
+  // session, within a league they are granted; admins edit any.
+  const grants = await prismaLeagueScorerStore.leagueIdsFor(userId);
   if (
     !canMutateSession({
-      userId: user.id,
-      role: session.role,
+      userId,
+      role,
       submittedById: target.submittedById,
+      grants,
+      sessionLeagueId: target.leagueId,
     })
   ) {
     redirect("/unauthorised");
   }
 
   const players = await prisma.player.findMany({
+    where: { leagueId: league.id },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
@@ -64,15 +65,15 @@ export default async function EditSessionPage({
 
   async function onUpdate(slots: FormSlot[], notes: string) {
     "use server";
-    return updateSessionAction(id, { slots, notes });
+    return updateSessionAction(slug, id, { slots, notes });
   }
   async function onDelete() {
     "use server";
-    return deleteSessionAction(id);
+    return deleteSessionAction(slug, id);
   }
 
   return (
-    <PageShell title="Edit session">
+    <PageShell title="Edit session" back={{ href: `/l/${slug}/sessions`, label: "Session history" }}>
       <SessionForm
         players={players}
         initialSlots={initialSlots}
@@ -80,6 +81,7 @@ export default async function EditSessionPage({
         submitLabel="Save"
         onSubmit={onUpdate}
         onDelete={onDelete}
+        ladderHref={`/l/${slug}`}
       />
     </PageShell>
   );

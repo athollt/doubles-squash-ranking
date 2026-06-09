@@ -1,38 +1,52 @@
 export type Role = "ADMIN" | "SCORER";
 
+// The league slug embedded in a /l/{slug}/... path, or null off a league route
+// (e.g. /admin/users, /signin). Lets the shared chrome build league-relative nav.
+export function slugFromPathname(pathname: string): string | null {
+  const m = pathname.match(/^\/l\/([^/]+)(?:\/|$)/);
+  return m ? m[1] : null;
+}
+
 export interface NavLink {
+  // A stable key for matching/icons, independent of the league slug ("ladder",
+  // "sessions", "submit", "/admin/players", …).
+  key: string;
   href: string;
   label: string;
 }
 
-// The admin pages, shown in the header's hamburger menu (not the primary nav
-// row). Order = the menu order.
-export const adminLinks: NavLink[] = [
-  { href: "/admin/players", label: "Players" },
-  { href: "/admin/sessions", label: "Sessions" },
-  { href: "/admin/settings", label: "Ratings" },
-  { href: "/admin/users", label: "Users" },
+// Per-league admin pages, in menu order. `Users` is NOT here — account/role
+// management is a global admin surface (stays at top-level /admin/users).
+const leagueAdminPages: { sub: string; label: string }[] = [
+  { sub: "admin/players", label: "Players" },
+  { sub: "admin/sessions", label: "Sessions" },
+  { sub: "admin/settings", label: "Ratings" },
 ];
 
-// The menu links for a given role. Scorers may reach Players, Sessions and
-// Settings (Settings read-only — editing stays admin-only via the Edit button +
-// server check). Users (account/role management) is ADMIN-only. Mirrors
-// `authorizeRoute`'s route gate.
-export function adminLinksFor(role: Role): NavLink[] {
-  if (role === "ADMIN") return adminLinks;
-  return adminLinks.filter((l) => l.href !== "/admin/users");
+// The header hamburger links for a role, scoped to the current league `slug`.
+// Scorers and admins both see the per-league pages; Users (global) is appended
+// for an admin only. Mirrors `authorizeRoute`/`canScoreLeague`'s gates.
+export function adminLinksFor(role: Role, slug: string): NavLink[] {
+  const links: NavLink[] = leagueAdminPages.map((p) => ({
+    key: `/${p.sub}`,
+    href: `/l/${slug}/${p.sub}`,
+    label: p.label,
+  }));
+  if (role === "ADMIN") {
+    links.push({ key: "/admin/users", href: "/admin/users", label: "Users" });
+  }
+  return links;
 }
 
-// The primary nav links to show for a given role (undefined = logged out).
-// Public links always show; Submit requires any session. Admin pages are
-// surfaced separately via `adminLinks` (the dropdown), gated on ADMIN.
-export function navLinksFor(role: Role | undefined): NavLink[] {
+// The primary (bottom-bar) nav for a role within league `slug`. Public links
+// always show; Submit requires a session. Admin pages live in the hamburger.
+export function navLinksFor(role: Role | undefined, slug: string): NavLink[] {
   const links: NavLink[] = [
-    { href: "/", label: "Ladder" },
-    { href: "/sessions", label: "Sessions" },
+    { key: "ladder", href: `/l/${slug}`, label: "Ladder" },
+    { key: "sessions", href: `/l/${slug}/sessions`, label: "Sessions" },
   ];
   if (role) {
-    links.push({ href: "/submit", label: "Submit" });
+    links.push({ key: "submit", href: `/l/${slug}/submit`, label: "Submit" });
   }
   return links;
 }

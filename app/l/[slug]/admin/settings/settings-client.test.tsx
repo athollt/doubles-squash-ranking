@@ -11,7 +11,7 @@ const SETTINGS = [{ key: "KFactor", value: 160, description: "Sensitivity" }];
 
 describe("SettingsClient", () => {
   it("is read-only by default — values shown, no inputs, no Save", () => {
-    render(<SettingsClient settings={SETTINGS} canEdit />);
+    render(<SettingsClient settings={SETTINGS} canEdit slug="bsc-doubles-squash" />);
     expect(screen.getByText("160")).toBeInTheDocument();
     expect(screen.queryByRole("spinbutton", { name: "KFactor" })).toBeNull();
     expect(
@@ -20,15 +20,15 @@ describe("SettingsClient", () => {
   });
 
   it("shows an Edit button only when the user may edit (admin)", () => {
-    const { rerender } = render(<SettingsClient settings={SETTINGS} canEdit />);
+    const { rerender } = render(<SettingsClient settings={SETTINGS} canEdit slug="bsc-doubles-squash" />);
     expect(screen.getByRole("button", { name: "Edit" })).toBeInTheDocument();
 
-    rerender(<SettingsClient settings={SETTINGS} canEdit={false} />);
+    rerender(<SettingsClient settings={SETTINGS} canEdit={false} slug="bsc-doubles-squash" />);
     expect(screen.queryByRole("button", { name: "Edit" })).toBeNull();
   });
 
   it("reveals editable inputs and Save after clicking Edit", () => {
-    render(<SettingsClient settings={SETTINGS} canEdit />);
+    render(<SettingsClient settings={SETTINGS} canEdit slug="bsc-doubles-squash" />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(
       screen.getByRole("spinbutton", { name: "KFactor" }),

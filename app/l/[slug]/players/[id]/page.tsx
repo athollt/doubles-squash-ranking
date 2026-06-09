@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { getDefaultLeagueId } from "@/lib/league";
+import { resolveLeagueOr404 } from "@/lib/league-access";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate } from "@/lib/rating-engine";
 import { buildTrendPoints, buildTrendRows } from "@/lib/player-trend";
@@ -26,10 +26,10 @@ export const dynamic = "force-dynamic";
 export default async function PlayerPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  const { id } = await params;
-  const leagueId = await getDefaultLeagueId();
+  const { slug, id } = await params;
+  const leagueId = (await resolveLeagueOr404(slug)).id;
 
   const player = await prisma.player.findUnique({
     where: { id },
@@ -76,7 +76,7 @@ export default async function PlayerPage({
 
   return (
     <PageShell
-      back={{ href: "/", label: "Ladder" }}
+      back={{ href: `/l/${slug}`, label: "Ladder" }}
       title={
         <>
           {player.name}

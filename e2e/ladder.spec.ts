@@ -4,7 +4,7 @@ import { TEST_SCORER } from "./fixtures";
 
 // The public ladder (home page) — no auth required to view (behaviour 1).
 test("the ladder home page is public and shows the title", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/l/bsc-doubles-squash");
   await expect(page.getByRole("heading", { name: "Ladder" })).toBeVisible();
 });
 
@@ -18,9 +18,9 @@ test("submitted players appear on the ladder, ranked and provisional", async ({
   const wins = [3, 3, 1, 1];
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
   await submitNewSession(page, names, wins);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 
   // The freshly submitted players are now on the ladder. Each is provisional
   // (one session played) and shows a New badge + a NEW trend indicator.

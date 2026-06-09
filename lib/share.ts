@@ -1,6 +1,17 @@
 // Pure builder for the "share result to WhatsApp" text (step 16.4). Framework-free
 // so it is trivially testable; the Web Share API call lives in the client form.
 
+// Absolute public ladder URL for a league (ADR-009/013): the deploy origin
+// (AUTH_URL) + the per-league /l/{slug} path. Embedded in the share text and the
+// slug's immutability is what keeps these links stable.
+export function ladderUrlForSlug(slug: string): string {
+  const base = (process.env.AUTH_URL ?? "https://squash.tomlinson.co.za").replace(
+    /\/+$/,
+    "",
+  );
+  return `${base}/l/${slug}`;
+}
+
 export interface ShareRosterEntry {
   name: string;
   wins: number;

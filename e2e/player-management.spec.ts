@@ -15,7 +15,7 @@ function playerCard(page: import("@playwright/test").Page, name: string) {
 
 test.beforeEach(async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
-  await page.goto("/admin/players");
+  await page.goto("/l/bsc-doubles-squash/admin/players");
   await expect(page.getByRole("heading", { name: "Players" })).toBeVisible();
 });
 

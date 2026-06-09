@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { resolveLeagueOr404 } from "@/lib/league-access";
 import { formatSessionDate } from "@/lib/session-history";
 import {
   Table,
@@ -21,13 +22,15 @@ export const dynamic = "force-dynamic";
 export default async function SessionDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { slug, id } = await params;
+  const league = await resolveLeagueOr404(slug);
 
   const session = await prisma.session.findUnique({
     where: { id },
     select: {
+      leagueId: true,
       timestamp: true,
       notes: true,
       totalPlayerWins: true,
@@ -45,7 +48,8 @@ export default async function SessionDetailPage({
     },
   });
 
-  if (!session) notFound();
+  // Unknown session, or one from another league (scoped read).
+  if (!session || session.leagueId !== league.id) notFound();
 
   const impactByPlayer = new Map(
     session.ratingsLogs.map((r) => [r.playerId, r]),
@@ -53,7 +57,7 @@ export default async function SessionDetailPage({
 
   return (
     <PageShell
-      back={{ href: "/sessions", label: "Session history" }}
+      back={{ href: `/l/${slug}/sessions`, label: "Session history" }}
       title={formatSessionDate(session.timestamp)}
       subtitle={`Submitted by ${session.submittedBy.name}`}
     >

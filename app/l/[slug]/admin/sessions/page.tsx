@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { requireLeagueScorer } from "@/lib/league-access";
 import {
   Table,
   TableBody,
@@ -18,8 +19,15 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminSessionsPage() {
+export default async function AdminSessionsPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { league } = await requireLeagueScorer(slug);
   const sessions = await prisma.session.findMany({
+    where: { leagueId: league.id },
     orderBy: { timestamp: "desc" },
     select: {
       id: true,
@@ -59,7 +67,7 @@ export default async function AdminSessionsPage() {
                   <TableCell>{s.totalPlayerWins}</TableCell>
                   <TableCell className="text-right">
                     <Link
-                      href={`/sessions/${s.id}/edit`}
+                      href={`/l/${slug}/sessions/${s.id}/edit`}
                       className={buttonVariants({ variant: "outline", size: "sm" })}
                     >
                       Edit

@@ -7,11 +7,16 @@ import { validateSession } from "@/lib/session-validation";
 import { canMutateSession } from "@/lib/session-authz";
 import { runRecalculation } from "@/lib/recalc";
 import { prismaRecalcStore } from "@/lib/recalc-store";
-import type { SubmitData } from "@/app/submit/actions";
+import { prismaLeagueScorerStore } from "@/lib/league-scorer-store";
+import { leagueBySlug } from "@/lib/league";
+import type { SubmitData } from "@/app/l/[slug]/submit/actions";
 
 export type MutateResult = { ok: true } | { ok: false; error: string };
 
-async function authoriseFor(sessionId: string): Promise<
+// Authorise a mutation of `sessionId` under league `slug`: the session must
+// belong to that league, and the caller must be able to mutate it (own session
+// in a granted league, or admin) — ADR-010/012.
+async function authoriseFor(slug: string, sessionId: string): Promise<
   | { ok: true; userId: string; leagueId: string }
   | { ok: false; error: string }
 > {
@@ -23,14 +28,27 @@ async function authoriseFor(sessionId: string): Promise<
   });
   if (!user) return { ok: false, error: "Unauthenticated" };
 
+  const league = await leagueBySlug(slug);
+  if (!league) return { ok: false, error: "League not found." };
+
   const target = await prisma.session.findUnique({
     where: { id: sessionId },
     select: { submittedById: true, leagueId: true },
   });
-  if (!target) return { ok: false, error: "Session not found." };
+  if (!target || target.leagueId !== league.id) {
+    return { ok: false, error: "Session not found." };
+  }
 
-  const role = session.role;
-  if (!canMutateSession({ userId: user.id, role, submittedById: target.submittedById })) {
+  const grants = await prismaLeagueScorerStore.leagueIdsFor(user.id);
+  if (
+    !canMutateSession({
+      userId: user.id,
+      role: session.role,
+      submittedById: target.submittedById,
+      grants,
+      sessionLeagueId: target.leagueId,
+    })
+  ) {
     return { ok: false, error: "Forbidden" };
   }
   // Recalc + any new player scope to the edited session's own League.
@@ -38,10 +56,11 @@ async function authoriseFor(sessionId: string): Promise<
 }
 
 export async function updateSessionAction(
+  slug: string,
   sessionId: string,
   data: SubmitData,
 ): Promise<MutateResult> {
-  const authz = await authoriseFor(sessionId);
+  const authz = await authoriseFor(slug, sessionId);
   if (!authz.ok) return authz;
 
   const resolved: { playerId: string; wins: number }[] = [];
@@ -83,22 +102,23 @@ export async function updateSessionAction(
   ]);
 
   await runRecalculation(prismaRecalcStore, new Date(), authz.leagueId);
-  revalidatePath("/");
-  revalidatePath("/sessions");
+  revalidatePath(`/l/${slug}`);
+  revalidatePath(`/l/${slug}/sessions`);
   return { ok: true };
 }
 
 export async function deleteSessionAction(
+  slug: string,
   sessionId: string,
 ): Promise<MutateResult> {
-  const authz = await authoriseFor(sessionId);
+  const authz = await authoriseFor(slug, sessionId);
   if (!authz.ok) return authz;
 
   // Cascade removes SessionPlayer + RatingsLog (schema onDelete: Cascade).
   await prisma.session.delete({ where: { id: sessionId } });
 
   await runRecalculation(prismaRecalcStore, new Date(), authz.leagueId);
-  revalidatePath("/");
-  revalidatePath("/sessions");
+  revalidatePath(`/l/${slug}`);
+  revalidatePath(`/l/${slug}/sessions`);
   return { ok: true };
 }

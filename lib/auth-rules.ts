@@ -30,6 +30,19 @@ function isPublicSessionDetail(pathname: string): boolean {
   return match !== null;
 }
 
+// Public per-league read routes (ADR-013): the ladder, history, a session detail
+// and a player trend — all under /l/{slug}/, viewable without login. The scorer
+// surfaces (.../submit, .../sessions/{id}/edit, .../admin/*) are deliberately
+// excluded so they fall through to the auth gate.
+function isPublicLeagueRoute(pathname: string): boolean {
+  return (
+    /^\/l\/[^/]+$/.test(pathname) || // /l/{slug}  (ladder)
+    /^\/l\/[^/]+\/sessions$/.test(pathname) || // /l/{slug}/sessions
+    /^\/l\/[^/]+\/sessions\/[^/]+$/.test(pathname) || // /l/{slug}/sessions/{id}
+    /^\/l\/[^/]+\/players\/[^/]+$/.test(pathname) // /l/{slug}/players/{id}
+  );
+}
+
 function isPublicRoute(pathname: string): boolean {
   return (
     pathname === "/" ||
@@ -38,7 +51,8 @@ function isPublicRoute(pathname: string): boolean {
     pathname.startsWith("/api/auth/") ||
     pathname === "/sessions" ||
     isPublicSessionDetail(pathname) ||
-    pathname.startsWith("/players/")
+    pathname.startsWith("/players/") ||
+    isPublicLeagueRoute(pathname)
   );
 }
 

@@ -5,15 +5,15 @@ import type { Page } from "@playwright/test";
 
 // Submit a session of four on-the-fly [e2e] players as the signed-in user.
 async function submitSession(page: Page, token: string) {
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
   const names = [0, 1, 2, 3].map((i) => `[e2e] ${token} P${i}`);
   await submitNewSession(page, names, [3, 3, 1, 1]);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 }
 
 // Find the newest session's edit URL from the admin sessions list.
 async function newestEditHref(page: Page): Promise<string> {
-  await page.goto("/admin/sessions");
+  await page.goto("/l/bsc-doubles-squash/admin/sessions");
   const firstEdit = page.getByRole("link", { name: "Edit" }).first();
   await expect(firstEdit).toBeVisible();
   return (await firstEdit.getAttribute("href")) ?? "";
@@ -37,7 +37,7 @@ test("a scorer can edit their own session", async ({ page }) => {
   await setPlayerWins(page, `[e2e] ${token} P0`, 5);
   await setPlayerWins(page, `[e2e] ${token} P2`, 3);
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });
 
 test("a scorer is redirected from another user's session edit page", async ({
@@ -66,7 +66,7 @@ test("an admin can edit any session and save", async ({ page }) => {
   await setPlayerWins(page, `[e2e] ${token} P0`, 5);
   await setPlayerWins(page, `[e2e] ${token} P2`, 3);
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });
 
 test("an admin can delete a session", async ({ page }) => {
@@ -76,5 +76,5 @@ test("an admin can delete a session", async ({ page }) => {
 
   await page.goto(href);
   await page.getByRole("button", { name: "Delete" }).click();
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 });

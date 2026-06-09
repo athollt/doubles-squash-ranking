@@ -24,7 +24,13 @@ type PlayerRow = {
   created: string;
 };
 
-export function PlayersClient({ players }: { players: PlayerRow[] }) {
+export function PlayersClient({
+  players,
+  slug,
+}: {
+  players: PlayerRow[];
+  slug: string;
+}) {
   const [isPending, startTransition] = useTransition();
   const [addOpen, setAddOpen] = useState(false);
   const [addName, setAddName] = useState("");
@@ -36,7 +42,7 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
   function handleAdd() {
     setAddError(null);
     startTransition(async () => {
-      const result = await createPlayerAction(addName);
+      const result = await createPlayerAction(slug, addName);
       if (result.ok) {
         setAddName("");
         setAddOpen(false);
@@ -50,7 +56,7 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
     if (!editing) return;
     setEditError(null);
     startTransition(async () => {
-      const result = await updatePlayerNameAction(editing.id, editName);
+      const result = await updatePlayerNameAction(slug, editing.id, editName);
       if (result.ok) {
         setEditing(null);
       } else {
@@ -62,7 +68,7 @@ export function PlayersClient({ players }: { players: PlayerRow[] }) {
   function handleToggleStatus(player: PlayerRow) {
     const next = player.status === "ACTIVE" ? "REMOVED" : "ACTIVE";
     startTransition(async () => {
-      await updatePlayerStatusAction(player.id, next);
+      await updatePlayerStatusAction(slug, player.id, next);
     });
   }
 

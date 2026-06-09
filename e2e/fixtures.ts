@@ -22,3 +22,18 @@ export const NON_ALLOWLISTED = {
 };
 
 export const TEST_USER_EMAILS = [TEST_ADMIN.email, TEST_SCORER.email];
+
+// The seed league slug (step 21). Public + scorer/admin league routes live under
+// /l/{slug}; lpath() builds them so specs stay slug-aware.
+export const LEAGUE_SLUG = "bsc-doubles-squash";
+export function lpath(sub = ""): string {
+  return sub ? `/l/${LEAGUE_SLUG}/${sub}` : `/l/${LEAGUE_SLUG}`;
+}
+
+// A second, ephemeral league used to verify cross-league authz: the test scorer
+// is granted the BSC league but NOT this one, so its scorer routes must bounce
+// them to /unauthorised. Created in global-setup, removed in teardown.
+export const OTHER_LEAGUE = {
+  slug: "e2e-other-league",
+  name: "[e2e] Other League",
+};

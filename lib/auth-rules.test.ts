@@ -60,4 +60,42 @@ describe("authorizeRoute", () => {
   it("allows the sign-in page through without a session", () => {
     expect(authorizeRoute("/signin", null)).toBe("allow");
   });
+
+  // /l/{slug} routing (step 21, ADR-013): the proxy gates on route SHAPE only —
+  // public league reads need no auth; scorer/admin league surfaces need a session
+  // (the per-league grant check happens at the page with the resolved leagueId).
+  describe("/l/{slug} league routes", () => {
+    it("allows the public league ladder without a session", () => {
+      expect(authorizeRoute("/l/bsc-doubles-squash", null)).toBe("allow");
+    });
+
+    it("allows public league history and player pages without a session", () => {
+      expect(authorizeRoute("/l/bsc-doubles-squash/sessions", null)).toBe("allow");
+      expect(authorizeRoute("/l/bsc-doubles-squash/sessions/42", null)).toBe("allow");
+      expect(authorizeRoute("/l/bsc-doubles-squash/players/7", null)).toBe("allow");
+    });
+
+    it("redirects an unauthenticated visitor away from a league submit/edit page", () => {
+      expect(authorizeRoute("/l/bsc-doubles-squash/submit", null)).toBe("signin");
+      expect(authorizeRoute("/l/bsc-doubles-squash/sessions/42/edit", null)).toBe(
+        "signin",
+      );
+    });
+
+    it("redirects an unauthenticated visitor away from a league admin page", () => {
+      expect(authorizeRoute("/l/bsc-doubles-squash/admin/players", null)).toBe(
+        "signin",
+      );
+    });
+
+    it("lets a signed-in scorer through the shape gate for a league surface", () => {
+      // Shape gate only — the grant check is at the page. A session is enough here.
+      expect(
+        authorizeRoute("/l/bsc-doubles-squash/submit", { role: "SCORER" }),
+      ).toBe("allow");
+      expect(
+        authorizeRoute("/l/bsc-doubles-squash/admin/players", { role: "SCORER" }),
+      ).toBe("allow");
+    });
+  });
 });

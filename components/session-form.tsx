@@ -48,6 +48,9 @@ interface Props {
   // supports the Web Share API), a successful submit shows a share screen instead
   // of redirecting (step 16.4). Edit mode omits it, so it always redirects.
   ladderUrl?: string;
+  // Where to go after a successful submit/delete (the league's ladder). Defaults
+  // to "/" for callers that don't set it (e.g. edit pages bind their own).
+  ladderHref?: string;
 }
 
 // Courtside doubles capture (step 16.2, rev. single-grid): one "Choose players"
@@ -65,6 +68,7 @@ export function SessionForm({
   onSubmit,
   onDelete,
   ladderUrl,
+  ladderHref = "/",
 }: Props) {
   const router = useRouter();
   const [entries, setEntries] = useState<Entry[]>(() =>
@@ -184,7 +188,7 @@ export function SessionForm({
           buildShareText({ roster: shareRoster(), ladderUrl, notes }),
         );
       } else {
-        router.push("/");
+        router.push(ladderHref);
       }
     });
   }
@@ -194,7 +198,7 @@ export function SessionForm({
     setError(null);
     startTransition(async () => {
       const result = await onDelete();
-      if (result.ok) router.push("/");
+      if (result.ok) router.push(ladderHref);
       else setError(result.error);
     });
   }
@@ -239,7 +243,7 @@ export function SessionForm({
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.push("/")}
+          onClick={() => router.push(ladderHref)}
         >
           View ladder →
         </Button>

@@ -4,7 +4,7 @@ import { TEST_SCORER } from "./fixtures";
 
 // /sessions is public — reachable without authentication (behaviour 1).
 test("the session history page is public", async ({ page }) => {
-  await page.goto("/sessions");
+  await page.goto("/l/bsc-doubles-squash/sessions");
   await expect(
     page.getByRole("heading", { name: "Session history" }),
   ).toBeVisible();
@@ -12,7 +12,7 @@ test("the session history page is public", async ({ page }) => {
 
 // A non-existent session id returns 404 (behaviour 5).
 test("an unknown session id returns 404", async ({ page }) => {
-  const res = await page.goto("/sessions/does-not-exist");
+  const res = await page.goto("/l/bsc-doubles-squash/sessions/does-not-exist");
   expect(res?.status()).toBe(404);
 });
 
@@ -26,12 +26,12 @@ test("a submitted session is listed and has a detail page", async ({
   const wins = [3, 2, 2, 1];
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
   await submitNewSession(page, names, wins);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 
   // The session shows on the public list with player count and games.
-  await page.goto("/sessions");
+  await page.goto("/l/bsc-doubles-squash/sessions");
   const item = page.getByRole("listitem").filter({ hasText: "4 players" });
   await expect(item.first()).toBeVisible();
 

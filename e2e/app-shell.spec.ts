@@ -11,7 +11,7 @@ import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 test("logged-out shell shows public tabs and Sign in, not the account menu", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/l/bsc-doubles-squash");
   const tabs = page.getByRole("navigation", { name: "Primary" });
   await expect(tabs.getByRole("link", { name: /ladder/i })).toBeVisible();
   await expect(tabs.getByRole("link", { name: /sessions/i })).toBeVisible();

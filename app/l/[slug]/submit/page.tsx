@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { requireLeagueScorer } from "@/lib/league-access";
+import { ladderUrlForSlug } from "@/lib/share";
 import { SessionForm, type FormSlot } from "@/components/session-form";
 import { PageShell } from "@/components/ui/page-shell";
 import { submitSessionAction } from "./actions";
@@ -9,16 +11,23 @@ export const metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function SubmitPage() {
+export default async function SubmitPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const { league } = await requireLeagueScorer(slug);
+
   const players = await prisma.player.findMany({
-    where: { status: "ACTIVE" },
+    where: { status: "ACTIVE", leagueId: league.id },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
 
   async function onSubmit(slots: FormSlot[], notes: string) {
     "use server";
-    return submitSessionAction({ slots, notes });
+    return submitSessionAction(slug, { slots, notes });
   }
 
   return (
@@ -30,7 +39,8 @@ export default async function SubmitPage() {
         players={players}
         submitLabel="Log Results"
         onSubmit={onSubmit}
-        ladderUrl={process.env.AUTH_URL ?? "https://squash.tomlinson.co.za"}
+        ladderUrl={ladderUrlForSlug(slug)}
+        ladderHref={`/l/${slug}`}
       />
     </PageShell>
   );

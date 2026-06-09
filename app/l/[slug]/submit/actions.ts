@@ -1,14 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { validateSession } from "@/lib/session-validation";
 import { runRecalculation } from "@/lib/recalc";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { resolvePlayerName } from "@/lib/players";
 import { makePrismaPlayerStore } from "@/lib/player-store";
-import { getDefaultLeagueId } from "@/lib/league";
+import { requireLeagueScorer } from "@/lib/league-access";
 
 export interface SubmitSlot {
   playerId?: string;
@@ -25,22 +24,14 @@ export type SubmitResult =
   | { ok: true; sessionId: string }
   | { ok: false; error: string };
 
-async function requireUserId(): Promise<string> {
-  const session = await auth();
-  if (!session?.user?.email) throw new Error("Unauthenticated");
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
-    select: { id: true },
-  });
-  if (!user) throw new Error("Unauthenticated");
-  return user.id;
-}
-
 export async function submitSessionAction(
+  slug: string,
   data: SubmitData,
 ): Promise<SubmitResult> {
-  const userId = await requireUserId();
-  const leagueId = await getDefaultLeagueId();
+  // Server-side gate (defence in depth beyond the page): resolves the league,
+  // 404s an unknown slug, and enforces the scorer grant (ADR-012).
+  const { league, userId } = await requireLeagueScorer(slug);
+  const leagueId = league.id;
   const playerStore = makePrismaPlayerStore(leagueId);
 
   // Resolve on-the-fly players (slots with a newName) into real players first.
@@ -82,7 +73,7 @@ export async function submitSessionAction(
 
   await runRecalculation(prismaRecalcStore, new Date(), leagueId);
 
-  revalidatePath("/");
-  revalidatePath("/sessions");
+  revalidatePath(`/l/${slug}`);
+  revalidatePath(`/l/${slug}/sessions`);
   return { ok: true, sessionId: session.id };
 }

@@ -17,7 +17,7 @@ test("manifest.json is served with the correct fields", async ({ request }) => {
 test("the ladder page links the manifest, apple touch icon and OG image", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/l/bsc-doubles-squash");
 
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",

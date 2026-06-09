@@ -14,9 +14,11 @@ type SettingRow = { key: string; value: number; description: string | null };
 export function SettingsClient({
   settings,
   canEdit,
+  slug,
 }: {
   settings: SettingRow[];
   canEdit: boolean;
+  slug: string;
 }) {
   const [editing, setEditing] = useState(false);
   const [values, setValues] = useState<Record<string, string>>(
@@ -34,7 +36,7 @@ export function SettingsClient({
       value: Number(values[s.key]),
     }));
     startTransition(async () => {
-      const result = await saveAndRecalculateAction(updates);
+      const result = await saveAndRecalculateAction(slug, updates);
       if (result.ok) {
         setDone(true);
         setEditing(false);
