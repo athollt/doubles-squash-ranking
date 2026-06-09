@@ -1613,3 +1613,56 @@ as the worked example.
   existing process (especially the §3 update-docs symmetry in `create-plan`).
 
 ---
+
+## Step 17 — Inline new-player on Submit, rename users, verify backups
+
+**Date**: 2026-06-09
+
+### Delivered
+
+- **Inline new-player on Submit** — the `+ New` chip in the "Choose players" grid now
+  expands **in place** into a name field (Enter or ✓ confirms, ✕ / Escape cancels)
+  instead of appending an unnamed "New player N" block at the bottom of the page. On
+  confirm it adds a **named** score block; you can add several. A name already on the
+  list (an existing roster player or another new entry, case-insensitive) shows an
+  inline "… is already on the list." error and adds nothing.
+  - Spec deviation (approved): step 16.2 already created on-the-fly players, so the
+    work was the **chip UX**, not the create flow. The grill's "select into the chip
+    row + call a separate create action" design was superseded by the in-chip rename
+    after reviewing the actual screen (the bottom-of-page block was unintuitive). The
+    redundant in-block "New player name" input was removed (made unused by the chip).
+- **Duplicate-player bug fixed** — `submitSessionAction` created on-the-fly players via
+  a raw `prisma.player.create`, bypassing the case-insensitive dedup, so typing an
+  existing player's name as "new" made a duplicate row. New pure helper
+  `resolvePlayerName(name, store)` (in `lib/players.ts`) reuses a case-insensitive name
+  match or creates; submit routes through it. Side effect: new players from submit no
+  longer set `createdById` (the store's `create` omits it) — now consistent with the
+  admin players-create path, which also omits it.
+- **Rename users** — new pure `updateUserName(id, name, store)` (`lib/users.ts`; trims,
+  rejects empty; **no** uniqueness check — names aren't unique), `UserStore.updateName`
+  + Prisma impl, `updateUserNameAction` (ADMIN-only, mirrors role update). The Edit User
+  dialog gains a **Name** field saved alongside Role. No cascade (ADR-004: a User's name
+  is not shown on any ladder/session view).
+- **Backups verified** (ADR-008) — prod Postgres volume `vol_vp29zqy1q3352724`
+  (`bsc-squash-db`, jnb) has automatic snapshots: 2 present (1 day + 21 h old),
+  **5-day retention** — matches the ADR-008 design. Working; no action needed. (Also
+  satisfies the step-19 migration's backup prerequisite.)
+
+### Tests
+
+- New unit: `resolvePlayerName` (reuse/create/blank), `updateUserName` (trim/empty),
+  session-form chip flow (add by typing, duplicate inline error, multiple adds).
+- E2E extended: submit chip-add names its block + duplicate-name inline error
+  (`submit.spec.ts`); admin renames a user via Edit (`user-management.spec.ts`). The
+  shared `addNewPlayer` helper was updated to the chip flow (used by all submit specs).
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **149/149 unit pass** (excluding 2 pre-existing
+  `lib/prisma.test.ts` failures that require a live Postgres — fail identically on clean
+  HEAD; not a regression). Lint clean on all changed files.
+- **E2E not executed in this environment** — local Postgres (`localhost:5433`) was not
+  running. The specs are updated and expected to pass on the CI DB; re-run
+  `npm run test:e2e` with Postgres up before relying on them.
+
+---

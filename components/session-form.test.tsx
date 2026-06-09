@@ -74,7 +74,7 @@ describe("SessionForm single-grid select-then-score", () => {
     ]);
   });
 
-  it("supports adding a brand-new player via + New", () => {
+  it("adds a brand-new player by typing in the + New chip", () => {
     let captured: FormSlot[] | null = null;
     const onSubmit = (slots: FormSlot[]) => {
       captured = slots;
@@ -84,18 +84,65 @@ describe("SessionForm single-grid select-then-score", () => {
       <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={onSubmit} />,
     );
 
+    // Activating "+ New" turns the chip into a name field (no block at the
+    // bottom of the page until the name is confirmed).
     fireEvent.click(chip("+ New"));
-    // The new player's block carries a name input; fill it and set wins.
-    const newBlock = screen.getByRole("group", { name: /new player 1/i });
     fireEvent.change(
-      within(newBlock).getByRole("textbox", { name: /new player name/i }),
+      screen.getByRole("textbox", { name: /new player name/i }),
       { target: { value: "Carol" } },
     );
+    fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+
+    // A named score block now exists; set wins on it.
+    const newBlock = screen.getByRole("group", { name: "Carol" });
     fireEvent.click(within(newBlock).getByRole("button", { name: "2 wins" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Log" }));
     expect(captured).toEqual([
       { playerId: undefined, newName: "Carol", wins: 2 },
+    ]);
+  });
+
+  it("rejects a + New name that is already on the roster, with an inline error", () => {
+    render(
+      <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={noop} />,
+    );
+
+    fireEvent.click(chip("+ New"));
+    fireEvent.change(
+      screen.getByRole("textbox", { name: /new player name/i }),
+      { target: { value: "alice" } }, // matches "Alice" case-insensitively
+    );
+    fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+
+    expect(screen.getByText(/already on the list/i)).toBeInTheDocument();
+    // No new score block was created.
+    expect(screen.queryByRole("group", { name: "alice" })).toBeNull();
+  });
+
+  it("supports adding more than one new player", () => {
+    let captured: FormSlot[] | null = null;
+    const onSubmit = (slots: FormSlot[]) => {
+      captured = slots;
+      return Promise.resolve({ ok: true as const });
+    };
+    render(
+      <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={onSubmit} />,
+    );
+
+    for (const name of ["Carol", "Dave"]) {
+      fireEvent.click(chip("+ New"));
+      fireEvent.change(
+        screen.getByRole("textbox", { name: /new player name/i }),
+        { target: { value: name } },
+      );
+      fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+    }
+
+    fireEvent.click(screen.getByRole("button", { name: "Log" }));
+    expect(captured).toEqual([
+      { playerId: undefined, newName: "Carol", wins: 0 },
+      { playerId: undefined, newName: "Dave", wins: 0 },
     ]);
   });
 

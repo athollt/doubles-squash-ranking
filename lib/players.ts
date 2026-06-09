@@ -50,6 +50,30 @@ export async function updatePlayerName(
   return { ok: true, player };
 }
 
+export type ResolveResult =
+  | { ok: true; playerId: string }
+  | { ok: false; error: string };
+
+// Resolve an on-the-fly player name to a player id: reuse an existing player
+// whose name matches case-insensitively, else create one. This is what session
+// submit uses for slots typed as a "new" player, so a name that already exists
+// is reused rather than duplicated.
+export async function resolvePlayerName(
+  name: string,
+  store: PlayerStore,
+): Promise<ResolveResult> {
+  const trimmed = name.trim();
+  if (trimmed === "") {
+    return { ok: false, error: "Name is required." };
+  }
+  const existing = await store.findByNameInsensitive(trimmed);
+  if (existing) {
+    return { ok: true, playerId: existing.id };
+  }
+  const player = await store.create(trimmed);
+  return { ok: true, playerId: player.id };
+}
+
 export async function updatePlayerStatus(
   id: string,
   status: PlayerStatus,

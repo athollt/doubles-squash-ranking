@@ -13,6 +13,7 @@ export interface UserStore {
   countAdmins(): Promise<number>;
   create(email: string, name: string, role: Role): Promise<UserRecord>;
   updateRole(id: string, role: Role): Promise<UserRecord>;
+  updateName(id: string, name: string): Promise<UserRecord>;
   delete(id: string): Promise<void>;
 }
 
@@ -54,6 +55,19 @@ export async function updateUserRole(
   store: UserStore,
 ): Promise<UserResult> {
   const user = await store.updateRole(id, role);
+  return { ok: true, user };
+}
+
+export async function updateUserName(
+  id: string,
+  name: string,
+  store: UserStore,
+): Promise<UserResult> {
+  const trimmed = name.trim();
+  if (trimmed === "") {
+    return { ok: false, error: "Name is required." };
+  }
+  const user = await store.updateName(id, trimmed);
   return { ok: true, user };
 }
 

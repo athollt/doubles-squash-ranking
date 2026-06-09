@@ -14,6 +14,7 @@ import {
 import {
   createUserAction,
   updateUserRoleAction,
+  updateUserNameAction,
   deleteUserAction,
 } from "./actions";
 
@@ -48,6 +49,7 @@ export function UsersClient({
   const [rowError, setRowError] = useState<string | null>(null);
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [editRole, setEditRole] = useState<Role>("SCORER");
+  const [editName, setEditName] = useState("");
 
   function handleAdd() {
     setAddError(null);
@@ -64,17 +66,31 @@ export function UsersClient({
     });
   }
 
-  function handleSaveRole() {
+  function handleSaveEdit() {
     if (!editing) return;
-    if (editRole === editing.role) {
+    const nameChanged = editName.trim() !== editing.name;
+    const roleChanged = editRole !== editing.role;
+    if (!nameChanged && !roleChanged) {
       setEditing(null);
       return;
     }
     setRowError(null);
     startTransition(async () => {
-      const result = await updateUserRoleAction(editing.id, editRole);
-      if (result.ok) setEditing(null);
-      else setRowError(result.error);
+      if (nameChanged) {
+        const result = await updateUserNameAction(editing.id, editName);
+        if (!result.ok) {
+          setRowError(result.error);
+          return;
+        }
+      }
+      if (roleChanged) {
+        const result = await updateUserRoleAction(editing.id, editRole);
+        if (!result.ok) {
+          setRowError(result.error);
+          return;
+        }
+      }
+      setEditing(null);
     });
   }
 
@@ -127,6 +143,7 @@ export function UsersClient({
                       onClick={() => {
                         setEditing(user);
                         setEditRole(user.role);
+                        setEditName(user.name);
                         setRowError(null);
                       }}
                     >
@@ -203,6 +220,14 @@ export function UsersClient({
           {editing && (
             <p className="text-muted-foreground text-sm">{editing.email}</p>
           )}
+          <Input
+            placeholder="Name"
+            aria-label="Name"
+            value={editName}
+            disabled={isPending}
+            onChange={(e) => setEditName(e.target.value)}
+            autoFocus
+          />
           <select
             className={ROLE_SELECT_CLASS}
             aria-label="Role"
@@ -213,8 +238,9 @@ export function UsersClient({
             <option value="SCORER">SCORER</option>
             <option value="ADMIN">ADMIN</option>
           </select>
+          {rowError && <p className="text-destructive text-sm">{rowError}</p>}
           <DialogFooter>
-            <Button onClick={handleSaveRole} disabled={isPending}>
+            <Button onClick={handleSaveEdit} disabled={isPending}>
               Save
             </Button>
           </DialogFooter>

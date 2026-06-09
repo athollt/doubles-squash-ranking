@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { createUser, updateUserRole, deleteUser } from "@/lib/users";
+import {
+  createUser,
+  updateUserRole,
+  updateUserName,
+  deleteUser,
+} from "@/lib/users";
 import type { UserStore, UserRecord, Role } from "@/lib/users";
 
 function fakeStore(overrides: Partial<UserStore> = {}): UserStore {
@@ -9,6 +14,7 @@ function fakeStore(overrides: Partial<UserStore> = {}): UserStore {
     countAdmins: async () => 2,
     create: async (email, name, role) => ({ id: "u1", email, name, role }),
     updateRole: async (id, role) => ({ id, email: "x@y.z", name: "X", role }),
+    updateName: async (id, name) => ({ id, email: "x@y.z", name, role: "SCORER" }),
     delete: async () => {},
     ...overrides,
   };
@@ -83,6 +89,31 @@ describe("updateUserRole", () => {
     const result = await updateUserRole("u1", "ADMIN", store);
     expect(result.ok).toBe(true);
     expect(updates).toEqual([["u1", "ADMIN"]]);
+  });
+});
+
+describe("updateUserName", () => {
+  it("trims the name and updates it (behaviour 2)", async () => {
+    const updates: Array<[string, string]> = [];
+    const store = fakeStore({
+      updateName: async (id, name) => {
+        updates.push([id, name]);
+        return { id, email: "x@y.z", name, role: "SCORER" };
+      },
+    });
+    const result = await updateUserName("u1", "  New Name  ", store);
+    expect(result).toMatchObject({ ok: true, user: { name: "New Name" } });
+    expect(updates).toEqual([["u1", "New Name"]]);
+  });
+
+  it("rejects an empty name (behaviour 1)", async () => {
+    const store = fakeStore({
+      updateName: async () => {
+        throw new Error("should not update");
+      },
+    });
+    const result = await updateUserName("u1", "   ", store);
+    expect(result).toEqual({ ok: false, error: "Name is required." });
   });
 });
 

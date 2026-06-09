@@ -11,7 +11,7 @@ async function fillFourNewPlayers(
 ) {
   for (let i = 0; i < 4; i++) {
     const name = `[e2e] ${token} P${i}`;
-    await addNewPlayer(page, name, i + 1);
+    await addNewPlayer(page, name);
     await setPlayerWins(page, name, wins[i]);
   }
 }
@@ -40,6 +40,33 @@ test("a session with an odd total of wins is rejected", async ({ page }) => {
 
   await expect(page.getByText(/total wins must be even/i)).toBeVisible();
   await expect(page).toHaveURL(/\/submit/);
+});
+
+test("adding a new player via the + New chip names its score block", async ({
+  page,
+}) => {
+  await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
+  await page.goto("/submit");
+
+  const name = `[e2e] chip-${Date.now()}`;
+  await addNewPlayer(page, name);
+  // A named score block now exists for the typed name.
+  await expect(page.getByRole("group", { name })).toBeVisible();
+});
+
+test("the + New chip rejects a name already on the list", async ({ page }) => {
+  await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
+  await page.goto("/submit");
+
+  const name = `[e2e] dup-${Date.now()}`;
+  await addNewPlayer(page, name);
+
+  // Typing the same name again shows an inline error and adds no second block.
+  const grid = page.getByRole("group", { name: "Choose players" });
+  await grid.getByRole("button", { name: "+ New" }).click();
+  await grid.getByRole("textbox", { name: "New player name" }).fill(name);
+  await grid.getByRole("button", { name: "Add player" }).click();
+  await expect(page.getByText(/already on the list/i)).toBeVisible();
 });
 
 test("an unauthenticated user cannot reach /submit", async ({ page }) => {

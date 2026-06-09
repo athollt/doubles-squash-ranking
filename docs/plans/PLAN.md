@@ -97,6 +97,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 16.4 | [WhatsApp share on submit (Web Share API)](steps/step-16.4-whatsapp-share.md) | complete | 16.2 |
 | 16.5 | [Cleanup & security review](steps/step-16.5-cleanup-security.md) | complete | 16.1, 16.2, 16.3, 16.4 |
 | 16.6 | [Update documentation (16.x)](steps/step-16.6-update-docs.md) | complete | 16.1–16.5 |
+| 17 | [Inline new-player on Submit, rename users, verify backups](steps/step-17-submit-polish.md) | complete | 16.2, 12 |
 
 > **WhatsApp notifications** (testing feedback): the research chose the Web Share
 > API tap-to-share direction (see [RESEARCH-whatsapp-notifications.md](RESEARCH-whatsapp-notifications.md)),

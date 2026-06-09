@@ -27,22 +27,14 @@ export async function signIn(
   }
 }
 
-// Drive the single-grid session form (step 16.2 rev). Add an on-the-fly player:
-// tap "+ New" in the "Choose players" grid, then name the new score block (the
-// nth new block added so far) — naming it relabels the block to that name.
-export async function addNewPlayer(
-  page: Page,
-  name: string,
-  newBlockIndex: number,
-): Promise<void> {
-  await page
-    .getByRole("group", { name: "Choose players" })
-    .getByRole("button", { name: "+ New" })
-    .click();
-  await page
-    .getByRole("group", { name: `New player ${newBlockIndex}` })
-    .getByRole("textbox", { name: "New player name" })
-    .fill(name);
+// Drive the single-grid session form (step 17). Add an on-the-fly player: tap
+// "+ New" in the "Choose players" grid — the chip becomes a name field — type the
+// name and confirm ("Add player"). This creates a named score block.
+export async function addNewPlayer(page: Page, name: string): Promise<void> {
+  const grid = page.getByRole("group", { name: "Choose players" });
+  await grid.getByRole("button", { name: "+ New" }).click();
+  await grid.getByRole("textbox", { name: "New player name" }).fill(name);
+  await grid.getByRole("button", { name: "Add player" }).click();
 }
 
 // Set the wins for the score block named `name` via the segmented buttons.
@@ -67,7 +59,7 @@ export async function submitNewSession(
   wins: number[],
 ): Promise<void> {
   for (let i = 0; i < names.length; i++) {
-    await addNewPlayer(page, names[i], i + 1);
+    await addNewPlayer(page, names[i]);
     await setPlayerWins(page, names[i], wins[i]);
   }
   await page.getByRole("button", { name: /log results/i }).click();

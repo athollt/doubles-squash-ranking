@@ -3,7 +3,6 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildShareText } from "@/lib/share";
@@ -83,6 +82,11 @@ export function SessionForm({
   const [notes, setNotes] = useState(initialNotes);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Inline "+ New" chip: when adding, the chip becomes a text field. Holds the
+  // typed name and any validation error shown under the chip row.
+  const [adding, setAdding] = useState(false);
+  const [newChipName, setNewChipName] = useState("");
+  const [newChipError, setNewChipError] = useState<string | null>(null);
   // Set on a successful submit (submit mode only) — drives the success screen
   // (step 16.4). Null = stay on the form.
   const [shareText, setShareText] = useState<string | null>(null);
@@ -102,11 +106,39 @@ export function SessionForm({
     );
   }
 
-  function addNew() {
+  // Confirm the inline "+ New" chip: add a named on-the-fly entry, unless the
+  // name is blank or already on the list (an existing roster player or another
+  // new entry). Reuses the NEW/newName payload — the player is created at submit.
+  function confirmNewChip() {
+    const trimmed = newChipName.trim();
+    if (trimmed === "") {
+      setAdding(false);
+      setNewChipName("");
+      setNewChipError(null);
+      return;
+    }
+    const lower = trimmed.toLowerCase();
+    const onRoster = players.some((p) => p.name.toLowerCase() === lower);
+    const alreadyNew = entries.some(
+      (e) => e.playerId === NEW && e.newName.trim().toLowerCase() === lower,
+    );
+    if (onRoster || alreadyNew) {
+      setNewChipError(`${trimmed} is already on the list.`);
+      return;
+    }
     setEntries((es) => [
       ...es,
-      { key: nextKey(), playerId: NEW, newName: "", wins: "0" },
+      { key: nextKey(), playerId: NEW, newName: trimmed, wins: "0" },
     ]);
+    setNewChipName("");
+    setNewChipError(null);
+    setAdding(false);
+  }
+
+  function cancelNewChip() {
+    setAdding(false);
+    setNewChipName("");
+    setNewChipError(null);
   }
 
   function patch(key: number, p: Partial<Entry>) {
@@ -249,14 +281,60 @@ export function SessionForm({
               {p.name}
             </button>
           ))}
-          <button
-            type="button"
-            className="border-primary text-primary rounded-full border border-dashed px-3 py-2 text-sm font-medium"
-            onClick={addNew}
-          >
-            + New
-          </button>
+          {adding ? (
+            <span className="border-primary inline-flex items-center gap-1 rounded-full border px-2 py-1">
+              <input
+                aria-label="New player name"
+                autoFocus
+                value={newChipName}
+                onChange={(e) => {
+                  setNewChipName(e.target.value);
+                  setNewChipError(null);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    confirmNewChip();
+                  } else if (e.key === "Escape") {
+                    cancelNewChip();
+                  }
+                }}
+                className="w-28 bg-transparent text-sm font-medium outline-none"
+                placeholder="Name"
+              />
+              <button
+                type="button"
+                aria-label="Add player"
+                className="text-primary text-sm font-bold"
+                onClick={confirmNewChip}
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                aria-label="Cancel new player"
+                className="text-muted-foreground text-sm font-bold"
+                onClick={cancelNewChip}
+              >
+                ✕
+              </button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              className="border-primary text-primary rounded-full border border-dashed px-3 py-2 text-sm font-medium"
+              onClick={() => {
+                setAdding(true);
+                setNewChipError(null);
+              }}
+            >
+              + New
+            </button>
+          )}
         </div>
+        {newChipError && (
+          <p className="text-destructive text-sm">{newChipError}</p>
+        )}
       </div>
 
       {entries.map((e) => {
@@ -332,15 +410,6 @@ function ScoreBlock({
           remove
         </button>
       </div>
-
-      {entry.playerId === NEW && (
-        <Input
-          aria-label="New player name"
-          placeholder="New player name"
-          value={entry.newName}
-          onChange={(e) => onChange({ newName: e.target.value })}
-        />
-      )}
 
       <div>
         <p className="text-muted-foreground mb-1.5 text-xs">wins</p>

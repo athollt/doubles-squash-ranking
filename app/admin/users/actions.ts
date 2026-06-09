@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import {
   createUser,
   updateUserRole,
+  updateUserName,
   deleteUser,
   type Role,
   type UserResult,
@@ -46,6 +47,16 @@ export async function updateUserRoleAction(
 ): Promise<UserResult> {
   await requireAdminId();
   const result = await updateUserRole(id, role, prismaUserStore);
+  if (result.ok) revalidatePath("/admin/users");
+  return result;
+}
+
+export async function updateUserNameAction(
+  id: string,
+  name: string,
+): Promise<UserResult> {
+  await requireAdminId();
+  const result = await updateUserName(id, name, prismaUserStore);
   if (result.ok) revalidatePath("/admin/users");
   return result;
 }
