@@ -1666,3 +1666,53 @@ as the worked example.
   against the updated chip-based `addNewPlayer` helper (no regressions).
 
 ---
+
+## Step 18 — Tenancy schema: League + leagueId + per-league Settings
+
+**Date**: 2026-06-09
+
+First Rungs step (ADR-011). Schema-only — lands the multi-tenant columns with **no
+behaviour change**; step 19 back-fills + tightens them. Columns are **nullable** in
+this step so the migration applies cleanly to existing rows.
+
+### Delivered
+
+- **`League` model** — `id`, `name`, `displayName`, `slug` (unique), `createdAt`, with
+  back-relations to `Player`, `Session`, `Setting`, `RatingsLog`, `LadderSnapshot`.
+- **Nullable `leagueId` FK** added to `Player`, `Session`, `Setting`, `RatingsLog`,
+  `LadderSnapshot` (`onDelete: SetNull`). Nullable **pending step 19**, which seeds the
+  BSC League, back-fills, and flips them non-null.
+- **`Setting` uniqueness** changed from `@unique(key)` → `@@unique([leagueId, key])`
+  per the per-league-settings intent. With `leagueId` null on existing rows, Postgres
+  treats the NULLs as distinct, so the index applies without conflict.
+- **Migration** `20260609143700_add_league_tenancy` — applied to the local DB holding
+  existing-shaped rows without error (the `prisma migrate dev` interactive guard blocks
+  non-TTY runs, so the SQL was generated via `prisma migrate diff` and applied with
+  `prisma migrate deploy`; the SQL is byte-identical to what `migrate dev` would emit).
+- No application code reads `leagueId` — recalc, auth, routing, and pages are unchanged.
+
+### Forced mechanical fixes (consequence of dropping `Setting`'s key-unique)
+
+- `saveAndRecalculateAction` (`app/admin/settings/actions.ts`): `setting.update({ where:
+  { key } })` → `setting.updateMany({ where: { key } })` — `key` is no longer a
+  `WhereUniqueInput`. Identical runtime behaviour (settings stay global, one row per key).
+- `prisma/seed.ts`: keyed `upsert` → `findFirst`-or-`create`, keeping the seed idempotent
+  without the standalone key-unique. Re-running the seed leaves exactly 15 settings.
+
+### Tests
+
+- New DB-backed round-trip (`lib/league-tenancy.test.ts`, node env): creates a `League`,
+  creates a `Player` with `leagueId`, reads the `league` relation back. Self-cleans.
+- Existing pure-core suite (rating-engine, recalc, players, users, auth-rules, prisma
+  round-trip incl. the 15-settings assertion) passes **unchanged** — proving no behaviour
+  moved.
+
+### Validation
+
+- `npx prisma migrate deploy` ✅ (applied to existing data); `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — the dropped key-unique surfaced the two fixes
+  above). `npm run test`: **153/153 unit pass** (local Postgres up).
+- Seed re-run idempotent: **15 settings**, no duplicates.
+- **No routes changed → no E2E required.**
+
+---

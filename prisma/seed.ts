@@ -25,12 +25,14 @@ const defaultSettings: { key: string; value: number; description: string }[] = [
 ];
 
 async function main() {
+  // Settings are global (leagueId null) until step 19 splits them per-league.
+  // Step 18 dropped the standalone key-unique, so upsert-by-key no longer
+  // type-checks; find-or-create keeps the seed idempotent without that constraint.
   for (const setting of defaultSettings) {
-    await prisma.setting.upsert({
-      where: { key: setting.key },
-      update: {},
-      create: setting,
-    });
+    const existing = await prisma.setting.findFirst({ where: { key: setting.key } });
+    if (!existing) {
+      await prisma.setting.create({ data: setting });
+    }
   }
 
   // Dev password for local manual sign-in via the Credentials provider.

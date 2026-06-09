@@ -20,6 +20,20 @@ enum PlayerStatus {
   REMOVED
 }
 
+model League {
+  id          String   @id @default(uuid())
+  name        String
+  displayName String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+
+  players         Player[]
+  sessions        Session[]
+  settings        Setting[]
+  ratingsLogs     RatingsLog[]
+  ladderSnapshots LadderSnapshot[]
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -39,6 +53,10 @@ model Player {
   createdAt   DateTime     @default(now())
   createdById String?
   createdBy   User?        @relation(fields: [createdById], references: [id])
+  // Nullable in step 18; step 19 back-fills + tightens to non-null. Name
+  // uniqueness becomes (leagueId, name) at the application layer (step 20/21).
+  leagueId    String?
+  league      League?      @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -46,9 +64,14 @@ model Player {
 
 model Setting {
   id          String  @id @default(uuid())
-  key         String  @unique
+  key         String
   value       Float
   description String?
+  // Nullable in step 18; step 19 back-fills + enforces unique (leagueId, key).
+  leagueId    String?
+  league      League? @relation(fields: [leagueId], references: [id])
+
+  @@unique([leagueId, key])
 }
 
 model Session {
@@ -62,6 +85,8 @@ model Session {
   playerCount     Int
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  leagueId        String?
+  league          League?  @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -96,10 +121,14 @@ model RatingsLog {
   wins                  Int
   inferredGames         Int
   isNewOrReturningBoost Boolean
+  leagueId              String?
+  league                League? @relation(fields: [leagueId], references: [id])
 }
 
 model LadderSnapshot {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   rankings  Json
+  leagueId  String?
+  league    League?  @relation(fields: [leagueId], references: [id])
 }

@@ -26,9 +26,12 @@ export async function saveAndRecalculateAction(
   const validation = validateSettings(updates);
   if (!validation.ok) return { ok: false, error: validation.error };
 
+  // updateMany (not update): step 18 dropped Setting's standalone key-unique in
+  // favour of (leagueId, key), so `key` is no longer a WhereUniqueInput. Behaviour
+  // is unchanged — settings are still global (leagueId null), one row per key.
   await prisma.$transaction(
     validation.updates.map((u) =>
-      prisma.setting.update({ where: { key: u.key }, data: { value: u.value } }),
+      prisma.setting.updateMany({ where: { key: u.key }, data: { value: u.value } }),
     ),
   );
 
