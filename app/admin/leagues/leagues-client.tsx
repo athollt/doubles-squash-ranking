@@ -263,15 +263,16 @@ export function LeaguesClient({
                 {editingLive.scorers.map((s) => (
                   <li
                     key={s.id}
-                    className="flex items-center justify-between gap-2 text-sm"
+                    className="flex items-center gap-2 text-sm"
                   >
-                    <span className="min-w-0 truncate">
+                    <span className="min-w-0 flex-1 truncate">
                       {s.name}{" "}
                       <span className="text-muted-foreground">({s.email})</span>
                     </span>
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="shrink-0"
                       disabled={isPending}
                       onClick={() => handleRemoveScorer(s.id)}
                     >
