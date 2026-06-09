@@ -43,7 +43,6 @@ export default async function Landing() {
     select: { id: true, slug: true, displayName: true },
   });
   const leagues = visibleLeaguesFor(actor, allLeagues);
-  const isAdmin = role === "ADMIN";
 
   return (
     <PageShell
@@ -57,11 +56,7 @@ export default async function Landing() {
       </p>
 
       {leagues.length === 0 ? (
-        <p className="text-muted-foreground">
-          {actor && !isAdmin
-            ? "You have not been assigned to a league yet. Ask an admin for access."
-            : "No leagues yet."}
-        </p>
+        <p className="text-muted-foreground">No leagues yet.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {leagues.map((l) => (

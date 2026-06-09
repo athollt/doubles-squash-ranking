@@ -35,20 +35,28 @@ test("a non-staff user is bounced, requests access (incl. a new league), and an 
   ).toBeVisible();
 
   // Issue #1: `/` does NOT force-redirect a grant-less user back to the bounce —
-  // they browse the public landing like any visitor.
+  // they reach the landing and stay there. (The fixture user is a SCORER with no
+  // grant — the only non-staff state a credentials login can represent; a
+  // role-less Google session's "browse all public leagues" view is unit-tested
+  // in lib/landing.test.ts, since no User row means no credentials login.)
   await page.goto("/");
   await expect(page).toHaveURL((url) => url.pathname === "/");
   await expect(page.getByRole("heading", { name: "Rungs" })).toBeVisible();
 
   // A "set up a new league" request (no existing league) carries notes; the
-  // admin sees it labelled as a new-league request and dismisses it.
-  await requestAccessFor(page, "Set up a new league…", "Padel at Westville");
+  // admin sees it labelled as a new-league request and dismisses it. The notes
+  // text is unique to this request, so it identifies this row even if the queue
+  // holds other pending requests.
+  const notes = "Padel at Westville";
+  await requestAccessFor(page, "Set up a new league…", notes);
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   await page.goto("/admin/access-requests");
-  await expect(page.getByText(/set up a new league/i)).toBeVisible();
-  await expect(page.getByText("Padel at Westville")).toBeVisible();
-  await page.getByRole("button", { name: "Dismiss" }).first().click();
-  await expect(page.getByText(/set up a new league/i)).toHaveCount(0);
+  const newLeagueCard = page
+    .getByText(notes)
+    .locator("xpath=ancestor::*[contains(@data-slot,'card') or contains(@class,'rounded')][1]");
+  await expect(newLeagueCard.getByText(/set up a new league/i)).toBeVisible();
+  await newLeagueCard.getByRole("button", { name: "Dismiss" }).click();
+  await expect(page.getByText(notes)).toHaveCount(0);
 
   // An existing-league request the admin DISMISSES — no grant created.
   await signIn(page, TEST_NONSTAFF.email, TEST_NONSTAFF.password);

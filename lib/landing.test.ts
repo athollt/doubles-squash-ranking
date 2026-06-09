@@ -26,8 +26,21 @@ describe("visibleLeaguesFor", () => {
     ).toEqual(["b"]);
   });
 
-  it("shows a scorer with no grants nothing", () => {
-    expect(visibleLeaguesFor({ role: "SCORER", grants: [] }, ALL)).toEqual([]);
+  it("shows a scorer with no grants every league (browse like a visitor)", () => {
+    // A scorer awaiting their first grant can't act anywhere yet, so the landing
+    // is just the public browse list — not a dead end. The grant filter only
+    // narrows the list once they actually hold grants.
+    expect(
+      visibleLeaguesFor({ role: "SCORER", grants: [] }, ALL).map((l) => l.id),
+    ).toEqual(["a", "b", "c"]);
+  });
+
+  it("shows a signed-in non-staff user (no role) every league, like a visitor", () => {
+    // A role-less signed-in user is non-staff: they browse the public list the
+    // same as a signed-out visitor (ADR-013/014), not the staff switcher.
+    expect(
+      visibleLeaguesFor({ role: undefined, grants: [] }, ALL).map((l) => l.id),
+    ).toEqual(["a", "b", "c"]);
   });
 
   it("shows a signed-out visitor every league (public ladders are browsable)", () => {

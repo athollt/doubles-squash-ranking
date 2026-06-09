@@ -2139,11 +2139,32 @@ it in-app. **No email** — the logged-in admin sees the queue.
 
 ### Validation
 
-- `prisma db execute` (migration applied over existing data); schema vs DB **no
-  difference**; `prisma generate` ✅.
-- `npm run build` ✅. `npm run test`: **231/231**. `npm run test:e2e`: **55/55**
+- `prisma db execute` (migration applied over existing data; nullable `leagueId`
+  + `notes` folded into the one migration); schema vs DB **no difference**;
+  `prisma generate` ✅.
+- `npm run build` ✅. `npm run test`: **233/233**. `npm run test:e2e`: **55/55**
   against the migrated DB + ephemeral test leagues; teardown leaves only the seeded
   leagues, zero access requests.
+
+### Refinements (manual testing feedback)
+
+- **New-league requests + notes.** The bounce form now offers "Set up a new
+  league…" (a request with `leagueId` null) alongside the existing-league picker,
+  plus an optional multi-line **Notes** field; the button is "Request access".
+  `AccessRequest.leagueId` is nullable; `requestAccess`/`approve` handle the
+  new-league branch (approve just marks it handled — the admin creates the league
+  manually). Wording is "help run a league", not "club".
+- **No homepage dead-end.** The landing only narrows to a scorer's leagues once
+  they actually hold a grant — a scorer **with no grants**, a role-less non-staff
+  user, and a signed-out visitor all browse the full public league list.
+  `visibleLeaguesFor` filters to grants only when `grants` is non-empty; the
+  "ask an admin" empty state is removed. (The bug: a SCORER-with-no-grants — the
+  state the approve flow leaves a new staff member in — was shown the dead end.)
+- **Bounce fires once, post-login only.** The redirect to `/request-access` rides
+  the sign-in `callbackUrl` (defaults there); `/` never force-redirects, so a
+  signed-in user browses freely after the first landing.
+- **Avatar fallback.** A broken/expired Google profile-image URL falls back to the
+  user's initial instead of a broken-image icon (`onError`).
 
 > **Plan update:** the old combined step 24 (rebrand + infra + docs) is **split** — step
 > 24 is now the locally-testable **Rungs rebrand & docs**, and step 25 is the

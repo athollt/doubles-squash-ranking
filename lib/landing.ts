@@ -11,17 +11,25 @@ export type LeagueListItem = {
 // holds (LeagueScorer); ignored for an admin.
 export type Actor = { role: Role | undefined; grants: string[] } | null;
 
-// Which leagues to show on the landing page / switcher (ADR-011/012):
+// Which leagues to show on the landing page / switcher (ADR-011/012/013).
+// Anyone who can't currently act on a specific league browses the FULL public
+// list (public ladders are browsable); the list only narrows to a scorer's own
+// leagues once they actually hold grants:
 // - admin: every league (acts on all);
-// - scorer: only the leagues they are granted;
-// - signed out: every league (public ladders are browsable, ADR-013).
+// - scorer WITH grants: only those leagues — the switcher view;
+// - scorer with NO grants, signed-in non-staff (no role), or signed-out: every
+//   league. None of them can act on one in particular, so it's a browse list,
+//   not a dead end.
 export function visibleLeaguesFor(
   actor: Actor,
   allLeagues: LeagueListItem[],
 ): LeagueListItem[] {
   if (!actor) return allLeagues;
   if (actor.role === "ADMIN") return allLeagues;
-  return allLeagues.filter((l) => actor.grants.includes(l.id));
+  if (actor.role === "SCORER" && actor.grants.length > 0) {
+    return allLeagues.filter((l) => actor.grants.includes(l.id));
+  }
+  return allLeagues;
 }
 
 // Where to send a signed-in actor who lands on `/` (ADR-012/014). A non-staff
