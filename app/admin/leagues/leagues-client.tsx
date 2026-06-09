@@ -57,6 +57,22 @@ export function LeaguesClient({
     if (!slugEdited) setAddSlug(suggestSlug(value));
   }
 
+  // Clear the add form so reopening the dialog always starts blank (the fields
+  // are real inputs, not placeholders — leftover text from a previous open would
+  // look like a default).
+  function resetAddForm() {
+    setAddName("");
+    setAddDisplay("");
+    setAddSlug("");
+    setSlugEdited(false);
+    setAddError(null);
+  }
+
+  function openAdd() {
+    resetAddForm();
+    setAddOpen(true);
+  }
+
   function handleAdd() {
     setAddError(null);
     startTransition(async () => {
@@ -66,10 +82,7 @@ export function LeaguesClient({
         addSlug,
       );
       if (result.ok) {
-        setAddName("");
-        setAddDisplay("");
-        setAddSlug("");
-        setSlugEdited(false);
+        resetAddForm();
         setAddOpen(false);
         router.refresh();
       } else {
@@ -143,7 +156,7 @@ export function LeaguesClient({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button onClick={() => setAddOpen(true)}>Add League</Button>
+        <Button onClick={openAdd}>Add League</Button>
       </div>
 
       {rowError && !editing && (
@@ -185,7 +198,13 @@ export function LeaguesClient({
         </ul>
       )}
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog
+        open={addOpen}
+        onOpenChange={(open) => {
+          setAddOpen(open);
+          if (!open) resetAddForm();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add League</DialogTitle>
