@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   createLeague,
   updateLeague,
+  deleteLeague,
   assignScorer,
   revokeScorer,
   type LeagueProvisioningStore,
@@ -22,6 +23,7 @@ function makeStore(
       slug: "unchanged-slug",
       displayName: input.displayName,
     }),
+    deleteLeagueWithData: async () => {},
     grant: async () => {},
     revoke: async () => {},
     ...over,
@@ -106,6 +108,26 @@ describe("updateLeague", () => {
     expect((await updateLeague("L1", { name: "X", displayName: " " }, store)).ok).toBe(
       false,
     );
+  });
+});
+
+describe("deleteLeague", () => {
+  it("deletes the league and all its data", async () => {
+    let deletedId: string | null = null;
+    const store = makeStore({
+      deleteLeagueWithData: async (id) => {
+        deletedId = id;
+      },
+    });
+
+    const r = await deleteLeague("L1", store);
+
+    expect(r.ok).toBe(true);
+    expect(deletedId).toBe("L1");
+  });
+
+  it("rejects a missing league id", async () => {
+    expect((await deleteLeague("", makeStore())).ok).toBe(false);
   });
 });
 

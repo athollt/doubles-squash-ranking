@@ -5,10 +5,12 @@ import { auth } from "@/auth";
 import {
   createLeague,
   updateLeague,
+  deleteLeague,
   assignScorer,
   revokeScorer,
   type CreateLeagueResult,
   type AssignScorerResult,
+  type DeleteLeagueResult,
 } from "@/lib/league-provisioning";
 import { prismaLeagueProvisioningStore } from "@/lib/league-provisioning-store";
 
@@ -47,6 +49,18 @@ export async function updateLeagueAction(
     { name, displayName },
     prismaLeagueProvisioningStore,
   );
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/admin/leagues");
+  }
+  return result;
+}
+
+export async function deleteLeagueAction(
+  id: string,
+): Promise<DeleteLeagueResult> {
+  await requireAdmin();
+  const result = await deleteLeague(id, prismaLeagueProvisioningStore);
   if (result.ok) {
     revalidatePath("/");
     revalidatePath("/admin/leagues");

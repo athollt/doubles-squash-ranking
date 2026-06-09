@@ -21,6 +21,9 @@ export interface LeagueProvisioningStore {
     id: string,
     input: { name: string; displayName: string },
   ): Promise<CreatedLeague>;
+  // Delete a league and ALL its data (players, sessions, settings, ratings,
+  // snapshots, scorer grants) in one transaction. Irreversible.
+  deleteLeagueWithData(id: string): Promise<void>;
   grant(userId: string, leagueId: string): Promise<void>;
   revoke(userId: string, leagueId: string): Promise<void>;
 }
@@ -70,6 +73,19 @@ export async function updateLeague(
   }
   const league = await store.updateLeagueDetails(id, { name, displayName });
   return { ok: true, league };
+}
+
+export type DeleteLeagueResult = { ok: true } | { ok: false; error: string };
+
+// Delete a league and everything under it. Destructive and irreversible — the
+// caller (admin action) gates on role and the UI confirms first.
+export async function deleteLeague(
+  id: string,
+  store: LeagueProvisioningStore,
+): Promise<DeleteLeagueResult> {
+  if (!id) return { ok: false, error: "Missing league." };
+  await store.deleteLeagueWithData(id);
+  return { ok: true };
 }
 
 export type AssignScorerInput = { userId: string; leagueId: string };

@@ -2039,4 +2039,30 @@ Same-day follow-up after testing the landing + provisioning:
   scorer inside Edit**, asserting the granted scorer sees the league on `/` and the
   removed scorer's row disappears. **209 unit / 52 E2E.**
 
+### Step 22 — refinements, round 3 (UX feedback)
+
+- **Add/Edit dialogs**: the Name vs Display name inputs were indistinguishable once
+  filled — added visible **field labels + a one-line hint** each (Name = internal,
+  Display name = shown to players, Slug = permanent URL). The Add form now **resets on
+  open/close** (the fields are real inputs, not placeholders — leftover text from a
+  closed-without-creating open looked like a default).
+- **Click-through**: each Leagues-page row's name/slug now **links to `/l/{slug}`** (like
+  the landing list); Edit/Delete are separate controls.
+- **Delete a league**: a **Delete** button per row opens a **confirmation modal** listing
+  exactly what will be destroyed — players, sessions, rating records + ladder history,
+  scorer assignments and settings — and that `/l/{slug}` will stop working. Confirming
+  calls `deleteLeagueAction`. New pure `deleteLeague` + `deleteLeagueWithData` store
+  method: since the `leagueId` FKs are `onDelete: Restrict` (step 19), it deletes the
+  children in dependency order inside one transaction — snapshots → ratingsLogs →
+  sessions (cascades SessionPlayer) → settings → players → league (LeagueScorer grants
+  cascade). The page loads each league's `_count` (players/sessions/ratings) for the
+  warning.
+- Fix: Remove buttons in Edit overflowed the modal (inline name span didn't shrink) —
+  `min-w-0 flex-1 truncate` name + `shrink-0` buttons; the add-scorer dropdown sits
+  **above** the current-scorer list.
+- Landing copy finalised; page heading is **"Rungs - Individual ladders for doubles
+  play"** with the sports list as the subtitle.
+- Tests: `deleteLeague` units; E2E adds **click-through to the ladder** and **create →
+  delete via the confirm modal** (row gone, ladder 404s). **211 unit / 54 E2E.**
+
 ---

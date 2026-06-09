@@ -100,6 +100,54 @@ test("an admin can edit a league's display name (slug stays put)", async ({
   expect(res?.status()).toBe(200);
 });
 
+test("an admin can click through a league row to its ladder", async ({
+  page,
+}) => {
+  await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
+  await page.goto("/admin/leagues");
+  // The BSC row's name links to its ladder (like the landing list).
+  await page
+    .getByRole("group", { name: "Doubles Squash @ BSC" })
+    .getByRole("link")
+    .click();
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
+  await expect(page.getByRole("heading", { name: "Ladder" })).toBeVisible();
+});
+
+test("an admin deletes a league after confirming the impact", async ({
+  page,
+}) => {
+  const token = `${Date.now()}`;
+  const slug = `e2e-del-${token}`;
+  const display = `[e2e] Deletable ${token}`;
+
+  await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
+  await page.goto("/admin/leagues");
+  await page.getByRole("button", { name: "Add League" }).click();
+  let dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "League name" }).fill(display);
+  await dialog.getByRole("textbox", { name: "Slug" }).fill(slug);
+  await dialog.getByRole("button", { name: "Create" }).click();
+  await expect(page.getByRole("group", { name: display })).toBeVisible();
+
+  // Delete it via the confirmation modal.
+  await page
+    .getByRole("group", { name: display })
+    .getByRole("button", { name: "Delete" })
+    .click();
+  dialog = page.getByRole("dialog");
+  await expect(dialog.getByText(/permanently deletes/i)).toBeVisible();
+  await dialog.getByRole("button", { name: "Delete league" }).click();
+
+  // The row is gone and the ladder 404s (retry the navigation to ride out
+  // revalidation timing).
+  await expect(page.getByRole("group", { name: display })).toHaveCount(0);
+  await expect(async () => {
+    const res = await page.goto(`/l/${slug}`);
+    expect(res?.status()).toBe(404);
+  }).toPass();
+});
+
 test("a granted scorer sees only their leagues on the landing page", async ({
   page,
 }) => {

@@ -33,6 +33,22 @@ export const prismaLeagueProvisioningStore: LeagueProvisioningStore = {
       select: { id: true, slug: true, displayName: true },
     }),
 
+  // Delete a league and all its data. The leagueId FKs are onDelete: Restrict
+  // (step 19) — a tenant must not be silently nulled out — so children are
+  // removed explicitly, in dependency order, inside one transaction:
+  //   snapshots → ratingsLogs → sessions (cascades any SessionPlayer/RatingsLog)
+  //   → settings → players → league (LeagueScorer grants cascade with it).
+  deleteLeagueWithData: async (id) => {
+    await prisma.$transaction([
+      prisma.ladderSnapshot.deleteMany({ where: { leagueId: id } }),
+      prisma.ratingsLog.deleteMany({ where: { leagueId: id } }),
+      prisma.session.deleteMany({ where: { leagueId: id } }),
+      prisma.setting.deleteMany({ where: { leagueId: id } }),
+      prisma.player.deleteMany({ where: { leagueId: id } }),
+      prisma.league.delete({ where: { id } }),
+    ]);
+  },
+
   grant: async (userId, leagueId) => {
     await prisma.leagueScorer.upsert({
       where: { userId_leagueId: { userId, leagueId } },

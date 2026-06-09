@@ -30,6 +30,14 @@ export default async function AdminLeaguesPage() {
           select: { user: { select: { id: true, name: true, email: true } } },
           orderBy: { user: { name: "asc" } },
         },
+        // Counts for the delete-confirmation warning (what will be destroyed).
+        _count: {
+          select: {
+            players: true,
+            sessions: true,
+            ratingsLogs: true,
+          },
+        },
       },
     }),
     // Existing scorers (any non-admin staff) — the add dropdown picks from these;
@@ -47,6 +55,11 @@ export default async function AdminLeaguesPage() {
     slug: l.slug,
     displayName: l.displayName,
     scorers: l.scorerGrants.map((g) => g.user),
+    counts: {
+      players: l._count.players,
+      sessions: l._count.sessions,
+      ratings: l._count.ratingsLogs,
+    },
   }));
 
   return (

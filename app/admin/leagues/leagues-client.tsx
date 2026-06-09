@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import { suggestSlug } from "@/lib/slug";
 import {
   createLeagueAction,
   updateLeagueAction,
+  deleteLeagueAction,
   assignScorerAction,
   revokeScorerAction,
 } from "./actions";
@@ -27,6 +29,7 @@ type League = {
   slug: string;
   displayName: string;
   scorers: Scorer[];
+  counts: { players: number; sessions: number; ratings: number };
 };
 
 const SELECT_CLASS =
@@ -153,6 +156,25 @@ export function LeaguesClient({
     });
   }
 
+  // Delete-league confirmation. `deleting` holds the league pending confirmation;
+  // the modal shows what will be destroyed and only then calls the action.
+  const [deleting, setDeleting] = useState<League | null>(null);
+
+  function handleConfirmDelete() {
+    if (!deleting) return;
+    const id = deleting.id;
+    setRowError(null);
+    startTransition(async () => {
+      const result = await deleteLeagueAction(id);
+      if (result.ok) {
+        setDeleting(null);
+        router.refresh();
+      } else {
+        setRowError(result.error);
+      }
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -174,10 +196,20 @@ export function LeaguesClient({
                 aria-label={league.displayName}
                 className="p-3 sm:flex sm:items-center sm:gap-4"
               >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{league.displayName}</p>
+                {/* Click the name/slug to view the league's ladder (like the
+                    landing list). Edit/Delete are separate controls. */}
+                <Link
+                  href={`/l/${league.slug}`}
+                  className="group/row min-w-0 flex-1"
+                >
+                  <p className="group-hover/row:text-primary truncate font-medium">
+                    {league.displayName}
+                    <span aria-hidden className="text-primary ml-1">
+                      ›
+                    </span>
+                  </p>
                   <p className="text-muted-foreground text-sm">{league.slug}</p>
-                </div>
+                </Link>
                 <div className="mt-3 flex items-center justify-end gap-2 sm:mt-0">
                   <span className="text-muted-foreground mr-auto text-sm sm:mr-2">
                     {league.scorers.length}{" "}
@@ -190,6 +222,17 @@ export function LeaguesClient({
                     onClick={() => openEdit(league)}
                   >
                     Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => {
+                      setDeleting(league);
+                      setRowError(null);
+                    }}
+                  >
+                    Delete
                   </Button>
                 </div>
               </Card>
@@ -381,6 +424,66 @@ export function LeaguesClient({
           <DialogFooter>
             <Button onClick={handleSaveEdit} disabled={isPending}>
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleting(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete league?</DialogTitle>
+          </DialogHeader>
+          {deleting && (
+            <div className="space-y-3 text-sm">
+              <p>
+                This permanently deletes{" "}
+                <span className="font-medium">{deleting.displayName}</span> and
+                everything in it. This cannot be undone.
+              </p>
+              <ul className="text-muted-foreground list-disc space-y-1 pl-5">
+                <li>
+                  {deleting.counts.players}{" "}
+                  {deleting.counts.players === 1 ? "player" : "players"}
+                </li>
+                <li>
+                  {deleting.counts.sessions}{" "}
+                  {deleting.counts.sessions === 1 ? "session" : "sessions"}
+                </li>
+                <li>
+                  {deleting.counts.ratings} rating{" "}
+                  {deleting.counts.ratings === 1 ? "record" : "records"} and all
+                  ladder history
+                </li>
+                <li>all scorer assignments and rating settings</li>
+              </ul>
+              <p className="text-muted-foreground">
+                The ladder at /l/{deleting.slug} will stop working.
+              </p>
+            </div>
+          )}
+          {rowError && deleting && (
+            <p className="text-destructive text-sm">{rowError}</p>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleting(null)}
+              disabled={isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={isPending}
+            >
+              Delete league
             </Button>
           </DialogFooter>
         </DialogContent>
