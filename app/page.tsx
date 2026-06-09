@@ -8,7 +8,8 @@ import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Rungs - Individual ladders for doubles play",
+  // Absolute so the layout template doesn't append a second " — Rungs".
+  title: { absolute: "Rungs — Individual ladders for doubles play" },
 };
 
 // The Rungs landing + league switcher (step 22): one list whose contents vary by

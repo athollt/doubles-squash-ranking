@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { resolveLeagueOr404 } from "@/lib/league-access";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate } from "@/lib/rating-engine";
@@ -16,9 +19,17 @@ import {
 import { PageShell } from "@/components/ui/page-shell";
 import { Badge } from "@/components/ui/badge";
 
-export const metadata = {
-  title: "Player — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Player — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Player", league.displayName) } };
+}
 
 // Public, no auth (auth-rules allows /players/*). Derived view, not cached.
 export const dynamic = "force-dynamic";

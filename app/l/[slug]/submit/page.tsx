@@ -1,13 +1,24 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { requireLeagueScorer } from "@/lib/league-access";
 import { ladderUrlForSlug } from "@/lib/share";
 import { SessionForm, type FormSlot } from "@/components/session-form";
 import { PageShell } from "@/components/ui/page-shell";
 import { submitSessionAction } from "./actions";
 
-export const metadata = {
-  title: "Submit a session — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Submit a session — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Submit a session", league.displayName) } };
+}
 
 export const dynamic = "force-dynamic";
 

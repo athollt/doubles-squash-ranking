@@ -5,7 +5,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { AccessRequestsClient } from "./access-requests-client";
 
 export const metadata = {
-  title: "Access requests — Rungs",
+  title: "Access requests",
 };
 
 // The approval queue (ADR-014, stories #6/#7): a global admin reviews pending

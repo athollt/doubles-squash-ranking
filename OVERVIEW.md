@@ -1,16 +1,25 @@
 # OVERVIEW — doubles-squash-ranking
 
-Architecture and internals of the BSC Doubles Squash Ladder. For *running* the app
-(setup, dev, tests, deploy) see [`README.md`](README.md); this doc is the map of *how it is
-built*.
+Architecture and internals of **Rungs** — a multi-tenant ranking-ladder platform (the repo
+name predates the rebrand). For *running* the app (setup, dev, tests, deploy) see
+[`README.md`](README.md); this doc is the map of *how it is built*.
 
 ## Purpose
 
-A mobile-first PWA for a club doubles-squash ladder. The public sees rankings, session
-history, and per-player rating trends; signed-in **scorers** submit/edit their own sessions,
-manage players, and view rating settings; **admins** also manage users and edit the rating
-settings (see [ADR-010](docs/plans/DECISIONS.md)). Hosted on Fly.io (Johannesburg)
-— see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+A mobile-first PWA hosting **many independent ranking ladders** — one **League** per club,
+for any doubles sport where you count each player's wins per session. Each League lives at
+its own URL `/l/{slug}` ([ADR-013](docs/plans/DECISIONS.md)) and its public ladder, session
+history, and per-player rating trends are viewable without login. A signed-in **Scorer**
+submits/edits their own sessions and manages players for the League(s) they're granted; a
+global **Admin** administers every League, creates Leagues, and assigns Scorers
+([ADR-012](docs/plans/DECISIONS.md)). Login is **staff-only**; a non-staff Google sign-in
+can request scoring access in-app ([ADR-014](docs/plans/DECISIONS.md)). Hosted on Fly.io
+(Johannesburg) — see [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+> **Branding:** the product/PWA identity is **Rungs** (single shared identity, ADR-013);
+> individual Leagues keep their own display names (e.g. "Doubles Squash @ BSC"). The Fly
+> app/Postgres and domain still carry the old `squash` names — the infra rename to
+> `rungs.co.za` is **step 25** (pending).
 
 ## Tech stack
 
@@ -42,11 +51,11 @@ This is why most behaviour is testable without a database or the OAuth runtime.
 
 | Path | What's there |
 |---|---|
-| [`app/`](app/) | Routes (App Router). Public: `/` (ladder), `/sessions`, `/sessions/[id]`, `/players/[id]`. Auth'd: `/submit`, `/sessions/[id]/edit`. Admin: `/admin/{players,sessions,settings,users}`. Plus `/signin`, `/unauthorised`, `/~offline`. Server Actions in `**/actions.ts`. |
+| [`app/`](app/) | Routes (App Router). Landing/switcher: `/`. Per-League under **`/l/[slug]/`** — public: ladder, `sessions`, `sessions/[id]`, `players/[id]`; scorer: `submit`, `sessions/[id]/edit`, `admin/{players,sessions,settings}`. Global-admin (top-level): `/admin/{users,leagues,access-requests}`. Plus `/signin`, `/request-access` (non-staff bounce), `/unauthorised`, `/~offline`. Server Actions in `**/actions.ts`. |
 | [`app/sw.ts`](app/sw.ts) | Serwist service-worker source (bundled to `public/sw.js` at build). |
 | [`lib/`](lib/) | Pure domain logic (see below) + the Prisma singleton and store adapters. |
 | [`components/`](components/) | App components (`site-header`, `session-form`, `admin-menu`, `rating-trend-chart`, …) and `components/ui/` design-system primitives (`page-shell`, `card`, `badge`, `trend`, `bottom-nav`, …). |
-| [`prisma/`](prisma/) | `schema.prisma`, `migrations/`, `seed.ts` (15 settings + first admin), `seed-sample.ts` (opt-in demo data). |
+| [`prisma/`](prisma/) | `schema.prisma`, `migrations/`, `seed.ts` (seeds the BSC + Padel Leagues, each with 15 settings, + the first admin), `seed-sample.ts` (opt-in demo data). |
 | [`auth.ts`](auth.ts) | Single Auth.js config (providers + `signIn`/`jwt`/`session` callbacks). |
 | [`proxy.ts`](proxy.ts) | Next 16 proxy (was `middleware.ts`) — route gating via `authorizeRoute`. |
 | [`docs/`](docs/) | This repo's docs: deployment, rating algorithm, and the `plans/` design set. |
@@ -57,34 +66,51 @@ This is why most behaviour is testable without a database or the OAuth runtime.
   orchestrated by [`recalc.ts`](lib/recalc.ts) over a store port, backed by
   [`recalc-store.ts`](lib/recalc-store.ts). Full explanation:
   [`docs/RATING-ALGORITHM.md`](docs/RATING-ALGORITHM.md).
-- **Auth** — [`auth-rules.ts`](lib/auth-rules.ts) (`authorizeRoute` — pure route policy) and
-  [`auth-callbacks.ts`](lib/auth-callbacks.ts) (sign-in allowlist, role attach, credentials
-  verify). [`password.ts`](lib/password.ts) for the Credentials provider.
+- **Auth** — [`auth-rules.ts`](lib/auth-rules.ts) (`authorizeRoute` + `canScoreLeague` +
+  `canMutateSession` — pure route/league policy) and [`auth-callbacks.ts`](lib/auth-callbacks.ts)
+  (provider-aware sign-in, role attach, credentials verify). [`password.ts`](lib/password.ts)
+  for the Credentials provider.
+- **Tenancy** — [`league.ts`](lib/league.ts) (`leagueBySlug`), [`league-access.ts`](lib/league-access.ts)
+  (`resolveLeagueOr404` / `requireLeagueScorer` — the page-boundary gate), `league-scorer-store.ts`
+  (grant/revoke/list), `landing.ts` (`visibleLeaguesFor` / `bounceTarget`), `slug.ts`
+  (suggest/validate; slugs are immutable), `league-provisioning.ts` (create/update/delete League,
+  assign/revoke Scorer), `access-requests.ts` (request/approve/dismiss — ADR-014), `page-title.ts`.
 - **Entities** — `players.ts` / `users.ts` / `settings.ts` (pure create/update + validation
   over `*-store.ts` ports), `session-validation.ts`, `session-authz.ts`.
 - **Presentation helpers** — `public-ladder.ts`, `session-history.ts`, `player-trend.ts`,
-  `nav.ts`.
+  `nav.ts`, `default-settings.ts`.
 - **Demo data** — `sample-data.ts` (deterministic generator used by `seed-sample.ts`).
 
 ## Data model (`prisma/schema.prisma`)
 
-`User` (Google accounts + role) and `Player` (name roster) are **deliberately unlinked**
-([ADR-004](docs/plans/DECISIONS.md)). A `Session` has many `SessionPlayer` rows (wins per
-player). `RatingsLog` stores every per-player-per-session rating step (powers trends);
-`LadderSnapshot` stores a ladder state as JSON (powers movement indicators). `Setting` holds
-the 15 tunable algorithm parameters. `SessionPlayer` + `RatingsLog` cascade-delete with their
-`Session`.
+A **`League`** (name, `displayName`, unique immutable `slug`) is the tenant: `Player`,
+`Session`, `Setting`, `RatingsLog`, and `LadderSnapshot` each carry a non-null `leagueId`
+([ADR-011](docs/plans/DECISIONS.md)); `Setting` is unique on `(leagueId, key)`, so each League
+has its own 15 algorithm parameters. `User` (Google accounts + global role) and `Player` (name
+roster, now per-League) are **deliberately unlinked** ([ADR-004](docs/plans/DECISIONS.md)). A
+`Session` has many `SessionPlayer` rows (wins per player). `RatingsLog` powers trends;
+`LadderSnapshot` stores a ladder state as JSON (powers movement). **`LeagueScorer(userId,
+leagueId)`** is a Scorer's per-League grant ([ADR-012](docs/plans/DECISIONS.md)). **`AccessRequest`**
+(email, name, nullable `leagueId`, notes, status) is an in-app request to score a League or set
+up a new one ([ADR-014](docs/plans/DECISIONS.md)). `SessionPlayer` + `RatingsLog` cascade-delete
+with their `Session`; the tenant `leagueId` FKs are `onDelete: Restrict` (a League is deleted by
+removing its children in order — see `league-provisioning-store.ts`).
 
 ## Authentication & authorisation
 
-- Sign-in is **Google OAuth**; the `signIn` callback enforces an **allowlist** — only emails
-  present in the `User` table may sign in (others → `/unauthorised`). Role (`ADMIN` /
-  `SCORER`) is attached to the JWT.
-- [`proxy.ts`](proxy.ts) gates every request via the pure
-  [`authorizeRoute`](lib/auth-rules.ts): public routes open; `/submit` and most `/admin/*`
-  (Players, Sessions, Ratings) require sign-in; only `/admin/users` requires `ADMIN`
-  ([ADR-010](docs/plans/DECISIONS.md)). Server Actions **re-check** the role — settings-edit
-  and user management stay ADMIN-only, and a scorer may edit only their own sessions
+- Sign-in is **Google OAuth**. Staff (a `User` row) sign in regardless of provider; a
+  **non-staff Google** account is allowed in too (role-less session) and is bounced to
+  `/request-access` ([ADR-012](docs/plans/DECISIONS.md)/[ADR-014](docs/plans/DECISIONS.md)).
+  The Credentials path stays staff-only. The `User` table stays staff-only; only *sessions*
+  open up.
+- [`proxy.ts`](proxy.ts) gates on route **shape** only (DB-free): public `/l/{slug}` reads
+  open; scorer/admin shapes fall through to the auth gate. The real per-League check is at the
+  **page boundary** — `requireLeagueScorer` ([`league-access.ts`](lib/league-access.ts))
+  resolves the slug→League and enforces the `LeagueScorer` grant (admin bypasses; ADR-012).
+  Global-admin routes (`/admin/{users,leagues,access-requests}`) require `ADMIN`.
+- **Authority model** ([ADR-012](docs/plans/DECISIONS.md)): a global **ADMIN** can act on every
+  League; a **SCORER** has power only via `LeagueScorer` grants and edits only their own
+  sessions in a granted League (`canScoreLeague` / `canMutateSession`). Server Actions re-check
   (defence in depth).
 - A **Credentials provider** exists for local manual testing and E2E only
   ([ADR-006](docs/plans/DECISIONS.md)); production uses Google.
@@ -108,6 +134,8 @@ the 15 tunable algorithm parameters. `SessionPlayer` + `RatingsLog` cascade-dele
 
 ## Domain language
 
+- **League** — a tenant: one club's ladder, at `/l/{slug}`, with its own players, sessions,
+  and rating settings. The product/PWA shell is **Rungs**; a League keeps its own display name.
 - **Session** — one night's play; a set of players with games won each (partners/opponents
   not recorded).
 - **Rating** — a player's skill number (starts at 1000). **Ladder score** = rating + activity
@@ -115,8 +143,10 @@ the 15 tunable algorithm parameters. `SessionPlayer` + `RatingsLog` cascade-dele
 - **Provisional** — a player still within their first `NewPlayerSessions` sessions.
 - **Active / Inactive** — played within / outside `ActiveThresholdDays`. **Removed** —
   off the visible ladder but kept in history.
-- **Scorer / Admin** — the two roles. See [`docs/RATING-ALGORITHM.md`](docs/RATING-ALGORITHM.md)
-  for every algorithm term.
+- **Scorer** (per-League) / **Admin** (global) — the two staff roles; a Scorer's authority is
+  its `LeagueScorer` grants. **Access request** — an in-app request by a signed-in non-staff
+  user to become a Scorer (or to set up a new League). See
+  [`docs/RATING-ALGORITHM.md`](docs/RATING-ALGORITHM.md) for every algorithm term.
 
 ## Where to read more
 

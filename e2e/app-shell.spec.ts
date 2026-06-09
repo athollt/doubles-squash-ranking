@@ -12,6 +12,10 @@ test("logged-out shell shows public tabs and Sign in, not the account menu", asy
   page,
 }) => {
   await page.goto("/l/bsc-doubles-squash");
+  // The header carries the Rungs wordmark (step 24 rebrand).
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Rungs" }),
+  ).toBeVisible();
   const tabs = page.getByRole("navigation", { name: "Primary" });
   await expect(tabs.getByRole("link", { name: /ladder/i })).toBeVisible();
   await expect(tabs.getByRole("link", { name: /sessions/i })).toBeVisible();

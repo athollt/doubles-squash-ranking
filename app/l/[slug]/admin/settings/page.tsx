@@ -1,12 +1,23 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { requireLeagueScorer } from "@/lib/league-access";
 import { PageShell } from "@/components/ui/page-shell";
 import { SettingsClient } from "./settings-client";
 import { RatingExplainer } from "./rating-explainer";
 
-export const metadata = {
-  title: "Ratings — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Ratings — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Ratings", league.displayName) } };
+}
 
 export const dynamic = "force-dynamic";
 

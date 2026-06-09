@@ -5,7 +5,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { LeaguesClient } from "./leagues-client";
 
 export const metadata = {
-  title: "Leagues — Rungs",
+  title: "Leagues",
 };
 
 // Global-admin provisioning surface (ADR-012): list/create/edit leagues and

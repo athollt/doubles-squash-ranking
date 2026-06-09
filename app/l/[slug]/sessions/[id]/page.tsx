@@ -1,5 +1,8 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { resolveLeagueOr404 } from "@/lib/league-access";
 import { formatSessionDate } from "@/lib/session-history";
 import {
@@ -12,9 +15,17 @@ import {
 } from "@/components/ui/table";
 import { PageShell } from "@/components/ui/page-shell";
 
-export const metadata = {
-  title: "Session — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Session — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Session", league.displayName) } };
+}
 
 // Public, no auth (auth-rules allows /sessions/<id>). Derived view, not cached.
 export const dynamic = "force-dynamic";

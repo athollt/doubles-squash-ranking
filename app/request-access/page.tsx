@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { RequestAccessForm } from "./request-access-form";
 
 export const metadata = {
-  title: "Request access — Rungs",
+  title: "Request access",
 };
 
 // The non-staff bounce page (ADR-012/014, stories #17/#18): a signed-in user who

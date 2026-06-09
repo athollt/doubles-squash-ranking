@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { resolveLeagueOr404 } from "@/lib/league-access";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate, type LadderEntry, type PlayerRating } from "@/lib/rating-engine";
 import {
@@ -19,9 +22,17 @@ import { PageShell } from "@/components/ui/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Trend } from "@/components/ui/trend";
 
-export const metadata = {
-  title: "Ladder — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Ladder — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Ladder", league.displayName) } };
+}
 
 // Derives the live ladder on every request (ADR-002) — trivial at this scale.
 export const dynamic = "force-dynamic";

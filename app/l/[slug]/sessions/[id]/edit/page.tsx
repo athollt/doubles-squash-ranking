@@ -1,5 +1,8 @@
 import { redirect, notFound } from "next/navigation";
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { canMutateSession } from "@/lib/session-authz";
 import { requireLeagueScorer } from "@/lib/league-access";
 import { prismaLeagueScorerStore } from "@/lib/league-scorer-store";
@@ -7,9 +10,17 @@ import { SessionForm, type FormSlot } from "@/components/session-form";
 import { PageShell } from "@/components/ui/page-shell";
 import { updateSessionAction, deleteSessionAction } from "./actions";
 
-export const metadata = {
-  title: "Edit session — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Edit session — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Edit session", league.displayName) } };
+}
 
 export const dynamic = "force-dynamic";
 

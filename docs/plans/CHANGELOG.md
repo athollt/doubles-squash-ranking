@@ -2172,3 +2172,59 @@ it in-app. **No email** — the logged-in admin sees the queue.
 > OAuth redirect URIs, DNS/TLS). New domain is **rungs.co.za** (owner sets up the CNAME).
 
 ---
+
+## Step 24 — Rungs rebrand & docs
+
+**Date**: 2026-06-10
+
+Re-skins the multi-tenant app as **Rungs** (ADR-013) and closes the documentation loop.
+Cosmetic + in-app only — no production infrastructure touched (the Fly/Postgres/domain
+rename is step 25). The product/PWA identity is "Rungs"; individual Leagues keep their own
+display names.
+
+### Branding
+
+- **"Climb" mark** — `public/icon.svg` / `logo.svg` / `og.svg` rebuilt as four rounded rungs
+  stepping up-and-right on a slate badge, top rung in coral (replaces the squash
+  racket+ball). Rasterised via `sharp` (same toolchain as step 13): `icon-192/512`,
+  `apple-touch-icon` (180), `favicon-16/32`, `og.png` (1200×630), and a 16+32 PNG-in-ICO
+  `app/favicon.ico`.
+- **Palette → slate / indigo / coral** (`app/globals.css`): primary indigo `#4F46E5`
+  (`#818CF8` dark), accent coral `#FB7185`, slate backgrounds — replacing the Court
+  royal/volt set. `--up`/`--down` trend colours unchanged (semantic, not brand).
+- **manifest.json** — name/short_name "Rungs", new description, `theme_color #4F46E5` /
+  `background_color #F8FAFC`. **layout.tsx** — `title.template` "%s — Rungs" (default
+  "Rungs"), description, appleWebApp title, OG, `viewport.themeColor` all Rungs.
+  `metadataBase` stays on the squash domain — the domain moves at step 25.
+- **Header wordmark** "Rungs"; offline page title "Offline".
+
+### Per-page titles (render the League, not a hard-coded brand)
+
+- New pure `leaguePageTitle(label, displayName)` (`lib/page-title.ts`). Every `/l/[slug]`
+  page swapped its static `metadata` for a `generateMetadata` that resolves the league and
+  returns `{ title: { absolute: "{page} — {displayName}" } }` — e.g.
+  "Ladder — Doubles Squash @ BSC". Shell pages set a bare label and the layout template
+  appends " — Rungs".
+
+### Docs (lifecycle close — `update-docs` Mode A)
+
+- `OVERVIEW.md`, `README.md`, `AGENT-NOTES.md` rewritten for Rungs: multi-tenant `League`
+  model, `/l/{slug}` routing, page-boundary per-League authz, staff-only auth + access
+  requests, the new `lib/` tenancy modules, two-League seed. Domain rename noted as pending
+  (step 25). All doc links verified against the current tree.
+- **ADR-011…015 promoted** `proposed → accepted (built)` in `DECISIONS.md` (this repo has no
+  central `architecture/ADR.md`; the `Promote: candidate` lines were dropped). ADR-013 notes
+  its domain/infra half is still pending step 25.
+
+### Tests
+
+- Unit (**235**, +2): `leaguePageTitle`; `manifest.test.ts` updated to Rungs + slate/indigo.
+- E2E (**55**): `pwa.spec` asserts manifest name "Rungs" + the league page title renders the
+  displayName; `app-shell.spec` asserts the header "Rungs" wordmark. No new routes.
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **235/235**. `npm run test:e2e`: **55/55**. `npm run
+  lint` ✅. All local — no infra cutover (that is step 25).
+
+---

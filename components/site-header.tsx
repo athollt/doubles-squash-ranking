@@ -18,7 +18,7 @@ export async function SiteHeader() {
       <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-4 py-3">
         <Link href="/" className="flex items-center gap-2 font-bold">
           <Image src="/icon.svg" alt="" width={28} height={28} className="rounded-md" />
-          <span className="font-heading">BSC Squash</span>
+          <span className="font-heading">Rungs</span>
         </Link>
         <div className="ml-auto flex items-center gap-3">
           {role && <AdminMenu role={role} />}

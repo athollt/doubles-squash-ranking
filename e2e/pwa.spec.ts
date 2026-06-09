@@ -6,8 +6,8 @@ test("manifest.json is served with the correct fields", async ({ request }) => {
   const res = await request.get("/manifest.json");
   expect(res.ok()).toBeTruthy();
   const manifest = await res.json();
-  expect(manifest.name).toBe("BSC Squash Ladder");
-  expect(manifest.short_name).toBe("Squash");
+  expect(manifest.name).toBe("Rungs");
+  expect(manifest.short_name).toBe("Rungs");
   expect(manifest.display).toBe("standalone");
   const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
   expect(sizes).toContain("192x192");
@@ -31,4 +31,7 @@ test("the ladder page links the manifest, apple touch icon and OG image", async 
     "content",
     /og\.png/,
   );
+  // The league page title renders the league's own name, not a hard-coded brand
+  // (step 24): "Ladder — Doubles Squash @ BSC".
+  await expect(page).toHaveTitle("Ladder — Doubles Squash @ BSC");
 });

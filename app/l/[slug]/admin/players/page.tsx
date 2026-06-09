@@ -1,11 +1,22 @@
+import type { Metadata } from "next";
 import { prisma } from "@/lib/prisma";
+import { leagueBySlug } from "@/lib/league";
+import { leaguePageTitle } from "@/lib/page-title";
 import { requireLeagueScorer } from "@/lib/league-access";
 import { PageShell } from "@/components/ui/page-shell";
 import { PlayersClient } from "./players-client";
 
-export const metadata = {
-  title: "Players — Doubles Squash @ BSC",
-};
+// Title renders the resolved league's name (step 24): "Players — {displayName}".
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await leagueBySlug(slug);
+  if (!league) return {};
+  return { title: { absolute: leaguePageTitle("Players", league.displayName) } };
+}
 
 // Player data is live and staff-only; never prerender or cache at build time.
 export const dynamic = "force-dynamic";
