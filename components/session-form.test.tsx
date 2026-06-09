@@ -23,6 +23,17 @@ function chip(name: string) {
   );
 }
 
+// Add an on-the-fly player via the "+ New" chip: open it, type the name, confirm.
+// The confirm (✓) button uses onPointerDown (so it fires before the input's
+// blur-to-cancel), so the test must fire pointerDown, not click.
+function addNewChip(name: string) {
+  fireEvent.click(chip("+ New"));
+  fireEvent.change(screen.getByRole("textbox", { name: /new player name/i }), {
+    target: { value: name },
+  });
+  fireEvent.pointerDown(screen.getByRole("button", { name: /add player/i }));
+}
+
 describe("SessionForm single-grid select-then-score", () => {
   it("shows no score block until a player is selected", () => {
     render(
@@ -84,14 +95,12 @@ describe("SessionForm single-grid select-then-score", () => {
       <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={onSubmit} />,
     );
 
-    // Activating "+ New" turns the chip into a name field (no block at the
-    // bottom of the page until the name is confirmed).
-    fireEvent.click(chip("+ New"));
-    fireEvent.change(
-      screen.getByRole("textbox", { name: /new player name/i }),
-      { target: { value: "Carol" } },
-    );
-    fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+    // Activating "+ New" turns the chip into a name field; confirming adds the
+    // player as a selected chip in the grid AND a named score block below.
+    addNewChip("Carol");
+
+    // Appears as a selected chip in the "Choose players" grid.
+    expect(chip("Carol")).toHaveAttribute("aria-pressed", "true");
 
     // A named score block now exists; set wins on it.
     const newBlock = screen.getByRole("group", { name: "Carol" });
@@ -103,17 +112,31 @@ describe("SessionForm single-grid select-then-score", () => {
     ]);
   });
 
+  it("removes an on-the-fly player when its grid chip is tapped", () => {
+    render(
+      <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={noop} />,
+    );
+
+    addNewChip("Carol");
+    expect(screen.getByRole("group", { name: "Carol" })).toBeInTheDocument();
+
+    // Tapping the new player's grid chip removes it (chip + score block gone).
+    fireEvent.click(chip("Carol"));
+    expect(
+      within(screen.getByRole("group", { name: /choose players/i })).queryByRole(
+        "button",
+        { name: "Carol" },
+      ),
+    ).toBeNull();
+    expect(screen.queryByRole("group", { name: "Carol" })).toBeNull();
+  });
+
   it("rejects a + New name that is already on the roster, with an inline error", () => {
     render(
       <SessionForm players={PLAYERS} submitLabel="Log" onSubmit={noop} />,
     );
 
-    fireEvent.click(chip("+ New"));
-    fireEvent.change(
-      screen.getByRole("textbox", { name: /new player name/i }),
-      { target: { value: "alice" } }, // matches "Alice" case-insensitively
-    );
-    fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+    addNewChip("alice"); // matches "Alice" case-insensitively
 
     expect(screen.getByText(/already on the list/i)).toBeInTheDocument();
     // No new score block was created.
@@ -131,12 +154,7 @@ describe("SessionForm single-grid select-then-score", () => {
     );
 
     for (const name of ["Carol", "Dave"]) {
-      fireEvent.click(chip("+ New"));
-      fireEvent.change(
-        screen.getByRole("textbox", { name: /new player name/i }),
-        { target: { value: name } },
-      );
-      fireEvent.click(screen.getByRole("button", { name: /add player/i }));
+      addNewChip(name);
     }
 
     fireEvent.click(screen.getByRole("button", { name: "Log" }));

@@ -281,42 +281,56 @@ export function SessionForm({
               {p.name}
             </button>
           ))}
+          {/* On-the-fly players appear here as selected chips too (they aren't on
+              the saved roster yet). Tapping one removes it — an unsaved player only
+              exists while selected. */}
+          {entries
+            .filter((e) => e.playerId === NEW)
+            .map((e) => (
+              <button
+                key={e.key}
+                type="button"
+                aria-pressed={true}
+                className="border-primary bg-primary/10 text-primary rounded-full border px-3 py-2 text-sm font-medium"
+                onClick={() => remove(e.key)}
+              >
+                {e.newName}
+              </button>
+            ))}
           {adding ? (
-            <span className="border-primary inline-flex items-center gap-1 rounded-full border px-2 py-1">
+            <span className="border-primary inline-flex items-center gap-2 rounded-full border py-1 pr-1 pl-3">
               <input
                 aria-label="New player name"
                 autoFocus
                 value={newChipName}
-                onChange={(e) => {
-                  setNewChipName(e.target.value);
+                onChange={(ev) => {
+                  setNewChipName(ev.target.value);
                   setNewChipError(null);
                 }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
+                onKeyDown={(ev) => {
+                  if (ev.key === "Enter") {
+                    ev.preventDefault();
                     confirmNewChip();
-                  } else if (e.key === "Escape") {
+                  } else if (ev.key === "Escape") {
                     cancelNewChip();
                   }
                 }}
+                // Tapping outside the chip cancels. The ✓ uses onPointerDown so it
+                // confirms before this blur fires (blur would otherwise cancel first).
+                onBlur={cancelNewChip}
                 className="w-28 bg-transparent text-sm font-medium outline-none"
                 placeholder="Name"
               />
               <button
                 type="button"
                 aria-label="Add player"
-                className="text-primary text-sm font-bold"
-                onClick={confirmNewChip}
+                className="border-primary text-primary flex h-8 w-8 items-center justify-center rounded-full border text-base font-bold"
+                onPointerDown={(ev) => {
+                  ev.preventDefault();
+                  confirmNewChip();
+                }}
               >
                 ✓
-              </button>
-              <button
-                type="button"
-                aria-label="Cancel new player"
-                className="text-muted-foreground text-sm font-bold"
-                onClick={cancelNewChip}
-              >
-                ✕
               </button>
             </span>
           ) : (
