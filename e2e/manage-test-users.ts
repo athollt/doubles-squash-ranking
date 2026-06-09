@@ -7,6 +7,7 @@ import { hashPassword } from "../lib/password";
 import {
   TEST_ADMIN,
   TEST_SCORER,
+  TEST_NONSTAFF,
   TEST_USER_EMAILS,
   OTHER_LEAGUE,
 } from "./fixtures";
@@ -16,7 +17,7 @@ const prisma = new PrismaClient({ adapter });
 
 async function setup() {
   const created: Record<string, string> = {};
-  for (const u of [TEST_ADMIN, TEST_SCORER]) {
+  for (const u of [TEST_ADMIN, TEST_SCORER, TEST_NONSTAFF]) {
     const passwordHash = await hashPassword(u.password);
     const row = await prisma.user.upsert({
       where: { email: u.email },
@@ -47,6 +48,17 @@ async function setup() {
       create: { userId: created[TEST_SCORER.email], leagueId: bscLeague.id },
     });
   }
+
+  // The non-staff user (step 23) starts with NO grant so they hit the bounce
+  // page. A prior run's approve-spec would have granted them — clear it to
+  // restore the precondition. Also clear any leftover access requests so the
+  // duplicate-pending guard doesn't block a fresh request.
+  await prisma.leagueScorer.deleteMany({
+    where: { userId: created[TEST_NONSTAFF.email] },
+  });
+  await prisma.accessRequest.deleteMany({
+    where: { email: { equals: TEST_NONSTAFF.email, mode: "insensitive" } },
+  });
 
   // A second league the test scorer is NOT granted — used to verify cross-league
   // authz bounces them. No LeagueScorer grant is created for it.
@@ -80,7 +92,12 @@ async function teardown() {
     });
   }
   await prisma.player.deleteMany({ where: { name: { contains: "[e2e]" } } });
-  // The two fixture users plus any [e2e]-named users created by the user-management
+  // Access requests raised by the non-staff fixture user (step 23): they target
+  // the persistent BSC league, so they don't cascade away — remove by email.
+  await prisma.accessRequest.deleteMany({
+    where: { email: { in: TEST_USER_EMAILS } },
+  });
+  // The fixture users plus any [e2e]-named users created by the user-management
   // spec or by assign-scorer in the provisioning spec.
   await prisma.user.deleteMany({ where: { email: { in: TEST_USER_EMAILS } } });
   await prisma.user.deleteMany({ where: { name: { contains: "[e2e]" } } });

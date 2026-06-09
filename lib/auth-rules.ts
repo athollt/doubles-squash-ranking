@@ -56,16 +56,19 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
-// Global-admin screens a scorer may NOT reach: Users (login accounts + roles)
-// and Leagues (provisioning — create league, assign scorer). Both are top-level
-// (not league-scoped). Per-league Players/Sessions/Settings live under
-// /l/{slug}/admin and are gated per-league at the page (ADR-012), not here.
+// Global-admin screens a scorer may NOT reach: Users (login accounts + roles),
+// Leagues (provisioning — create league, assign scorer), and the access-request
+// approval queue (ADR-014). All top-level (not league-scoped). Per-league
+// Players/Sessions/Settings live under /l/{slug}/admin and are gated per-league
+// at the page (ADR-012), not here.
 function isAdminOnly(pathname: string): boolean {
   return (
     pathname === "/admin/users" ||
     pathname.startsWith("/admin/users/") ||
     pathname === "/admin/leagues" ||
-    pathname.startsWith("/admin/leagues/")
+    pathname.startsWith("/admin/leagues/") ||
+    pathname === "/admin/access-requests" ||
+    pathname.startsWith("/admin/access-requests/")
   );
 }
 

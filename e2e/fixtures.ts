@@ -21,7 +21,22 @@ export const NON_ALLOWLISTED = {
   password: "whatever",
 };
 
-export const TEST_USER_EMAILS = [TEST_ADMIN.email, TEST_SCORER.email];
+// A non-staff signed-in user (step 23): a SCORER-role account with a password
+// but NO league grant, so bounceTarget routes them to /request-access — the
+// E2E-credentials stand-in for a fresh Google user with no access. After the
+// admin approves their request they gain a grant and can act on that league.
+export const TEST_NONSTAFF = {
+  email: "testnonstaff@bsc.local",
+  name: "TestNonStaff",
+  role: "SCORER" as const,
+  password: "test-nonstaff-pw",
+};
+
+export const TEST_USER_EMAILS = [
+  TEST_ADMIN.email,
+  TEST_SCORER.email,
+  TEST_NONSTAFF.email,
+];
 
 // The seed league slug (step 21). Public + scorer/admin league routes live under
 // /l/{slug}; lpath() builds them so specs stay slug-aware.

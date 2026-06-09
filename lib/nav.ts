@@ -45,6 +45,11 @@ export function adminLinksFor(role: Role, slug: string): NavLink[] {
 export function globalAdminLinks(): NavLink[] {
   return [
     { key: "/admin/leagues", href: "/admin/leagues", label: "Leagues" },
+    {
+      key: "/admin/access-requests",
+      href: "/admin/access-requests",
+      label: "Access requests",
+    },
     { key: "/admin/users", href: "/admin/users", label: "Users" },
   ];
 }

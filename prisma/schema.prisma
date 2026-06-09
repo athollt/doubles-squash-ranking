@@ -20,6 +20,12 @@ enum PlayerStatus {
   REMOVED
 }
 
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  DISMISSED
+}
+
 model League {
   id          String   @id @default(uuid())
   name        String
@@ -33,6 +39,7 @@ model League {
   ratingsLogs     RatingsLog[]
   ladderSnapshots LadderSnapshot[]
   scorerGrants    LeagueScorer[]
+  accessRequests  AccessRequest[]
 }
 
 model User {
@@ -59,6 +66,24 @@ model LeagueScorer {
   createdAt DateTime @default(now())
 
   @@unique([userId, leagueId])
+}
+
+// In-app access request (ADR-014): a signed-in non-staff Google user asks to
+// help run a League — either to become a Scorer for an existing League, or to
+// set up a NEW League (leagueId null). An admin approves (existing → creates the
+// User + LeagueScorer grant; new → marks handled, then creates the league
+// manually) or dismisses. No email — the logged-in admin sees the queue.
+// email/name capture the requester (no User row exists yet at request time);
+// notes is the requester's free-text (e.g. the proposed new league's details).
+model AccessRequest {
+  id        String              @id @default(uuid())
+  email     String
+  name      String
+  leagueId  String?
+  league    League?             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  notes     String?
+  status    AccessRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
 }
 
 model Player {

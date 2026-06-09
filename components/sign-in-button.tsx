@@ -17,7 +17,9 @@ export function SignInButton() {
       disabled={pending}
       onClick={() => {
         setPending(true);
-        signIn("google", { callbackUrl: "/" });
+        // Post-login bounce (ADR-014): staff are sent home from /request-access,
+        // non-staff see the access-request form. Fires once, here at sign-in.
+        signIn("google", { callbackUrl: "/request-access" });
       }}
     >
       {pending ? "Signing in…" : "Sign in"}

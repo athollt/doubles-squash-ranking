@@ -2066,3 +2066,88 @@ Same-day follow-up after testing the landing + provisioning:
   delete via the confirm modal** (row gone, ladder 404s). **211 unit / 54 E2E.**
 
 ---
+
+## Step 23 — Non-staff bounce + access requests + approval queue
+
+**Date**: 2026-06-09
+
+Turns the dead-end for a non-staff sign-in into a self-service intake (ADR-014): a
+signed-in user with no scoring access lands on a bounce page, requests to help run a
+league (an existing one *or* a brand-new one), and a global admin approves or dismisses
+it in-app. **No email** — the logged-in admin sees the queue.
+
+### Delivered
+
+- **`AccessRequest` model** — `id`, `email`, `name`, nullable `leagueId` (null = a
+  request to set up a *new* league), `notes`, `status` (`PENDING`/`APPROVED`/`DISMISSED`),
+  `createdAt`. Migration `20260609220610_add_access_request` (FK `onDelete: Cascade`).
+- **Sign-in opens up for non-staff (ADR-012/014).** `resolveSignIn` now takes the
+  provider: a **Google** account with no users-table row is **allowed** (it gets a
+  role-less session); **Credentials** stays staff-only (a non-staff email is still
+  denied — defence-in-depth on top of `verifyCredentials`, which already needs a stored
+  hash). The `User` table stays staff-only; only *sessions* open up.
+- **Post-login bounce, once (not a gate).** `bounceTarget(actor)` (`lib/landing.ts`)
+  returns `/request-access` for a signed-in user who is neither admin nor holds any
+  grant, else null. The bounce fires via the **sign-in `callbackUrl`** (defaults to
+  `/request-access`; the header Google button + the credentials form both point there) —
+  so it happens once after login. The landing `/` **never** force-redirects, so a
+  grant-less user browses the public league list like any visitor. `/request-access`
+  redirects staff straight home.
+- **Bounce page `/request-access`** — "scorers & admins only", explains they can help
+  run a league or set one up; a league dropdown (existing leagues **+ "Set up a new
+  league…"**), an optional multi-line **Notes** field, and a **Request access** button.
+- **Approval queue `/admin/access-requests`** (global-admin only; added to
+  `isAdminOnly`, linked from the admin hamburger between Leagues and Users). Lists
+  pending requests with the requester, the target league *or* a "wants to set up a new
+  league" label, and their notes. **Approve** (existing league → create the `User` if
+  absent + `LeagueScorer` grant, reusing step 22's assign-Scorer sequence; **new-league
+  request** → just mark handled, the admin creates the league manually) and **Dismiss**.
+  Server actions re-check admin.
+
+### Pure-core / thin-shell
+
+- `lib/access-requests.ts`: `requestAccess` (rejects unknown league; no duplicate
+  pending per email+league; new-league request skips the league check; trims notes to
+  null), `approveAccessRequest` (find-or-create user + grant for an existing league,
+  mark-handled for a new-league request), `dismissAccessRequest` — all over an
+  `AccessRequestStore` port, unit-tested with fakes.
+- `lib/access-request-store.ts`: the Prisma adapter.
+
+### Decision captured in this step
+
+- **Allowlist relaxed for Google only** (with the user): stories #17/#18 require a
+  non-staff user to actually be *signed in* to reach the bounce + request flow, which
+  the old `signIn`-deny made impossible. `/unauthorised` is kept for genuinely-denied
+  cases (no email, or a non-staff credentials attempt).
+
+### Tests
+
+- Unit (**231 pass**, +20): `bounceTarget` (admin/granted/grant-less/signed-out);
+  `resolveSignIn` provider-aware (Google non-staff allowed, credentials non-staff
+  denied); `requestAccess` (scorer + new-league + notes-to-null + dup guard + unknown
+  league); `approve` (create+grant / existing-user grant / new-league mark-handled /
+  unknown); `dismiss`; `authorizeRoute` gates `/admin/access-requests` ADMIN-only; nav
+  exposes the Access-requests link.
+- E2E (**55 pass**, +1): a fixture **non-staff** user (SCORER role, no grant — the
+  credentials stand-in for a fresh Google sign-in) signs in → lands on the bounce page →
+  `/` does **not** re-redirect (issue: browse freely) → raises a **new-league** request
+  (dismissed) → an existing-league request (dismissed, scorer surface stays barred) →
+  a BSC request the admin **approves** → the user gains access (BSC on the landing,
+  submit reachable). Global setup creates the non-staff user grant-less + clears stale
+  grants/requests; teardown removes their access requests (they target the persistent
+  BSC league, so don't cascade).
+
+### Validation
+
+- `prisma db execute` (migration applied over existing data); schema vs DB **no
+  difference**; `prisma generate` ✅.
+- `npm run build` ✅. `npm run test`: **231/231**. `npm run test:e2e`: **55/55**
+  against the migrated DB + ephemeral test leagues; teardown leaves only the seeded
+  leagues, zero access requests.
+
+> **Plan update:** the old combined step 24 (rebrand + infra + docs) is **split** — step
+> 24 is now the locally-testable **Rungs rebrand & docs**, and step 25 is the
+> hard-to-reverse **infra rename & `rungs.co.za` cutover** (Fly app/DB, GitHub Actions,
+> OAuth redirect URIs, DNS/TLS). New domain is **rungs.co.za** (owner sets up the CNAME).
+
+---

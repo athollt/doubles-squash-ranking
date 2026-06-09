@@ -70,12 +70,15 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 20 | [Staff-only auth — LeagueScorer grants + league-scoped authz](steps/step-20-league-authz.md) | complete | 18 |
 | 21 | [Path-prefix routing — `/l/{slug}` + slug lifecycle](steps/step-21-slug-routing.md) | complete | 19, 20 |
 | 22 | [Landing, League switcher & admin provisioning](steps/step-22-provisioning.md) | complete | 20, 21 |
-| 23 | [Non-staff bounce + access requests + approval queue](steps/step-23-access-requests.md) | pending | 22 |
-| 24 | [Rungs rebrand, infra rename & docs](steps/step-24-rebrand-infra-docs.md) | pending | 21, 22, 23 |
+| 23 | [Non-staff bounce + access requests + approval queue](steps/step-23-access-requests.md) | complete | 22 |
+| 24 | [Rungs rebrand & docs](steps/step-24-rebrand-docs.md) | pending | 21, 22, 23 |
+| 25 | [Infra rename & rungs.co.za cutover](steps/step-25-infra-rename.md) | pending | 24 |
 
-> Risk isolation: **step 19** (data migration over live prod data) and **step 24**
-> (Fly app/DB + domain rename — hard to reverse) are deliberately their own steps.
-> Step 24 also carries the lifecycle `update-docs` close (it is the final step).
+> Risk isolation: **step 19** (data migration over live prod data) and **step 25**
+> (Fly app/DB + domain rename to `rungs.co.za` — hard to reverse, touches GitHub
+> Actions + Fly.io) are deliberately their own steps. **Step 24** (the cosmetic
+> Rungs rebrand) is fully testable locally and carries the lifecycle `update-docs`
+> close; **step 25** is the final step (manual infra cutover, verified live).
 
 ---
 

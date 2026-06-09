@@ -33,6 +33,10 @@ export default async function Landing() {
       : [];
     actor = { role, grants };
   }
+  // The landing never force-redirects: a signed-in non-staff user browses the
+  // public league list like any visitor. The post-login bounce to
+  // /request-access (ADR-014) lives at sign-in (the callbackUrl), so it fires
+  // once after login, not on every visit to `/`.
 
   const allLeagues = await prisma.league.findMany({
     orderBy: { displayName: "asc" },

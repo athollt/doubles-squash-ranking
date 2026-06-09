@@ -23,3 +23,16 @@ export function visibleLeaguesFor(
   if (actor.role === "ADMIN") return allLeagues;
   return allLeagues.filter((l) => actor.grants.includes(l.id));
 }
+
+// Where to send a signed-in actor who lands on `/` (ADR-012/014). A non-staff
+// user — signed in but neither ADMIN nor holding any scorer grant — is routed to
+// the access-request bounce page; everyone else (admin, granted scorer, or a
+// signed-out visitor browsing public ladders) stays on the landing (null = no
+// redirect). The redirect lives only here, so it fires post-login (/ is the
+// default sign-in target) without gating any other public page.
+export function bounceTarget(actor: Actor): string | null {
+  if (!actor) return null;
+  if (actor.role === "ADMIN") return null;
+  if (actor.grants.length > 0) return null;
+  return "/request-access";
+}

@@ -9,15 +9,21 @@ export interface AuthToken {
   [key: string]: unknown;
 }
 
-// signIn callback: deny a Google account whose email is not in the users table.
+// signIn callback (ADR-012/014). Staff (a users-table row) sign in regardless of
+// provider. A non-staff Google account is now ALLOWED — it gets a role-less
+// session and the landing bounces it to /request-access (bounceTarget). The
+// User table stays staff-only; only sessions open up. The Credentials path stays
+// staff-only (no session for a non-staff email) — defence-in-depth on top of
+// verifyCredentials, which already requires a stored hash non-staff never have.
 export async function resolveSignIn(
   email: string | null | undefined,
+  provider: string,
   lookup: UserLookup,
 ): Promise<true | string> {
   if (!email) return "/unauthorised";
   const appUser = await lookup(email);
-  if (!appUser) return "/unauthorised";
-  return true;
+  if (appUser) return true;
+  return provider === "google" ? true : "/unauthorised";
 }
 
 // jwt callback: on first sign-in (user present) attach the role from the

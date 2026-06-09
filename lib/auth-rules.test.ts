@@ -52,6 +52,18 @@ describe("authorizeRoute", () => {
     expect(authorizeRoute("/admin/leagues", { role: "ADMIN" })).toBe("allow");
   });
 
+  it("denies a scorer the access-request approval queue", () => {
+    expect(authorizeRoute("/admin/access-requests", { role: "SCORER" })).toBe(
+      "unauthorised",
+    );
+  });
+
+  it("allows an admin into the access-request approval queue", () => {
+    expect(authorizeRoute("/admin/access-requests", { role: "ADMIN" })).toBe(
+      "allow",
+    );
+  });
+
   it("redirects an unauthenticated visitor away from an admin screen to sign-in", () => {
     expect(authorizeRoute("/admin/players", null)).toBe("signin");
     expect(authorizeRoute("/admin/users", null)).toBe("signin");
