@@ -10,12 +10,36 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function setup() {
+  const created: Record<string, string> = {};
   for (const u of [TEST_ADMIN, TEST_SCORER]) {
     const passwordHash = await hashPassword(u.password);
-    await prisma.user.upsert({
+    const row = await prisma.user.upsert({
       where: { email: u.email },
       update: { passwordHash, role: u.role, name: u.name },
       create: { email: u.email, name: u.name, role: u.role, passwordHash },
+      select: { id: true },
+    });
+    created[u.email] = row.id;
+  }
+
+  // Grant the test scorer the seed BSC League (ADR-012) so they keep scorer
+  // authority once authz is league-scoped (step 21 wires the gate). Mirrors the
+  // step-20 migration back-fill; idempotent on (userId, leagueId). The admin
+  // bypasses and needs no grant.
+  const bscLeague = await prisma.league.findUnique({
+    where: { slug: "bsc-doubles-squash" },
+    select: { id: true },
+  });
+  if (bscLeague) {
+    await prisma.leagueScorer.upsert({
+      where: {
+        userId_leagueId: {
+          userId: created[TEST_SCORER.email],
+          leagueId: bscLeague.id,
+        },
+      },
+      update: {},
+      create: { userId: created[TEST_SCORER.email], leagueId: bscLeague.id },
     });
   }
 }

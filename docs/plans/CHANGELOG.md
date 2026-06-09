@@ -1798,3 +1798,58 @@ back-fills guard on `IS NULL`).
 - Seeds idempotent: re-seeding leaves one BSC League + 15 settings.
 
 ---
+
+## Step 20 — Staff-only auth: LeagueScorer grants + league-scoped authz
+
+**Date**: 2026-06-09
+
+Replaces the single global role with **global Admin + per-League Scorer grants**
+(ADR-012), as **pure authz logic + the grant model** — before any routing consumes
+it. No routes change yet; the `/l/{slug}` wiring + its E2E land in step 21. The proxy
+is untouched this step.
+
+### Delivered
+
+- **`LeagueScorer(userId, leagueId)`** model — unique `(userId, leagueId)`, both FKs
+  `onDelete: Cascade`. Migration `20260609183000_add_league_scorer`. A SCORER's
+  authority comes entirely from these grants; a global ADMIN needs none.
+- **`canScoreLeague({ role, grants, leagueId })`** (pure, `lib/auth-rules.ts`):
+  `true` if `role === "ADMIN"` (bypass) or `grants` includes the league.
+- **`authorizeRoute`** gains an **optional `targetLeagueId`** and `grants` on
+  `RouteAuth`. With no `targetLeagueId` (today's global routes) behaviour is
+  **unchanged**; when step 21 resolves a slug→leagueId it passes it and the league
+  gate activates (scorer needs a grant, admin bypasses, public reads stay open). The
+  Users surface stays ADMIN-only even with a league grant.
+- **`canMutateSession`** gains optional `grants` + `sessionLeagueId`: a scorer may
+  mutate **their own** session only within a league they are granted (extends ADR-010's
+  ownership rule); admin mutates any; omitting the league inputs preserves the prior
+  own-session rule.
+- **Grant store** `lib/league-scorer-store.ts` (`prismaLeagueScorerStore`):
+  `leagueIdsFor` / `grant` (idempotent upsert) / `revoke`.
+- **Back-fill**: the migration grants every existing **SCORER** the seed BSC League
+  (`bsc-doubles-squash`); admins bypass. Verified: `atholl@different.co.za` (SCORER)
+  granted, the admin un-granted. The E2E fixture setup (`manage-test-users.ts`) grants
+  the test scorer the same league, so fresh dev/E2E DBs match (idempotent; the grant
+  cascade-deletes with the user on teardown).
+
+### Tests
+
+- `lib/league-authz.test.ts`: `canScoreLeague` (admin bypass / grant present / grant
+  absent); `authorizeRoute` league gate (no-grant → unauthorised, grant → allow, admin
+  bypass, public read open, unauthenticated → signin, Users still ADMIN-only).
+- `lib/session-authz.test.ts` (extended): own-session in granted vs non-granted league,
+  another scorer's session in a granted league, admin-any — alongside the unchanged
+  pre-multi-tenant cases.
+- `lib/league-scorer-store.test.ts` (node env): grant → list → revoke round-trip, and
+  grant idempotency on `(userId, leagueId)`. Self-cleans.
+
+### Validation
+
+- `prisma migrate deploy` ✅; schema vs DB **no difference**; `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — optional params kept existing callers valid).
+  `npm run test`: **175/175 unit pass** (local Postgres up).
+- **No routes change (logic only) → no E2E required.** The existing `authorizeRoute` +
+  `canMutateSession` tests pass unchanged (backward-compatible signatures), and the E2E
+  fixture setup runs idempotently with the new grant.
+
+---

@@ -32,6 +32,7 @@ model League {
   settings        Setting[]
   ratingsLogs     RatingsLog[]
   ladderSnapshots LadderSnapshot[]
+  scorerGrants    LeagueScorer[]
 }
 
 model User {
@@ -42,8 +43,22 @@ model User {
   passwordHash String?
   createdAt    DateTime @default(now())
 
-  players  Player[]
-  sessions Session[]
+  players      Player[]
+  sessions     Session[]
+  scorerGrants LeagueScorer[]
+}
+
+// Per-league scorer authority (ADR-012). A SCORER acts on a League only with a
+// grant here; a global ADMIN needs none. Assigning a scorer = creating this row.
+model LeagueScorer {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, leagueId])
 }
 
 model Player {
