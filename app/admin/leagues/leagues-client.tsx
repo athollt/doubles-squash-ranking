@@ -190,31 +190,46 @@ export function LeaguesClient({
           <DialogHeader>
             <DialogTitle>Add League</DialogTitle>
           </DialogHeader>
-          <Input
-            aria-label="League name"
-            placeholder="Name (e.g. Padel Tuesdays)"
-            value={addName}
-            onChange={(e) => onAddNameChange(e.target.value)}
-            autoFocus
-          />
-          <Input
-            aria-label="Display name"
-            placeholder="Display name"
-            value={addDisplay}
-            onChange={(e) => setAddDisplay(e.target.value)}
-          />
-          <Input
-            aria-label="Slug"
-            placeholder="slug"
-            value={addSlug}
-            onChange={(e) => {
-              setSlugEdited(true);
-              setAddSlug(e.target.value);
-            }}
-          />
-          <p className="text-muted-foreground text-xs">
-            URL slug: {addSlug || "your-slug"} — permanent once created.
-          </p>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium">Name</span>
+            <Input
+              aria-label="League name"
+              placeholder="e.g. Padel Tuesdays"
+              value={addName}
+              onChange={(e) => onAddNameChange(e.target.value)}
+              autoFocus
+            />
+            <span className="text-muted-foreground mt-1 block text-xs">
+              Internal name for this league.
+            </span>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium">Display name</span>
+            <Input
+              aria-label="Display name"
+              placeholder="e.g. Padel Tuesdays @ BSC"
+              value={addDisplay}
+              onChange={(e) => setAddDisplay(e.target.value)}
+            />
+            <span className="text-muted-foreground mt-1 block text-xs">
+              Shown to players on the ladder and in the league list.
+            </span>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium">Slug (URL)</span>
+            <Input
+              aria-label="Slug"
+              placeholder="slug"
+              value={addSlug}
+              onChange={(e) => {
+                setSlugEdited(true);
+                setAddSlug(e.target.value);
+              }}
+            />
+            <span className="text-muted-foreground mt-1 block text-xs">
+              /l/{addSlug || "your-slug"} — permanent once created.
+            </span>
+          </label>
           {addError && <p className="text-destructive text-sm">{addError}</p>}
           <DialogFooter>
             <Button onClick={handleAdd} disabled={isPending}>
@@ -234,21 +249,33 @@ export function LeaguesClient({
           <DialogHeader>
             <DialogTitle>Edit League</DialogTitle>
           </DialogHeader>
-          <Input
-            aria-label="League name"
-            placeholder="Name"
-            value={editName}
-            disabled={isPending}
-            onChange={(e) => setEditName(e.target.value)}
-            autoFocus
-          />
-          <Input
-            aria-label="Display name"
-            placeholder="Display name"
-            value={editDisplay}
-            disabled={isPending}
-            onChange={(e) => setEditDisplay(e.target.value)}
-          />
+          <label className="text-sm">
+            <span className="mb-1 block font-medium">Name</span>
+            <Input
+              aria-label="League name"
+              placeholder="Name"
+              value={editName}
+              disabled={isPending}
+              onChange={(e) => setEditName(e.target.value)}
+              autoFocus
+            />
+            <span className="text-muted-foreground mt-1 block text-xs">
+              Internal name for this league.
+            </span>
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block font-medium">Display name</span>
+            <Input
+              aria-label="Display name"
+              placeholder="Display name"
+              value={editDisplay}
+              disabled={isPending}
+              onChange={(e) => setEditDisplay(e.target.value)}
+            />
+            <span className="text-muted-foreground mt-1 block text-xs">
+              Shown to players on the ladder and in the league list.
+            </span>
+          </label>
           {editingLive && (
             <p className="text-muted-foreground text-xs">
               Slug: {editingLive.slug} — permanent, can&rsquo;t be changed.
