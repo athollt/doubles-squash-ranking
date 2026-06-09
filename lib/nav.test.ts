@@ -49,11 +49,12 @@ describe("navLinksFor", () => {
 });
 
 describe("adminLinksFor", () => {
-  it("gives an admin the per-league pages plus the global Users page", () => {
+  it("gives an admin the per-league pages plus the global Leagues + Users pages", () => {
     expect(adminLinksFor("ADMIN", SLUG).map((l) => l.href)).toEqual([
       `/l/${SLUG}/admin/players`,
       `/l/${SLUG}/admin/sessions`,
       `/l/${SLUG}/admin/settings`,
+      "/admin/leagues",
       "/admin/users",
     ]);
   });

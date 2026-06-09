@@ -42,6 +42,16 @@ describe("authorizeRoute", () => {
     );
   });
 
+  it("denies a scorer the admin Leagues (provisioning) screen", () => {
+    expect(authorizeRoute("/admin/leagues", { role: "SCORER" })).toBe(
+      "unauthorised",
+    );
+  });
+
+  it("allows an admin into the Leagues provisioning screen", () => {
+    expect(authorizeRoute("/admin/leagues", { role: "ADMIN" })).toBe("allow");
+  });
+
   it("redirects an unauthenticated visitor away from an admin screen to sign-in", () => {
     expect(authorizeRoute("/admin/players", null)).toBe("signin");
     expect(authorizeRoute("/admin/users", null)).toBe("signin");

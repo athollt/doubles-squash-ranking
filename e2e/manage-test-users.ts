@@ -80,11 +80,27 @@ async function teardown() {
     });
   }
   await prisma.player.deleteMany({ where: { name: { contains: "[e2e]" } } });
-  // The two fixture users plus any [e2e]-named users created by the user-management spec.
+  // The two fixture users plus any [e2e]-named users created by the user-management
+  // spec or by assign-scorer in the provisioning spec.
   await prisma.user.deleteMany({ where: { email: { in: TEST_USER_EMAILS } } });
   await prisma.user.deleteMany({ where: { name: { contains: "[e2e]" } } });
-  // The ephemeral second league (its grants, if any, cascade with it).
-  await prisma.league.deleteMany({ where: { slug: OTHER_LEAGUE.slug } });
+
+  // Ephemeral leagues: the fixed OTHER_LEAGUE plus any [e2e]-named league created
+  // by the provisioning spec. Settings have an onDelete:Restrict FK (step 19), so
+  // remove a league's settings (and grants) before the league itself; LeagueScorer
+  // and Player cascade, but Setting does not.
+  const e2eLeagues = await prisma.league.findMany({
+    where: {
+      OR: [{ slug: OTHER_LEAGUE.slug }, { displayName: { contains: "[e2e]" } }],
+    },
+    select: { id: true },
+  });
+  const leagueIds = e2eLeagues.map((l) => l.id);
+  if (leagueIds.length > 0) {
+    await prisma.setting.deleteMany({ where: { leagueId: { in: leagueIds } } });
+    await prisma.player.deleteMany({ where: { leagueId: { in: leagueIds } } });
+    await prisma.league.deleteMany({ where: { id: { in: leagueIds } } });
+  }
 }
 
 const mode = process.argv[2];

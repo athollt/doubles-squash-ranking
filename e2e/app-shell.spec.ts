@@ -26,11 +26,14 @@ test("logged-out shell shows public tabs and Sign in, not the account menu", asy
 
 test("admin menu links to every management page incl. Users", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
+  // The per-league management links resolve against the current league, so view
+  // a league page; admins also get the global Leagues + Users links.
+  await page.goto("/l/bsc-doubles-squash");
   const bar = page.getByRole("banner");
   await expect(bar.getByRole("button", { name: "Account" })).toBeVisible();
 
   await bar.getByRole("button", { name: "Menu" }).click();
-  for (const label of ["Players", "Sessions", "Ratings", "Users"]) {
+  for (const label of ["Players", "Sessions", "Ratings", "Leagues", "Users"]) {
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
   await page.getByRole("menuitem", { name: "Ratings" }).click();
@@ -41,6 +44,7 @@ test("scorer menu shows Players/Sessions/Ratings but not Users", async ({
   page,
 }) => {
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
+  await page.goto("/l/bsc-doubles-squash");
   await expect(
     page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
       name: /submit/i,
@@ -55,6 +59,7 @@ test("scorer menu shows Players/Sessions/Ratings but not Users", async ({
     await expect(page.getByRole("menuitem", { name: label })).toBeVisible();
   }
   await expect(page.getByRole("menuitem", { name: "Users" })).toHaveCount(0);
+  await expect(page.getByRole("menuitem", { name: "Leagues" })).toHaveCount(0);
 
   // Sign out lives inside the account menu (works for scorers too).
   await bar.getByRole("button", { name: "Account" }).click();

@@ -1931,3 +1931,71 @@ real landing.
 > landing + league switcher + creation form (which consumes `suggestSlug`/`validateNewSlug`).
 
 ---
+
+## Step 22 — Landing, League switcher & admin provisioning
+
+**Date**: 2026-06-09
+
+`/` becomes a real **Rungs landing**: a list of leagues that doubles as the
+**switcher** (its contents vary by viewer), plus the global-Admin flows to **create
+a League** and **assign a Scorer**. Consumes step 20's grants/authz and step 21's
+slug helpers.
+
+### Delivered
+
+- **Landing `/`** (`app/page.tsx`): a short Rungs intro + a league list. The list IS
+  the switcher — an **admin** sees every league, a **scorer** only their granted
+  ones, a **signed-out** visitor every league (public ladders are browsable,
+  ADR-013). Each row links to `/l/{slug}`. Decided with the user: no prominent
+  sign-in (not a core action for most visitors); signed-out sees the public list, not
+  "none". An admin also gets a **Manage leagues** button.
+- **`visibleLeaguesFor(actor, allLeagues)`** (`lib/landing.ts`) — the pure rule
+  behind both the landing list and the switcher.
+- **Create League** (admin only) — `app/admin/leagues` (new global-admin route,
+  added to `isAdminOnly`). Form: name → display name + **slug auto-suggested**
+  (`suggestSlug`, editable until hand-edited), validated unique (`validateNewSlug`).
+  On create, the new league's **settings are seeded from the defaults** in one
+  transaction.
+- **Assign Scorer** (admin only) — by email: creates the `User` (allowlist, role
+  SCORER) if absent, then the `LeagueScorer` grant. This is the same flow step 23's
+  access-request approval will call.
+- **`lib/default-settings.ts`** — `DEFAULT_SETTINGS` extracted from `prisma/seed.ts`
+  (single source of truth); the seed now imports it, and create-League seeds from it,
+  so an in-app league starts with the same parameters as the seeded BSC league.
+- **AdminMenu** gains the global **Leagues** link (admins) alongside Users.
+
+### Pure-core / thin-shell
+
+- `lib/league-provisioning.ts`: `createLeague` / `assignScorer` pure orchestrators
+  over a `LeagueProvisioningStore` port (validation + sequencing, no Prisma).
+- `lib/league-provisioning-store.ts`: the Prisma adapter (transactional
+  league+settings create; find-or-create user; idempotent grant).
+- Server actions (`app/admin/leagues/actions.ts`) re-check `role === "ADMIN"` — the
+  forms are UI gating, the server is the real gate.
+
+### Tests
+
+- Unit (**206 pass**): `visibleLeaguesFor` (admin all / scorer granted / scorer none
+  / signed-out all); `createLeague` (valid creates + seeds, duplicate slug rejected,
+  blank name + malformed slug rejected); `assignScorer` (new email → create+grant,
+  existing → grant only, invalid email rejected); `authorizeRoute` denies a scorer
+  `/admin/leagues`, allows an admin; nav exposes the Leagues link.
+- E2E (**51 pass**): the landing lists leagues and links to `/l/{slug}`; an **admin
+  creates a league and assigns a scorer** (new league's public ladder reachable,
+  "Scorer assigned ✓"); a **granted scorer sees only their league** on `/` (not the
+  ungranted second league). A second ephemeral league + `[e2e]`-named leagues are
+  cleaned up in teardown (settings removed first — `Setting.leagueId` is
+  `onDelete:Restrict`). The app-shell menu specs now view a league page first (the
+  per-league menu links resolve against the current slug).
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **206/206**. `npm run test:e2e`: **51/51**
+  against the migrated single-League DB + ephemeral test leagues; teardown leaves
+  only the BSC league.
+
+> Scorers can now be **created and granted** in-app, but a non-staff person still has
+> no way to *request* access — that (the in-app `AccessRequest` + approval queue,
+> ADR-014) is **step 23**, which reuses this step's assign-scorer flow on approval.
+
+---

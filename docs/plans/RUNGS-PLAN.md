@@ -69,7 +69,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 19 | [BSC adoption migration + per-league recalc & read scoping](steps/step-19-adoption-recalc.md) | complete | 17, 18 |
 | 20 | [Staff-only auth — LeagueScorer grants + league-scoped authz](steps/step-20-league-authz.md) | complete | 18 |
 | 21 | [Path-prefix routing — `/l/{slug}` + slug lifecycle](steps/step-21-slug-routing.md) | complete | 19, 20 |
-| 22 | [Landing, League switcher & admin provisioning](steps/step-22-provisioning.md) | pending | 20, 21 |
+| 22 | [Landing, League switcher & admin provisioning](steps/step-22-provisioning.md) | complete | 20, 21 |
 | 23 | [Non-staff bounce + access requests + approval queue](steps/step-23-access-requests.md) | pending | 22 |
 | 24 | [Rungs rebrand, infra rename & docs](steps/step-24-rebrand-infra-docs.md) | pending | 21, 22, 23 |
 

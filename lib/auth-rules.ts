@@ -56,11 +56,17 @@ function isPublicRoute(pathname: string): boolean {
   );
 }
 
-// Admin screens a non-admin (scorer) may NOT reach. Players, Sessions and
-// Settings are open to any signed-in user (step 16.x); Users — which manages
-// login accounts and roles — stays ADMIN-only.
+// Global-admin screens a scorer may NOT reach: Users (login accounts + roles)
+// and Leagues (provisioning — create league, assign scorer). Both are top-level
+// (not league-scoped). Per-league Players/Sessions/Settings live under
+// /l/{slug}/admin and are gated per-league at the page (ADR-012), not here.
 function isAdminOnly(pathname: string): boolean {
-  return pathname === "/admin/users" || pathname.startsWith("/admin/users/");
+  return (
+    pathname === "/admin/users" ||
+    pathname.startsWith("/admin/users/") ||
+    pathname === "/admin/leagues" ||
+    pathname.startsWith("/admin/leagues/")
+  );
 }
 
 export function authorizeRoute(

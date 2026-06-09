@@ -24,8 +24,9 @@ const leagueAdminPages: { sub: string; label: string }[] = [
 ];
 
 // The header hamburger links for a role, scoped to the current league `slug`.
-// Scorers and admins both see the per-league pages; Users (global) is appended
-// for an admin only. Mirrors `authorizeRoute`/`canScoreLeague`'s gates.
+// Scorers and admins both see the per-league pages; the global admin surfaces
+// (Leagues provisioning, Users) are appended for an admin only. Mirrors
+// `authorizeRoute`/`canScoreLeague`'s gates.
 export function adminLinksFor(role: Role, slug: string): NavLink[] {
   const links: NavLink[] = leagueAdminPages.map((p) => ({
     key: `/${p.sub}`,
@@ -33,7 +34,10 @@ export function adminLinksFor(role: Role, slug: string): NavLink[] {
     label: p.label,
   }));
   if (role === "ADMIN") {
-    links.push({ key: "/admin/users", href: "/admin/users", label: "Users" });
+    links.push(
+      { key: "/admin/leagues", href: "/admin/leagues", label: "Leagues" },
+      { key: "/admin/users", href: "/admin/users", label: "Users" },
+    );
   }
   return links;
 }
