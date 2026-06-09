@@ -6,6 +6,7 @@ import {
   createLeague,
   updateLeague,
   assignScorer,
+  revokeScorer,
   type CreateLeagueResult,
   type AssignScorerResult,
 } from "@/lib/league-provisioning";
@@ -59,6 +60,19 @@ export async function assignScorerAction(
 ): Promise<AssignScorerResult> {
   await requireAdmin();
   const result = await assignScorer(
+    { userId, leagueId },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) revalidatePath("/admin/leagues");
+  return result;
+}
+
+export async function revokeScorerAction(
+  userId: string,
+  leagueId: string,
+): Promise<AssignScorerResult> {
+  await requireAdmin();
+  const result = await revokeScorer(
     { userId, leagueId },
     prismaLeagueProvisioningStore,
   );

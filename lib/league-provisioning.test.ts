@@ -3,6 +3,7 @@ import {
   createLeague,
   updateLeague,
   assignScorer,
+  revokeScorer,
   type LeagueProvisioningStore,
 } from "@/lib/league-provisioning";
 
@@ -22,6 +23,7 @@ function makeStore(
       displayName: input.displayName,
     }),
     grant: async () => {},
+    revoke: async () => {},
     ...over,
   };
 }
@@ -127,6 +129,28 @@ describe("assignScorer", () => {
       false,
     );
     expect((await assignScorer({ userId: "u1", leagueId: "" }, makeStore())).ok).toBe(
+      false,
+    );
+  });
+});
+
+describe("revokeScorer", () => {
+  it("revokes the scorer's grant for the league", async () => {
+    const events: string[] = [];
+    const store = makeStore({
+      revoke: async (userId, leagueId) => {
+        events.push(`revoke:${userId}:${leagueId}`);
+      },
+    });
+
+    const r = await revokeScorer({ userId: "u1", leagueId: "L1" }, store);
+
+    expect(r.ok).toBe(true);
+    expect(events).toEqual(["revoke:u1:L1"]);
+  });
+
+  it("rejects a missing scorer or league", async () => {
+    expect((await revokeScorer({ userId: "", leagueId: "L1" }, makeStore())).ok).toBe(
       false,
     );
   });

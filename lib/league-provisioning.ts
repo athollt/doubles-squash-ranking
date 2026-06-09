@@ -22,6 +22,7 @@ export interface LeagueProvisioningStore {
     input: { name: string; displayName: string },
   ): Promise<CreatedLeague>;
   grant(userId: string, leagueId: string): Promise<void>;
+  revoke(userId: string, leagueId: string): Promise<void>;
 }
 
 export type CreateLeagueInput = {
@@ -85,5 +86,17 @@ export async function assignScorer(
   if (!input.userId) return { ok: false, error: "Select a scorer." };
   if (!input.leagueId) return { ok: false, error: "Select a league." };
   await store.grant(input.userId, input.leagueId);
+  return { ok: true };
+}
+
+// Revoke a scorer's grant for a league (ADR-012). Idempotent — revoking a grant
+// that isn't there is a no-op.
+export async function revokeScorer(
+  input: AssignScorerInput,
+  store: LeagueProvisioningStore,
+): Promise<AssignScorerResult> {
+  if (!input.userId) return { ok: false, error: "Select a scorer." };
+  if (!input.leagueId) return { ok: false, error: "Select a league." };
+  await store.revoke(input.userId, input.leagueId);
   return { ok: true };
 }

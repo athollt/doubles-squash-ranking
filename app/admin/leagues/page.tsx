@@ -17,19 +17,37 @@ export default async function AdminLeaguesPage() {
   const session = await auth();
   if (session?.role !== "ADMIN") redirect("/unauthorised");
 
-  const [leagues, scorers] = await Promise.all([
+  const [leaguesRaw, scorers] = await Promise.all([
     prisma.league.findMany({
       orderBy: { displayName: "asc" },
-      select: { id: true, name: true, slug: true, displayName: true },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        displayName: true,
+        // Each league's current scorers, for the Edit dialog's scorer list.
+        scorerGrants: {
+          select: { user: { select: { id: true, name: true, email: true } } },
+          orderBy: { user: { name: "asc" } },
+        },
+      },
     }),
-    // Existing scorers (any non-admin staff) — the assign dropdown picks from
-    // these; new accounts are created on the Users page.
+    // Existing scorers (any non-admin staff) — the add dropdown picks from these;
+    // new accounts are created on the Users page.
     prisma.user.findMany({
       where: { role: "SCORER" },
       orderBy: { name: "asc" },
       select: { id: true, name: true, email: true },
     }),
   ]);
+
+  const leagues = leaguesRaw.map((l) => ({
+    id: l.id,
+    name: l.name,
+    slug: l.slug,
+    displayName: l.displayName,
+    scorers: l.scorerGrants.map((g) => g.user),
+  }));
 
   return (
     <PageShell title="Leagues" subtitle="Create and edit leagues, and assign scorers.">

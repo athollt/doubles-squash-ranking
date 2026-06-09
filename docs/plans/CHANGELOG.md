@@ -2020,4 +2020,23 @@ Same-day follow-up after testing the landing + provisioning:
   missing rejected) added; E2E rewritten for the Add/Edit dialogs + scorer dropdown, plus
   a new edit-league spec (display name changes, slug/URL stays). **207 unit / 52 E2E.**
 
+### Step 22 — refinements, round 2 (UX feedback)
+
+- **Slug label**: the Leagues list + Edit dialog now show the **bare slug**
+  (`bsc-doubles-squash`) instead of `/l/bsc-doubles-squash`. Cosmetic — routing /
+  URLs are unchanged (still `/l/{slug}`, ADR-013).
+- **Scorer management moved into the league Edit dialog.** The standalone "Assign a
+  scorer" card is gone. Edit now lists the league's **current scorers** (each with a
+  **Remove**), plus an **Add** control (dropdown of scorers not yet on this league) —
+  so an admin can assign **multiple** scorers and revoke any. New pure `revokeScorer` +
+  `revokeScorerAction`; the page loads each league's `scorerGrants` and the dialog
+  re-reads from refreshed props so add/remove update live without closing.
+- **Second seeded league** (`padel-tuesdays`, "Padel Tuesdays @ BSC") added to
+  `prisma/seed.ts` (refactored to a `seedLeague` helper) so dev + tests exercise the
+  multi-tenant paths with more than one league. `prisma.test.ts`'s settings assertion
+  was re-scoped to the BSC league (15 per league) since the DB now seeds two.
+- Tests: `revokeScorer` units; E2E rewritten — create a league then **add and remove a
+  scorer inside Edit**, asserting the granted scorer sees the league on `/` and the
+  removed scorer's row disappears. **209 unit / 52 E2E.**
+
 ---

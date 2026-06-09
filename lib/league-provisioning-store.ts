@@ -40,4 +40,8 @@ export const prismaLeagueProvisioningStore: LeagueProvisioningStore = {
       create: { userId, leagueId },
     });
   },
+
+  revoke: async (userId, leagueId) => {
+    await prisma.leagueScorer.deleteMany({ where: { userId, leagueId } });
+  },
 };

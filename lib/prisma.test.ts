@@ -17,13 +17,21 @@ describe("Prisma client", () => {
     await expect(prisma.ladderSnapshot.findMany()).resolves.toBeInstanceOf(Array);
   });
 
-  it("returns the seeded admin user and default settings", async () => {
+  it("returns the seeded admin user and the BSC league's default settings", async () => {
     const admin = await prisma.user.findUnique({
       where: { email: "atholl@tomlinson.co.za" },
     });
     expect(admin?.role).toBe("ADMIN");
 
-    const settings = await prisma.setting.findMany();
+    // Settings are per-league now (the dev DB seeds more than one league), so
+    // scope the assertion to the BSC league: 15 rating params, StartingRating 1000.
+    const bsc = await prisma.league.findUniqueOrThrow({
+      where: { slug: "bsc-doubles-squash" },
+      select: { id: true },
+    });
+    const settings = await prisma.setting.findMany({
+      where: { leagueId: bsc.id },
+    });
     expect(settings.length).toBe(15);
 
     const startingRating = settings.find((s) => s.key === "StartingRating");

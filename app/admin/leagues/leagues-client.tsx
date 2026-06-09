@@ -17,10 +17,17 @@ import {
   createLeagueAction,
   updateLeagueAction,
   assignScorerAction,
+  revokeScorerAction,
 } from "./actions";
 
-type League = { id: string; name: string; slug: string; displayName: string };
 type Scorer = { id: string; name: string; email: string };
+type League = {
+  id: string;
+  name: string;
+  slug: string;
+  displayName: string;
+  scorers: Scorer[];
+};
 
 const SELECT_CLASS =
   "h-9 w-full rounded-md border border-input bg-transparent px-2 text-sm";
@@ -46,7 +53,6 @@ export function LeaguesClient({
 
   function onAddNameChange(value: string) {
     setAddName(value);
-    // Display name mirrors the name unless the admin has typed their own.
     setAddDisplay((d) => (d === "" || d === addName ? value : d));
     if (!slugEdited) setAddSlug(suggestSlug(value));
   }
@@ -72,10 +78,29 @@ export function LeaguesClient({
     });
   }
 
-  // Edit-league dialog (name + display name; slug is permanent — ADR-013).
+  // Edit-league dialog (name + display name; slug permanent — ADR-013). Also the
+  // home for scorer management: list current scorers, add (unassigned dropdown),
+  // remove each.
   const [editing, setEditing] = useState<League | null>(null);
   const [editName, setEditName] = useState("");
   const [editDisplay, setEditDisplay] = useState("");
+  const [addScorerId, setAddScorerId] = useState("");
+
+  // The editing league re-read from the latest props, so the scorer list reflects
+  // add/remove after router.refresh() without closing the dialog.
+  const editingLive = editing
+    ? (leagues.find((l) => l.id === editing.id) ?? editing)
+    : null;
+  const assignedIds = new Set(editingLive?.scorers.map((s) => s.id));
+  const unassigned = scorers.filter((s) => !assignedIds.has(s.id));
+
+  function openEdit(league: League) {
+    setEditing(league);
+    setEditName(league.name);
+    setEditDisplay(league.displayName);
+    setAddScorerId("");
+    setRowError(null);
+  }
 
   function handleSaveEdit() {
     if (!editing) return;
@@ -91,132 +116,74 @@ export function LeaguesClient({
     });
   }
 
-  // Assign-scorer card.
-  const [scorerId, setScorerId] = useState(scorers[0]?.id ?? "");
-  const [assignLeagueId, setAssignLeagueId] = useState(leagues[0]?.id ?? "");
-  const [assignError, setAssignError] = useState<string | null>(null);
-  const [assigned, setAssigned] = useState(false);
-
-  function handleAssign() {
-    setAssignError(null);
-    setAssigned(false);
+  function handleAddScorer() {
+    if (!editingLive || !addScorerId) return;
+    setRowError(null);
     startTransition(async () => {
-      const result = await assignScorerAction(scorerId, assignLeagueId);
+      const result = await assignScorerAction(addScorerId, editingLive.id);
       if (result.ok) {
-        setAssigned(true);
+        setAddScorerId("");
         router.refresh();
       } else {
-        setAssignError(result.error);
+        setRowError(result.error);
       }
     });
   }
 
+  function handleRemoveScorer(userId: string) {
+    if (!editingLive) return;
+    setRowError(null);
+    startTransition(async () => {
+      const result = await revokeScorerAction(userId, editingLive.id);
+      if (result.ok) router.refresh();
+      else setRowError(result.error);
+    });
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex justify-end">
-          <Button onClick={() => setAddOpen(true)}>Add League</Button>
-        </div>
-
-        {rowError && <p className="text-destructive text-sm">{rowError}</p>}
-
-        {leagues.length === 0 ? (
-          <p className="text-muted-foreground">No leagues yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {leagues.map((league) => (
-              <li key={league.id}>
-                <Card
-                  role="group"
-                  aria-label={league.displayName}
-                  className="p-3 sm:flex sm:items-center sm:gap-4"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{league.displayName}</p>
-                    <p className="text-muted-foreground text-sm">
-                      /l/{league.slug}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex items-center justify-end gap-2 sm:mt-0">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => {
-                        setEditing(league);
-                        setEditName(league.name);
-                        setEditDisplay(league.displayName);
-                        setRowError(null);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </Card>
-              </li>
-            ))}
-          </ul>
-        )}
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setAddOpen(true)}>Add League</Button>
       </div>
 
-      <Card className="p-4">
-        <h2 className="font-heading mb-3 text-lg font-bold">Assign a scorer</h2>
-        {leagues.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Create a league first.</p>
-        ) : scorers.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No scorers yet — add one on the{" "}
-            <a href="/admin/users" className="text-primary hover:underline">
-              Users
-            </a>{" "}
-            page first.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">Scorer</span>
-              <select
-                aria-label="Scorer"
-                className={SELECT_CLASS}
-                value={scorerId}
-                onChange={(e) => setScorerId(e.target.value)}
+      {rowError && !editing && (
+        <p className="text-destructive text-sm">{rowError}</p>
+      )}
+
+      {leagues.length === 0 ? (
+        <p className="text-muted-foreground">No leagues yet.</p>
+      ) : (
+        <ul className="flex flex-col gap-3">
+          {leagues.map((league) => (
+            <li key={league.id}>
+              <Card
+                role="group"
+                aria-label={league.displayName}
+                className="p-3 sm:flex sm:items-center sm:gap-4"
               >
-                {scorers.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.email})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="text-sm">
-              <span className="mb-1 block font-medium">League</span>
-              <select
-                aria-label="League"
-                className={SELECT_CLASS}
-                value={assignLeagueId}
-                onChange={(e) => setAssignLeagueId(e.target.value)}
-              >
-                {leagues.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.displayName}
-                  </option>
-                ))}
-              </select>
-            </label>
-            {assignError && (
-              <p className="text-destructive text-sm">{assignError}</p>
-            )}
-            {assigned && (
-              <p className="text-sm text-[var(--up)]">Scorer assigned ✓</p>
-            )}
-            <div>
-              <Button type="button" onClick={handleAssign} disabled={isPending}>
-                Assign scorer
-              </Button>
-            </div>
-          </div>
-        )}
-      </Card>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{league.displayName}</p>
+                  <p className="text-muted-foreground text-sm">{league.slug}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-2 sm:mt-0">
+                  <span className="text-muted-foreground mr-auto text-sm sm:mr-2">
+                    {league.scorers.length}{" "}
+                    {league.scorers.length === 1 ? "scorer" : "scorers"}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() => openEdit(league)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
@@ -246,7 +213,7 @@ export function LeaguesClient({
             }}
           />
           <p className="text-muted-foreground text-xs">
-            The ladder lives at /l/{addSlug || "your-slug"} — permanent once created.
+            URL slug: {addSlug || "your-slug"} — permanent once created.
           </p>
           {addError && <p className="text-destructive text-sm">{addError}</p>}
           <DialogFooter>
@@ -282,12 +249,88 @@ export function LeaguesClient({
             disabled={isPending}
             onChange={(e) => setEditDisplay(e.target.value)}
           />
-          {editing && (
+          {editingLive && (
             <p className="text-muted-foreground text-xs">
-              /l/{editing.slug} — the slug is permanent and can&rsquo;t be changed.
+              Slug: {editingLive.slug} — permanent, can&rsquo;t be changed.
             </p>
           )}
-          {rowError && <p className="text-destructive text-sm">{rowError}</p>}
+
+          {/* Scorer management (assign multiple, remove each). */}
+          <div className="border-border mt-2 border-t pt-3">
+            <p className="mb-2 text-sm font-medium">Scorers</p>
+            {editingLive && editingLive.scorers.length > 0 ? (
+              <ul className="mb-3 flex flex-col gap-2">
+                {editingLive.scorers.map((s) => (
+                  <li
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="min-w-0 truncate">
+                      {s.name}{" "}
+                      <span className="text-muted-foreground">({s.email})</span>
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() => handleRemoveScorer(s.id)}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground mb-3 text-sm">
+                No scorers assigned yet.
+              </p>
+            )}
+
+            {scorers.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                No scorers exist — add one on the{" "}
+                <a href="/admin/users" className="text-primary hover:underline">
+                  Users
+                </a>{" "}
+                page first.
+              </p>
+            ) : unassigned.length === 0 ? (
+              <p className="text-muted-foreground text-sm">
+                Every scorer is already assigned.
+              </p>
+            ) : (
+              <div className="flex items-end gap-2">
+                <label className="flex-1 text-sm">
+                  <span className="sr-only">Add scorer</span>
+                  <select
+                    aria-label="Add scorer"
+                    className={SELECT_CLASS}
+                    value={addScorerId}
+                    onChange={(e) => setAddScorerId(e.target.value)}
+                  >
+                    <option value="">Select a scorer…</option>
+                    {unassigned.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.email})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isPending || !addScorerId}
+                  onClick={handleAddScorer}
+                >
+                  Add
+                </Button>
+              </div>
+            )}
+          </div>
+
+          {rowError && editing && (
+            <p className="text-destructive text-sm">{rowError}</p>
+          )}
           <DialogFooter>
             <Button onClick={handleSaveEdit} disabled={isPending}>
               Save
