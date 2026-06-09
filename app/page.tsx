@@ -48,8 +48,8 @@ export default async function Landing() {
     >
       <p className="text-muted-foreground mb-6 text-sm">
         Players partner up differently each session; Rungs rates each person, not the
-        pair. All you record is how many games each player won in a session — Rungs
-        turns that into a live ranking ladder. Pick a ladder below to see its standings.
+        pair. All you record is how many wins each player got in a session — Rungs turns
+        that into a live ranking ladder.
       </p>
 
       {leagues.length === 0 ? (
