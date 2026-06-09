@@ -289,7 +289,7 @@ export function LeaguesClient({
               }}
             />
             <span className="text-muted-foreground mt-1 block text-xs">
-              /l/{addSlug || "your-slug"} — permanent once created.
+              {addSlug || "your-slug"} — permanent once created.
             </span>
           </label>
           {addError && <p className="text-destructive text-sm">{addError}</p>}
@@ -342,7 +342,7 @@ export function LeaguesClient({
             <div className="text-sm">
               <span className="mb-1 block font-medium">Slug (URL)</span>
               <p className="text-muted-foreground text-xs">
-                /l/{editingLive.slug} — permanent, can&rsquo;t be changed.
+                {editingLive.slug} — permanent, can&rsquo;t be changed.
               </p>
             </div>
           )}
