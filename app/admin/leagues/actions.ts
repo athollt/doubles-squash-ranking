@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import {
   createLeague,
+  updateLeague,
   assignScorer,
   type CreateLeagueResult,
   type AssignScorerResult,
@@ -34,14 +35,31 @@ export async function createLeagueAction(
   return result;
 }
 
-export async function assignScorerAction(
-  email: string,
+export async function updateLeagueAction(
+  id: string,
   name: string,
+  displayName: string,
+): Promise<CreateLeagueResult> {
+  await requireAdmin();
+  const result = await updateLeague(
+    id,
+    { name, displayName },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/admin/leagues");
+  }
+  return result;
+}
+
+export async function assignScorerAction(
+  userId: string,
   leagueId: string,
 ): Promise<AssignScorerResult> {
   await requireAdmin();
   const result = await assignScorer(
-    { email, name, leagueId },
+    { userId, leagueId },
     prismaLeagueProvisioningStore,
   );
   if (result.ok) revalidatePath("/admin/leagues");

@@ -1998,4 +1998,26 @@ slug helpers.
 > no way to *request* access — that (the in-app `AccessRequest` + approval queue,
 > ADR-014) is **step 23**, which reuses this step's assign-scorer flow on approval.
 
+### Step 22 — refinements (UX feedback)
+
+Same-day follow-up after testing the landing + provisioning:
+
+- **Landing copy**: rewritten to be doubles-specific — names the sports (squash, padel,
+  tennis, pickleball), explains Rungs rates each *person* (partners change each session),
+  and that all you capture is each player's **Wins** per session.
+- **"Manage leagues" moved off the landing page** into the header **hamburger**
+  (admins only), available **everywhere** — including before a league is selected. New
+  `globalAdminLinks()` (Leagues + Users) is what the hamburger shows off a league route;
+  `adminLinksFor` appends it on a league page.
+- **Leagues page rebuilt on the Users pattern** (no reinvention): a **list of league
+  cards + Add League** dialog, and a per-row **Edit League** dialog. Edit changes name +
+  display name; the **slug is shown read-only** (immutable, ADR-013 — shared/bookmarked
+  `/l/{slug}` links must not break). New pure `updateLeague` + `updateLeagueAction`.
+- **Assign Scorer** now picks an **existing scorer from a dropdown** (+ league dropdown)
+  rather than free-text email. `assignScorer` takes a `userId` and just grants; creating
+  new accounts stays the Users page's job. (The store's user-create path was removed.)
+- Tests: `updateLeague` (valid / blank rejected) and `assignScorer` (grant by id /
+  missing rejected) added; E2E rewritten for the Add/Edit dialogs + scorer dropdown, plus
+  a new edit-league spec (display name changes, slug/URL stays). **207 unit / 52 E2E.**
+
 ---

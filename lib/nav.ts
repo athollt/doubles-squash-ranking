@@ -34,12 +34,19 @@ export function adminLinksFor(role: Role, slug: string): NavLink[] {
     label: p.label,
   }));
   if (role === "ADMIN") {
-    links.push(
-      { key: "/admin/leagues", href: "/admin/leagues", label: "Leagues" },
-      { key: "/admin/users", href: "/admin/users", label: "Users" },
-    );
+    links.push(...globalAdminLinks());
   }
   return links;
+}
+
+// The global (not league-scoped) admin links: League provisioning + Users. Shown
+// to an admin everywhere — including the landing page, before any league is
+// selected (the hamburger off a league route shows exactly these).
+export function globalAdminLinks(): NavLink[] {
+  return [
+    { key: "/admin/leagues", href: "/admin/leagues", label: "Leagues" },
+    { key: "/admin/users", href: "/admin/users", label: "Users" },
+  ];
 }
 
 // The primary (bottom-bar) nav for a role within league `slug`. Public links

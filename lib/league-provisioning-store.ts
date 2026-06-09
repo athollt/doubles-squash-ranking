@@ -2,8 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { DEFAULT_SETTINGS } from "@/lib/default-settings";
 import type { LeagueProvisioningStore } from "@/lib/league-provisioning";
 
-// Prisma-backed provisioning store (step 22). New users are created with role
-// SCORER — a scorer's power comes from the grant, not the role (ADR-012).
+// Prisma-backed provisioning store (step 22). Scorers are granted from existing
+// Users (the Users page creates accounts); a scorer's power is the grant (ADR-012).
 export const prismaLeagueProvisioningStore: LeagueProvisioningStore = {
   slugTaken: async (slug) => {
     const existing = await prisma.league.findUnique({
@@ -26,16 +26,11 @@ export const prismaLeagueProvisioningStore: LeagueProvisioningStore = {
     });
   },
 
-  findUserByEmail: (email) =>
-    prisma.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
-      select: { id: true, email: true, name: true },
-    }),
-
-  createUser: (email, name) =>
-    prisma.user.create({
-      data: { email, name, role: "SCORER" },
-      select: { id: true, email: true, name: true },
+  updateLeagueDetails: (id, { name, displayName }) =>
+    prisma.league.update({
+      where: { id },
+      data: { name, displayName },
+      select: { id: true, slug: true, displayName: true },
     }),
 
   grant: async (userId, leagueId) => {

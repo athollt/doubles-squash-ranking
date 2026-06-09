@@ -6,7 +6,6 @@ import { visibleLeaguesFor, type Actor } from "@/lib/landing";
 import { prismaLeagueScorerStore } from "@/lib/league-scorer-store";
 import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
-import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = {
   title: "Rungs — club ladders, ranked",
@@ -45,18 +44,13 @@ export default async function Landing() {
   return (
     <PageShell
       title="Rungs"
-      subtitle="Club ladders, ranked. Pick a ladder to view its standings."
+      subtitle="Individual ladders for doubles play — squash, padel, tennis, pickleball and more."
     >
-      {isAdmin && (
-        <div className="mb-4">
-          <Link
-            href="/admin/leagues"
-            className={buttonVariants({ variant: "default", size: "sm" })}
-          >
-            Manage leagues
-          </Link>
-        </div>
-      )}
+      <p className="text-muted-foreground mb-6 text-sm">
+        Players partner up differently each session; Rungs rates each person, not the
+        pair. All you record is how many games each player won in a session — Rungs
+        turns that into a live ranking ladder. Pick a ladder below to see its standings.
+      </p>
 
       {leagues.length === 0 ? (
         <p className="text-muted-foreground">

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   createLeague,
+  updateLeague,
   assignScorer,
   type LeagueProvisioningStore,
 } from "@/lib/league-provisioning";
@@ -15,8 +16,11 @@ function makeStore(
       slug: input.slug,
       displayName: input.displayName,
     }),
-    findUserByEmail: async () => null,
-    createUser: async (email, name) => ({ id: "new-user", email, name }),
+    updateLeagueDetails: async (id, input) => ({
+      id,
+      slug: "unchanged-slug",
+      displayName: input.displayName,
+    }),
     grant: async () => {},
     ...over,
   };
@@ -72,60 +76,58 @@ describe("createLeague", () => {
   });
 });
 
+describe("updateLeague", () => {
+  it("updates name + displayName (slug is never touched)", async () => {
+    let updatedWith: { name: string; displayName: string } | null = null;
+    const store = makeStore({
+      updateLeagueDetails: async (id, input) => {
+        updatedWith = input;
+        return { id, slug: "padel-tuesdays", displayName: input.displayName };
+      },
+    });
+
+    const r = await updateLeague(
+      "L1",
+      { name: "Padel Weds", displayName: "Padel Wednesdays" },
+      store,
+    );
+
+    expect(r.ok).toBe(true);
+    expect(updatedWith).toEqual({ name: "Padel Weds", displayName: "Padel Wednesdays" });
+  });
+
+  it("rejects a blank name or display name", async () => {
+    const store = makeStore();
+    expect((await updateLeague("L1", { name: " ", displayName: "X" }, store)).ok).toBe(
+      false,
+    );
+    expect((await updateLeague("L1", { name: "X", displayName: " " }, store)).ok).toBe(
+      false,
+    );
+  });
+});
+
 describe("assignScorer", () => {
-  it("creates the user (allowlist) then grants the league when the email is new", async () => {
+  it("grants an existing scorer the chosen league", async () => {
     const events: string[] = [];
     const store = makeStore({
-      findUserByEmail: async () => null,
-      createUser: async (email, name) => {
-        events.push(`create:${email}`);
-        return { id: "u-new", email, name };
-      },
       grant: async (userId, leagueId) => {
         events.push(`grant:${userId}:${leagueId}`);
       },
     });
 
-    const r = await assignScorer(
-      { email: "new@club.test", name: "New Scorer", leagueId: "L1" },
-      store,
-    );
+    const r = await assignScorer({ userId: "u1", leagueId: "L1" }, store);
 
     expect(r.ok).toBe(true);
-    expect(events).toEqual(["create:new@club.test", "grant:u-new:L1"]);
+    expect(events).toEqual(["grant:u1:L1"]);
   });
 
-  it("grants the league without creating a user when the email already exists", async () => {
-    const events: string[] = [];
-    const store = makeStore({
-      findUserByEmail: async () => ({
-        id: "u-existing",
-        email: "scorer@club.test",
-        name: "Existing",
-      }),
-      createUser: async (email, name) => {
-        events.push(`create:${email}`);
-        return { id: "x", email, name };
-      },
-      grant: async (userId, leagueId) => {
-        events.push(`grant:${userId}:${leagueId}`);
-      },
-    });
-
-    const r = await assignScorer(
-      { email: "scorer@club.test", name: "Existing", leagueId: "L1" },
-      store,
+  it("rejects a missing scorer or league", async () => {
+    expect((await assignScorer({ userId: "", leagueId: "L1" }, makeStore())).ok).toBe(
+      false,
     );
-
-    expect(r.ok).toBe(true);
-    expect(events).toEqual(["grant:u-existing:L1"]);
-  });
-
-  it("rejects an invalid email", async () => {
-    const r = await assignScorer(
-      { email: "not-an-email", name: "X", leagueId: "L1" },
-      makeStore(),
+    expect((await assignScorer({ userId: "u1", leagueId: "" }, makeStore())).ok).toBe(
+      false,
     );
-    expect(r.ok).toBe(false);
   });
 });
