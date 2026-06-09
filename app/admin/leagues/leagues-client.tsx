@@ -339,31 +339,23 @@ export function LeaguesClient({
             </span>
           </label>
           {editingLive && (
-            <p className="text-muted-foreground text-xs">
-              Slug: {editingLive.slug} — permanent, can&rsquo;t be changed.
-            </p>
+            <div className="text-sm">
+              <span className="mb-1 block font-medium">Slug (URL)</span>
+              <p className="text-muted-foreground text-xs">
+                /l/{editingLive.slug} — permanent, can&rsquo;t be changed.
+              </p>
+            </div>
           )}
 
-          {/* Scorer management (assign multiple, remove each). The add control
-              sits above the current-scorer list. */}
+          {/* Scorer management: add control on top, current-scorer list below,
+              then a status note. */}
           <div className="border-border mt-2 border-t pt-3">
             <p className="mb-2 text-sm font-medium">Scorers</p>
 
-            {scorers.length === 0 ? (
-              <p className="text-muted-foreground mb-3 text-sm">
-                No scorers exist — add one on the{" "}
-                <a href="/admin/users" className="text-primary hover:underline">
-                  Users
-                </a>{" "}
-                page first.
-              </p>
-            ) : unassigned.length === 0 ? (
-              <p className="text-muted-foreground mb-3 text-sm">
-                Every scorer is already assigned.
-              </p>
-            ) : (
+            {/* Add control — only when there is someone left to add. */}
+            {unassigned.length > 0 && (
               <div className="mb-3 flex items-end gap-2">
-                <label className="flex-1 text-sm">
+                <label className="min-w-0 flex-1 text-sm">
                   <span className="sr-only">Add scorer</span>
                   <select
                     aria-label="Add scorer"
@@ -391,6 +383,7 @@ export function LeaguesClient({
               </div>
             )}
 
+            {/* Current scorers. */}
             {editingLive && editingLive.scorers.length > 0 ? (
               <ul className="flex flex-col gap-2">
                 {editingLive.scorers.map((s) => (
@@ -415,6 +408,23 @@ export function LeaguesClient({
               <p className="text-muted-foreground text-sm">
                 No scorers assigned yet.
               </p>
+            )}
+
+            {/* Status note below the list. */}
+            {scorers.length === 0 ? (
+              <p className="text-muted-foreground mt-3 text-xs">
+                No scorers exist yet — add one on the{" "}
+                <a href="/admin/users" className="text-primary hover:underline">
+                  Users
+                </a>{" "}
+                page first.
+              </p>
+            ) : (
+              unassigned.length === 0 && (
+                <p className="text-muted-foreground mt-3 text-xs">
+                  Every scorer is already assigned.
+                </p>
+              )
             )}
           </div>
 
