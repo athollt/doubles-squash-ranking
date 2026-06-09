@@ -1658,11 +1658,11 @@ as the worked example.
 
 ### Validation
 
-- `npm run build` ✅. `npm run test`: **149/149 unit pass** (excluding 2 pre-existing
-  `lib/prisma.test.ts` failures that require a live Postgres — fail identically on clean
-  HEAD; not a regression). Lint clean on all changed files.
-- **E2E not executed in this environment** — local Postgres (`localhost:5433`) was not
-  running. The specs are updated and expected to pass on the CI DB; re-run
-  `npm run test:e2e` with Postgres up before relying on them.
+- `npm run build` ✅. `npm run test`: **151/151 unit pass** (with local Postgres up).
+  Lint clean on all changed files.
+- `npm run test:e2e`: **45/45 pass** (local Postgres up + migrated/seeded), including the
+  new specs — submit chip-add names its block, the chip rejects a duplicate name, and
+  admin renames a user via the Edit dialog. Existing submit/edit/history/trend specs pass
+  against the updated chip-based `addNewPlayer` helper (no regressions).
 
 ---
