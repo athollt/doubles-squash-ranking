@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { validateSession } from "@/lib/session-validation";
 import { runRecalculation } from "@/lib/recalc";
 import { prismaRecalcStore } from "@/lib/recalc-store";
+import { resolvePlayerName } from "@/lib/players";
+import { prismaPlayerStore } from "@/lib/player-store";
 
 export interface SubmitSlot {
   playerId?: string;
@@ -39,14 +41,14 @@ export async function submitSessionAction(
   const userId = await requireUserId();
 
   // Resolve on-the-fly players (slots with a newName) into real players first.
+  // resolvePlayerName reuses an existing player whose name matches (case-
+  // insensitive) rather than creating a duplicate row.
   const resolved: { playerId: string; wins: number }[] = [];
   for (const slot of data.slots) {
     if (slot.newName && slot.newName.trim() !== "") {
-      const created = await prisma.player.create({
-        data: { name: slot.newName.trim(), createdById: userId },
-        select: { id: true },
-      });
-      resolved.push({ playerId: created.id, wins: slot.wins });
+      const r = await resolvePlayerName(slot.newName, prismaPlayerStore);
+      if (!r.ok) return { ok: false, error: r.error };
+      resolved.push({ playerId: r.playerId, wins: slot.wins });
     } else if (slot.playerId) {
       resolved.push({ playerId: slot.playerId, wins: slot.wins });
     }

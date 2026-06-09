@@ -3,6 +3,7 @@ import {
   createPlayer,
   updatePlayerName,
   updatePlayerStatus,
+  resolvePlayerName,
 } from "@/lib/players";
 import type { PlayerStore, PlayerStatus } from "@/lib/players";
 
@@ -145,6 +146,62 @@ describe("updatePlayerName", () => {
     const result = await updatePlayerName("p1", "ERIN", store);
 
     expect(result.ok).toBe(true);
+  });
+});
+
+describe("resolvePlayerName", () => {
+  it("reuses an existing player matching the name (case-insensitive) — no duplicate", async () => {
+    let createCalled = false;
+    const store = fakeStore({
+      findByNameInsensitive: async () => ({
+        id: "existing",
+        name: "Sarah",
+        status: "ACTIVE",
+      }),
+      create: async (name) => {
+        createCalled = true;
+        return { id: "new", name, status: "ACTIVE" };
+      },
+    });
+
+    const result = await resolvePlayerName("sarah", store);
+
+    expect(result).toEqual({ ok: true, playerId: "existing" });
+    expect(createCalled).toBe(false);
+  });
+
+  it("creates a new player when the name is unused", async () => {
+    const created: string[] = [];
+    const store = fakeStore({
+      create: async (name) => {
+        created.push(name);
+        return { id: "new", name, status: "ACTIVE" };
+      },
+    });
+
+    const result = await resolvePlayerName("  Newbie  ", store);
+
+    expect(result).toEqual({ ok: true, playerId: "new" });
+    expect(created).toEqual(["Newbie"]);
+  });
+
+  it("rejects a blank name without touching the store", async () => {
+    let touched = false;
+    const store = fakeStore({
+      findByNameInsensitive: async () => {
+        touched = true;
+        return null;
+      },
+      create: async (name) => {
+        touched = true;
+        return { id: "new", name, status: "ACTIVE" };
+      },
+    });
+
+    const result = await resolvePlayerName("   ", store);
+
+    expect(result.ok).toBe(false);
+    expect(touched).toBe(false);
   });
 });
 

@@ -26,6 +26,12 @@ export const prismaUserStore: UserStore = {
       data: { role },
       select: { id: true, email: true, name: true, role: true },
     }),
+  updateName: (id, name) =>
+    prisma.user.update({
+      where: { id },
+      data: { name },
+      select: { id: true, email: true, name: true, role: true },
+    }),
   delete: async (id) => {
     await prisma.user.delete({ where: { id } });
   },

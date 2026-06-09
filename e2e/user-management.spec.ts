@@ -56,6 +56,29 @@ test("admin can add scorer and admin users, change role, and delete (b1-4)", asy
   await expect(userRow(page, scorer)).toHaveCount(0);
 });
 
+test("admin can rename a user via the Edit dialog (step 17)", async ({
+  page,
+}) => {
+  const token = `rename-${Date.now()}`;
+  const email = `${token}@bsc.local`;
+
+  await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
+  await page.goto("/admin/users");
+
+  await addUser(page, email, `[e2e] ${token} Before`, "SCORER");
+  const row = userRow(page, email);
+  await expect(row).toContainText("Before");
+
+  // Edit dialog now carries a Name field alongside Role.
+  await row.getByRole("button", { name: "Edit" }).click();
+  await page.getByRole("textbox", { name: "Name" }).fill(`[e2e] ${token} After`);
+  await page.getByRole("button", { name: "Save" }).click();
+
+  await expect(row).toContainText("After");
+  await page.reload();
+  await expect(userRow(page, email)).toContainText("After");
+});
+
 test("the admin cannot remove their own row (b5)", async ({ page }) => {
   await signIn(page, TEST_ADMIN.email, TEST_ADMIN.password);
   await page.goto("/admin/users");
