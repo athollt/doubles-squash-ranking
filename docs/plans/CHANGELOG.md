@@ -1571,3 +1571,45 @@ the old "all `/admin/*` is ADMIN-only" model:
 - All doc links resolve (relative); no promote-candidates outstanding.
 
 ---
+
+## Step 13.6 — Fix create-prd & create-plan skills
+
+**Date**: 2026-06-09
+
+### Delivered
+
+Retrofitted both skills to encode the design-system-first convention learned from the
+13.3–13.5 redesign, so future plans establish shared UI primitives up front and reuse
+them per step.
+
+**`create-prd`** (`agent-tools/skills/create-prd/SKILL.md`):
+- New **§4a "Capture design intent"** process step — captures platform intent, CI
+  direction, and a component inventory when the feature has UI.
+- New **"Design / UX"** section in the PRD template (between Implementation Decisions
+  and Testing Decisions), with prompts for platform, CI, component inventory, and
+  optional screen sketches.
+
+**`create-plan`** (`agent-tools/skills/create-plan/SKILL.md`):
+- New **design-system-first step convention** in §3 — when the PRD has UI scope, include
+  an early step that establishes shared primitives before feature pages. Mirrors the
+  existing update-docs back-bookend phrasing.
+- New **"Reuse before you build"** rule in Key Rules — each step must consume existing
+  design-system components before creating new ones; flag missing primitives as gaps.
+
+Both edits cite the doubles-squash redesign (steps 13.4→13.5, `DECISIONS.md` ADR-008)
+as the worked example.
+
+### Deviations / notes
+
+- No deviations. Edits are surgical and limited to the design-system convention + the
+  Design/UX capture — no unrelated changes.
+- Dry mental run: given the squash PRD, `create-plan` would now produce a design-system
+  step before the feature pages → yes.
+
+### Validation
+
+- Skills only — no app code, no route changed → **no E2E required**.
+- Both `SKILL.md` files re-read end-to-end; new conventions read consistently with the
+  existing process (especially the §3 update-docs symmetry in `create-plan`).
+
+---
