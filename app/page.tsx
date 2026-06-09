@@ -8,7 +8,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
 
 export const metadata = {
-  title: "Rungs — club ladders, ranked",
+  title: "Rungs - Individual ladders for doubles play",
 };
 
 // The Rungs landing + league switcher (step 22): one list whose contents vary by
@@ -43,12 +43,12 @@ export default async function Landing() {
 
   return (
     <PageShell
-      title="Rungs"
-      subtitle="Individual ladders for doubles play — squash, padel, tennis, pickleball and more."
+      title="Rungs - Individual ladders for doubles play"
+      subtitle="Squash, padel, tennis, pickleball and more."
     >
       <p className="text-muted-foreground mb-6 text-sm">
         Players partner up differently each session; Rungs rates each person, not the
-        pair. All you record is how many wins each player got in a session — Rungs turns
+        pair. All you record is how many wins each player got in a session - Rungs turns
         that into a live ranking ladder.
       </p>
 
