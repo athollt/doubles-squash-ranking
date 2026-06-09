@@ -255,40 +255,13 @@ export function LeaguesClient({
             </p>
           )}
 
-          {/* Scorer management (assign multiple, remove each). */}
+          {/* Scorer management (assign multiple, remove each). The add control
+              sits above the current-scorer list. */}
           <div className="border-border mt-2 border-t pt-3">
             <p className="mb-2 text-sm font-medium">Scorers</p>
-            {editingLive && editingLive.scorers.length > 0 ? (
-              <ul className="mb-3 flex flex-col gap-2">
-                {editingLive.scorers.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    <span className="min-w-0 flex-1 truncate">
-                      {s.name}{" "}
-                      <span className="text-muted-foreground">({s.email})</span>
-                    </span>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="shrink-0"
-                      disabled={isPending}
-                      onClick={() => handleRemoveScorer(s.id)}
-                    >
-                      Remove
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-muted-foreground mb-3 text-sm">
-                No scorers assigned yet.
-              </p>
-            )}
 
             {scorers.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground mb-3 text-sm">
                 No scorers exist — add one on the{" "}
                 <a href="/admin/users" className="text-primary hover:underline">
                   Users
@@ -296,11 +269,11 @@ export function LeaguesClient({
                 page first.
               </p>
             ) : unassigned.length === 0 ? (
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground mb-3 text-sm">
                 Every scorer is already assigned.
               </p>
             ) : (
-              <div className="flex items-end gap-2">
+              <div className="mb-3 flex items-end gap-2">
                 <label className="flex-1 text-sm">
                   <span className="sr-only">Add scorer</span>
                   <select
@@ -320,12 +293,39 @@ export function LeaguesClient({
                 <Button
                   type="button"
                   variant="outline"
+                  className="shrink-0"
                   disabled={isPending || !addScorerId}
                   onClick={handleAddScorer}
                 >
                   Add
                 </Button>
               </div>
+            )}
+
+            {editingLive && editingLive.scorers.length > 0 ? (
+              <ul className="flex flex-col gap-2">
+                {editingLive.scorers.map((s) => (
+                  <li key={s.id} className="flex items-center gap-2 text-sm">
+                    <span className="min-w-0 flex-1 truncate">
+                      {s.name}{" "}
+                      <span className="text-muted-foreground">({s.email})</span>
+                    </span>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="shrink-0"
+                      disabled={isPending}
+                      onClick={() => handleRemoveScorer(s.id)}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                No scorers assigned yet.
+              </p>
             )}
           </div>
 
