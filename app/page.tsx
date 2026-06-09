@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getDefaultLeagueId } from "@/lib/league";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate, type LadderEntry, type PlayerRating } from "@/lib/rating-engine";
 import {
@@ -76,13 +77,15 @@ function LadderRows({
 }
 
 export default async function Home() {
+  const leagueId = await getDefaultLeagueId();
   const [settings, players, sessions, recentSnapshots] = await Promise.all([
-    prismaRecalcStore.loadSettings(),
-    prismaRecalcStore.loadPlayers(),
-    prismaRecalcStore.loadSessions(),
+    prismaRecalcStore.loadSettings(leagueId),
+    prismaRecalcStore.loadPlayers(leagueId),
+    prismaRecalcStore.loadSessions(leagueId),
     // The latest snapshot reflects the current state; movement is measured
     // against the one before it (the previous state) — see step 09 decision.
     prisma.ladderSnapshot.findMany({
+      where: { leagueId },
       orderBy: { createdAt: "desc" },
       take: 2,
       select: { rankings: true },

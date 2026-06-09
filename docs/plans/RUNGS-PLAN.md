@@ -66,7 +66,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | # | Step | Status | Depends On |
 |---|------|--------|------------|
 | 18 | [Tenancy schema — League + leagueId + per-league Settings](steps/step-18-tenancy-schema.md) | complete | 17 |
-| 19 | [BSC adoption migration + per-league recalc & read scoping](steps/step-19-adoption-recalc.md) | pending | 17, 18 |
+| 19 | [BSC adoption migration + per-league recalc & read scoping](steps/step-19-adoption-recalc.md) | complete | 17, 18 |
 | 20 | [Staff-only auth — LeagueScorer grants + league-scoped authz](steps/step-20-league-authz.md) | pending | 18 |
 | 21 | [Path-prefix routing — `/l/{slug}` + slug lifecycle](steps/step-21-slug-routing.md) | pending | 19, 20 |
 | 22 | [Landing, League switcher & admin provisioning](steps/step-22-provisioning.md) | pending | 20, 21 |

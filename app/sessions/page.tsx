@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getDefaultLeagueId } from "@/lib/league";
 import { formatSessionDate } from "@/lib/session-history";
 import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,9 @@ export const metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SessionsPage() {
+  const leagueId = await getDefaultLeagueId();
   const sessions = await prisma.session.findMany({
+    where: { leagueId },
     orderBy: { timestamp: "desc" },
     select: {
       id: true,

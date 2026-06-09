@@ -53,10 +53,10 @@ model Player {
   createdAt   DateTime     @default(now())
   createdById String?
   createdBy   User?        @relation(fields: [createdById], references: [id])
-  // Nullable in step 18; step 19 back-fills + tightens to non-null. Name
-  // uniqueness becomes (leagueId, name) at the application layer (step 20/21).
-  leagueId    String?
-  league      League?      @relation(fields: [leagueId], references: [id])
+  // Back-filled + tightened to non-null in step 19 (ADR-015). Name uniqueness
+  // becomes (leagueId, name) at the application layer (step 20/21).
+  leagueId    String
+  league      League       @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -67,9 +67,9 @@ model Setting {
   key         String
   value       Float
   description String?
-  // Nullable in step 18; step 19 back-fills + enforces unique (leagueId, key).
-  leagueId    String?
-  league      League? @relation(fields: [leagueId], references: [id])
+  // Back-filled + tightened to non-null in step 19; unique (leagueId, key).
+  leagueId    String
+  league      League  @relation(fields: [leagueId], references: [id])
 
   @@unique([leagueId, key])
 }
@@ -85,8 +85,8 @@ model Session {
   playerCount     Int
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  leagueId        String?
-  league          League?  @relation(fields: [leagueId], references: [id])
+  leagueId        String
+  league          League   @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -121,14 +121,14 @@ model RatingsLog {
   wins                  Int
   inferredGames         Int
   isNewOrReturningBoost Boolean
-  leagueId              String?
-  league                League? @relation(fields: [leagueId], references: [id])
+  leagueId              String
+  league                League  @relation(fields: [leagueId], references: [id])
 }
 
 model LadderSnapshot {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   rankings  Json
-  leagueId  String?
-  league    League?  @relation(fields: [leagueId], references: [id])
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id])
 }

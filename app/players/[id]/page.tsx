@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getDefaultLeagueId } from "@/lib/league";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { recalculate } from "@/lib/rating-engine";
 import { buildTrendPoints, buildTrendRows } from "@/lib/player-trend";
@@ -28,19 +29,21 @@ export default async function PlayerPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const leagueId = await getDefaultLeagueId();
 
   const player = await prisma.player.findUnique({
     where: { id },
-    select: { id: true, name: true, status: true },
+    select: { id: true, name: true, status: true, leagueId: true },
   });
-  if (!player) notFound();
+  // Not found, or belongs to a different League (scoped read).
+  if (!player || player.leagueId !== leagueId) notFound();
 
   const [settings, players, sessions, logRows] = await Promise.all([
-    prismaRecalcStore.loadSettings(),
-    prismaRecalcStore.loadPlayers(),
-    prismaRecalcStore.loadSessions(),
+    prismaRecalcStore.loadSettings(leagueId),
+    prismaRecalcStore.loadPlayers(leagueId),
+    prismaRecalcStore.loadSessions(leagueId),
     prisma.ratingsLog.findMany({
-      where: { playerId: id },
+      where: { playerId: id, leagueId },
       select: {
         ratingBefore: true,
         ratingChange: true,

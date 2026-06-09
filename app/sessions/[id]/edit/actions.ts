@@ -12,7 +12,7 @@ import type { SubmitData } from "@/app/submit/actions";
 export type MutateResult = { ok: true } | { ok: false; error: string };
 
 async function authoriseFor(sessionId: string): Promise<
-  | { ok: true; userId: string }
+  | { ok: true; userId: string; leagueId: string }
   | { ok: false; error: string }
 > {
   const session = await auth();
@@ -25,7 +25,7 @@ async function authoriseFor(sessionId: string): Promise<
 
   const target = await prisma.session.findUnique({
     where: { id: sessionId },
-    select: { submittedById: true },
+    select: { submittedById: true, leagueId: true },
   });
   if (!target) return { ok: false, error: "Session not found." };
 
@@ -33,7 +33,8 @@ async function authoriseFor(sessionId: string): Promise<
   if (!canMutateSession({ userId: user.id, role, submittedById: target.submittedById })) {
     return { ok: false, error: "Forbidden" };
   }
-  return { ok: true, userId: user.id };
+  // Recalc + any new player scope to the edited session's own League.
+  return { ok: true, userId: user.id, leagueId: target.leagueId };
 }
 
 export async function updateSessionAction(
@@ -47,7 +48,11 @@ export async function updateSessionAction(
   for (const slot of data.slots) {
     if (slot.newName && slot.newName.trim() !== "") {
       const created = await prisma.player.create({
-        data: { name: slot.newName.trim(), createdById: authz.userId },
+        data: {
+          name: slot.newName.trim(),
+          createdById: authz.userId,
+          leagueId: authz.leagueId,
+        },
         select: { id: true },
       });
       resolved.push({ playerId: created.id, wins: slot.wins });
@@ -77,7 +82,7 @@ export async function updateSessionAction(
     }),
   ]);
 
-  await runRecalculation(prismaRecalcStore, new Date());
+  await runRecalculation(prismaRecalcStore, new Date(), authz.leagueId);
   revalidatePath("/");
   revalidatePath("/sessions");
   return { ok: true };
@@ -92,7 +97,7 @@ export async function deleteSessionAction(
   // Cascade removes SessionPlayer + RatingsLog (schema onDelete: Cascade).
   await prisma.session.delete({ where: { id: sessionId } });
 
-  await runRecalculation(prismaRecalcStore, new Date());
+  await runRecalculation(prismaRecalcStore, new Date(), authz.leagueId);
   revalidatePath("/");
   revalidatePath("/sessions");
   return { ok: true };

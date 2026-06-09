@@ -7,7 +7,8 @@ import { validateSession } from "@/lib/session-validation";
 import { runRecalculation } from "@/lib/recalc";
 import { prismaRecalcStore } from "@/lib/recalc-store";
 import { resolvePlayerName } from "@/lib/players";
-import { prismaPlayerStore } from "@/lib/player-store";
+import { makePrismaPlayerStore } from "@/lib/player-store";
+import { getDefaultLeagueId } from "@/lib/league";
 
 export interface SubmitSlot {
   playerId?: string;
@@ -39,14 +40,16 @@ export async function submitSessionAction(
   data: SubmitData,
 ): Promise<SubmitResult> {
   const userId = await requireUserId();
+  const leagueId = await getDefaultLeagueId();
+  const playerStore = makePrismaPlayerStore(leagueId);
 
   // Resolve on-the-fly players (slots with a newName) into real players first.
   // resolvePlayerName reuses an existing player whose name matches (case-
-  // insensitive) rather than creating a duplicate row.
+  // insensitive, within this League) rather than creating a duplicate row.
   const resolved: { playerId: string; wins: number }[] = [];
   for (const slot of data.slots) {
     if (slot.newName && slot.newName.trim() !== "") {
-      const r = await resolvePlayerName(slot.newName, prismaPlayerStore);
+      const r = await resolvePlayerName(slot.newName, playerStore);
       if (!r.ok) return { ok: false, error: r.error };
       resolved.push({ playerId: r.playerId, wins: slot.wins });
     } else if (slot.playerId) {
@@ -62,6 +65,7 @@ export async function submitSessionAction(
     data: {
       timestamp: new Date(),
       submittedById: userId,
+      leagueId,
       notes: data.notes,
       totalPlayerWins: v.totalPlayerWins,
       inferredGames: v.inferredGames,
@@ -76,7 +80,7 @@ export async function submitSessionAction(
     select: { id: true },
   });
 
-  await runRecalculation(prismaRecalcStore, new Date());
+  await runRecalculation(prismaRecalcStore, new Date(), leagueId);
 
   revalidatePath("/");
   revalidatePath("/sessions");

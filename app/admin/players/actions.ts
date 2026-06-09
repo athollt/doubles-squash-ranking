@@ -9,7 +9,8 @@ import {
   type PlayerResult,
   type PlayerStatus,
 } from "@/lib/players";
-import { prismaPlayerStore } from "@/lib/player-store";
+import { makePrismaPlayerStore } from "@/lib/player-store";
+import { getDefaultLeagueId } from "@/lib/league";
 
 // Players management is open to any signed-in user (scorers and admins) — the
 // route gate already keeps the public out (step 16.x). Defence in depth: still
@@ -25,7 +26,8 @@ export async function createPlayerAction(
   name: string,
 ): Promise<PlayerResult> {
   await requireUser();
-  const result = await createPlayer(name, prismaPlayerStore);
+  const store = makePrismaPlayerStore(await getDefaultLeagueId());
+  const result = await createPlayer(name, store);
   if (result.ok) revalidatePath("/admin/players");
   return result;
 }
@@ -35,7 +37,8 @@ export async function updatePlayerNameAction(
   name: string,
 ): Promise<PlayerResult> {
   await requireUser();
-  const result = await updatePlayerName(id, name, prismaPlayerStore);
+  const store = makePrismaPlayerStore(await getDefaultLeagueId());
+  const result = await updatePlayerName(id, name, store);
   if (result.ok) revalidatePath("/admin/players");
   return result;
 }
@@ -45,7 +48,8 @@ export async function updatePlayerStatusAction(
   status: PlayerStatus,
 ): Promise<PlayerResult> {
   await requireUser();
-  const result = await updatePlayerStatus(id, status, prismaPlayerStore);
+  const store = makePrismaPlayerStore(await getDefaultLeagueId());
+  const result = await updatePlayerStatus(id, status, store);
   if (result.ok) revalidatePath("/admin/players");
   return result;
 }

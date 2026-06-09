@@ -25,13 +25,29 @@ const defaultSettings: { key: string; value: number; description: string }[] = [
 ];
 
 async function main() {
-  // Settings are global (leagueId null) until step 19 splits them per-league.
-  // Step 18 dropped the standalone key-unique, so upsert-by-key no longer
-  // type-checks; find-or-create keeps the seed idempotent without that constraint.
+  // Seed the BSC League (step 19 / ADR-015) — fresh dev/E2E DBs get the same
+  // single League the adoption migration creates over prod data. Fixed id +
+  // slug so re-seeding is idempotent and matches the migration.
+  const bscLeagueId = "bsc00000-0000-0000-0000-000000000000";
+  await prisma.league.upsert({
+    where: { id: bscLeagueId },
+    update: {},
+    create: {
+      id: bscLeagueId,
+      name: "BSC Doubles Squash",
+      displayName: "Doubles Squash @ BSC",
+      slug: "bsc-doubles-squash",
+    },
+  });
+
+  // Settings belong to the League (unique on (leagueId, key)). find-or-create
+  // keeps the seed idempotent.
   for (const setting of defaultSettings) {
-    const existing = await prisma.setting.findFirst({ where: { key: setting.key } });
+    const existing = await prisma.setting.findFirst({
+      where: { leagueId: bscLeagueId, key: setting.key },
+    });
     if (!existing) {
-      await prisma.setting.create({ data: setting });
+      await prisma.setting.create({ data: { ...setting, leagueId: bscLeagueId } });
     }
   }
 

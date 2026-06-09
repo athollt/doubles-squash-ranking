@@ -38,7 +38,7 @@ describe("runRecalculation", () => {
       },
     });
 
-    await runRecalculation(store, new Date("2026-02-01T00:00:00Z"));
+    await runRecalculation(store, new Date("2026-02-01T00:00:00Z"), "league-1");
 
     expect(written).not.toBeNull();
     expect((written ?? []).length).toBeGreaterThan(0);
@@ -52,9 +52,38 @@ describe("runRecalculation", () => {
       },
     });
 
-    await runRecalculation(store, new Date("2026-02-01T00:00:00Z"));
+    await runRecalculation(store, new Date("2026-02-01T00:00:00Z"), "league-1");
 
     expect(snapshot).not.toBeNull();
     expect((snapshot ?? []).length).toBeGreaterThan(0);
+  });
+
+  it("recalculates one League in isolation — League A ignores League B's data", async () => {
+    const seen: string[] = [];
+    // A store that records which leagueId each load was scoped to, so we can
+    // assert recalc never reaches across the tenant boundary.
+    const store: RecalcStore = {
+      loadSettings: async (leagueId) => {
+        seen.push(leagueId);
+        return { StartingRating: 1000, KFactor: 160 };
+      },
+      loadPlayers: async (leagueId) => {
+        seen.push(leagueId);
+        return [
+          { id: "a", name: "A", status: "ACTIVE" },
+          { id: "b", name: "B", status: "ACTIVE" },
+        ];
+      },
+      loadSessions: async (leagueId) => {
+        seen.push(leagueId);
+        return [];
+      },
+      replaceRatingsLog: async () => {},
+      createLadderSnapshot: async () => {},
+    };
+
+    await runRecalculation(store, new Date("2026-02-01T00:00:00Z"), "league-A");
+
+    expect(seen).toEqual(["league-A", "league-A", "league-A"]);
   });
 });

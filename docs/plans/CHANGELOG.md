@@ -1716,3 +1716,85 @@ this step so the migration applies cleanly to existing rows.
 - **No routes changed → no E2E required.**
 
 ---
+
+## Step 19 — BSC adoption migration + per-league recalc & read scoping
+
+**Date**: 2026-06-09
+
+Adopts all existing data into a single seed **BSC Doubles Squash** League (ADR-015),
+tightens `leagueId` to **non-null** everywhere, and makes recalculation + the public
+reads **league-scoped** (ADR-011) — with a no-drift guarantee on the migrated ratings.
+The rating engine is unchanged; only the data it is fed is now scoped to one League.
+
+### Delivered
+
+- **Adoption migration** `20260609150500_bsc_adoption` (SQL): creates the BSC League
+  (fixed id `bsc00000-…`, slug `bsc-doubles-squash`, displayName "Doubles Squash @ BSC"),
+  back-fills `leagueId` on every `Player`/`Session`/`Setting`/`RatingsLog`/`LadderSnapshot`,
+  splits the global `Setting` rows into that League, tightens all five `leagueId` columns
+  to `NOT NULL`, and swaps the FKs from `ON DELETE SET NULL` → `RESTRICT` (a tenant FK
+  must not null out on League delete). Applied locally over existing-shaped data (10
+  players, 84 sessions, 376 ratings-log, 558 snapshots, 15 settings) — every row adopted,
+  zero orphans. Schema vs DB: **no drift detected**.
+- **Schema**: the five `leagueId` relations are now required (non-optional).
+- **Per-League recalc**: `RecalcStore` methods + `runRecalculation` take a `leagueId`;
+  `prismaRecalcStore` filters every load by it and stamps `leagueId` on the RatingsLog it
+  replaces (scoped delete + insert) and the LadderSnapshot it creates. Recalc runs for one
+  League at a time (ADR-001 full-recalc, now per-League).
+- **Scoped public reads**: the ladder (`app/page.tsx`), session history
+  (`app/sessions/page.tsx`), and player trend (`app/players/[id]/page.tsx`) filter by
+  `leagueId`; the player page 404s a player from another League.
+- **Transitional resolver** `lib/league.ts` → `getDefaultLeagueId()`: there is exactly one
+  League until `/l/{slug}` routing (step 21), so pages/actions scope to it. Step 21
+  replaces callers with a slug→leagueId lookup off the route.
+- **Per-League player store**: `prismaPlayerStore` singleton → `makePrismaPlayerStore(leagueId)`
+  factory — name dedup is now per-League and new players carry `leagueId`. The pure
+  `createPlayer`/`resolvePlayerName` (and their tests) are unchanged.
+- **Writes stamp `leagueId`** (forced by the NOT-NULL columns): session submit + admin
+  player create scope to `getDefaultLeagueId()`; session edit/delete scope to the *edited
+  session's own* League; settings save scopes its `updateMany` + recalc to the League. The
+  baseline `seed.ts` now also creates the BSC League (so fresh dev/E2E DBs match the
+  migration); `seed-sample.ts` stamps all sample rows with it.
+
+### Spec note — staff grants deferred to step 20
+
+ADR-015 attaches current staff to the League via `LeagueScorer`, which **does not exist
+until step 20**, so no grant is back-filled here (per the step-19 spec's "do not block on
+it"). At prod-migration time, step 20 must attach the current admin (stays global ADMIN)
+and the current scorers. Local dev staff today: `atholl@tomlinson.co.za` (ADMIN),
+`atholl@different.co.za` (SCORER) — the real prod scorer list is captured at manual
+migration time.
+
+### Prod migration is manual + backup-gated
+
+This is the riskiest migration in the Rungs plan (touches every table + live prod data).
+It runs in prod via `prisma migrate deploy` only **after** a verified Fly volume snapshot
+(step 17 / ADR-008). It is idempotent-safe (league insert is `ON CONFLICT DO NOTHING`;
+back-fills guard on `IS NULL`).
+
+### Tests
+
+- **No drift** (`lib/bsc-adoption-no-drift.test.ts`): a fixture captured from the live
+  *pre-migration* ladder (raw settings/players/sessions + expected order + per-player
+  `ratingAfter`); recomputing from the same raw input reproduces the captured ladder order
+  and every rating **exactly** (`toBe`). Migration adds a column, moves no rating.
+- **Migration invariant** (`lib/bsc-adoption.test.ts`, node env): the BSC League exists
+  with its slug/name/displayName; every domain row is scoped to it (no orphans); settings
+  are unique within the League and `StartingRating` survived the split.
+- **Recalc scoped** (`lib/recalc.test.ts`): a fake store records its `leagueId` — recalc
+  for League A only ever loads League A's data.
+- **Cross-league isolation** (`lib/league-tenancy.test.ts`, node env): with two Leagues'
+  sessions present, `prismaRecalcStore.loadSessions(A)` returns only A's — at the real
+  Prisma query seam. Self-cleans.
+
+### Validation
+
+- `prisma migrate deploy` ✅ (adoption applied over existing data); schema vs DB **no
+  difference**; `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — the NOT-NULL columns surfaced every unscoped
+  write). `npm run test`: **159/159 unit pass** (local Postgres up).
+- `npm run test:e2e`: **45/45 pass** against the migrated single-League DB — all public
+  journeys (ladder, history, trend, submit, edit, settings, users) green, no regressions.
+- Seeds idempotent: re-seeding leaves one BSC League + 15 settings.
+
+---
