@@ -20,6 +20,28 @@ enum PlayerStatus {
   REMOVED
 }
 
+enum AccessRequestStatus {
+  PENDING
+  APPROVED
+  DISMISSED
+}
+
+model League {
+  id          String   @id @default(uuid())
+  name        String
+  displayName String
+  slug        String   @unique
+  createdAt   DateTime @default(now())
+
+  players         Player[]
+  sessions        Session[]
+  settings        Setting[]
+  ratingsLogs     RatingsLog[]
+  ladderSnapshots LadderSnapshot[]
+  scorerGrants    LeagueScorer[]
+  accessRequests  AccessRequest[]
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -28,8 +50,40 @@ model User {
   passwordHash String?
   createdAt    DateTime @default(now())
 
-  players  Player[]
-  sessions Session[]
+  players      Player[]
+  sessions     Session[]
+  scorerGrants LeagueScorer[]
+}
+
+// Per-league scorer authority (ADR-012). A SCORER acts on a League only with a
+// grant here; a global ADMIN needs none. Assigning a scorer = creating this row.
+model LeagueScorer {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, leagueId])
+}
+
+// In-app access request (ADR-014): a signed-in non-staff Google user asks to
+// help run a League — either to become a Scorer for an existing League, or to
+// set up a NEW League (leagueId null). An admin approves (existing → creates the
+// User + LeagueScorer grant; new → marks handled, then creates the league
+// manually) or dismisses. No email — the logged-in admin sees the queue.
+// email/name capture the requester (no User row exists yet at request time);
+// notes is the requester's free-text (e.g. the proposed new league's details).
+model AccessRequest {
+  id        String              @id @default(uuid())
+  email     String
+  name      String
+  leagueId  String?
+  league    League?             @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  notes     String?
+  status    AccessRequestStatus @default(PENDING)
+  createdAt DateTime            @default(now())
 }
 
 model Player {
@@ -39,6 +93,10 @@ model Player {
   createdAt   DateTime     @default(now())
   createdById String?
   createdBy   User?        @relation(fields: [createdById], references: [id])
+  // Back-filled + tightened to non-null in step 19 (ADR-015). Name uniqueness
+  // becomes (leagueId, name) at the application layer (step 20/21).
+  leagueId    String
+  league      League       @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -46,9 +104,14 @@ model Player {
 
 model Setting {
   id          String  @id @default(uuid())
-  key         String  @unique
+  key         String
   value       Float
   description String?
+  // Back-filled + tightened to non-null in step 19; unique (leagueId, key).
+  leagueId    String
+  league      League  @relation(fields: [leagueId], references: [id])
+
+  @@unique([leagueId, key])
 }
 
 model Session {
@@ -62,6 +125,8 @@ model Session {
   playerCount     Int
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  leagueId        String
+  league          League   @relation(fields: [leagueId], references: [id])
 
   sessionPlayers SessionPlayer[]
   ratingsLogs    RatingsLog[]
@@ -96,10 +161,14 @@ model RatingsLog {
   wins                  Int
   inferredGames         Int
   isNewOrReturningBoost Boolean
+  leagueId              String
+  league                League  @relation(fields: [leagueId], references: [id])
 }
 
 model LadderSnapshot {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
   rankings  Json
+  leagueId  String
+  league    League   @relation(fields: [leagueId], references: [id])
 }

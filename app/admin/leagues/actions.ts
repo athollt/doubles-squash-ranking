@@ -1,0 +1,95 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { auth } from "@/auth";
+import {
+  createLeague,
+  updateLeague,
+  deleteLeague,
+  assignScorer,
+  revokeScorer,
+  type CreateLeagueResult,
+  type AssignScorerResult,
+  type DeleteLeagueResult,
+} from "@/lib/league-provisioning";
+import { prismaLeagueProvisioningStore } from "@/lib/league-provisioning-store";
+
+// League provisioning is global-Admin only (ADR-012). The forms are admin-only
+// UI, but the server is the real gate.
+async function requireAdmin(): Promise<void> {
+  const session = await auth();
+  if (session?.role !== "ADMIN") throw new Error("Forbidden");
+}
+
+export async function createLeagueAction(
+  name: string,
+  displayName: string,
+  slug: string,
+): Promise<CreateLeagueResult> {
+  await requireAdmin();
+  const result = await createLeague(
+    { name, displayName, slug },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/admin/leagues");
+  }
+  return result;
+}
+
+export async function updateLeagueAction(
+  id: string,
+  name: string,
+  displayName: string,
+): Promise<CreateLeagueResult> {
+  await requireAdmin();
+  const result = await updateLeague(
+    id,
+    { name, displayName },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/admin/leagues");
+  }
+  return result;
+}
+
+export async function deleteLeagueAction(
+  id: string,
+): Promise<DeleteLeagueResult> {
+  await requireAdmin();
+  const result = await deleteLeague(id, prismaLeagueProvisioningStore);
+  if (result.ok) {
+    revalidatePath("/");
+    revalidatePath("/admin/leagues");
+  }
+  return result;
+}
+
+export async function assignScorerAction(
+  userId: string,
+  leagueId: string,
+): Promise<AssignScorerResult> {
+  await requireAdmin();
+  const result = await assignScorer(
+    { userId, leagueId },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) revalidatePath("/admin/leagues");
+  return result;
+}
+
+export async function revokeScorerAction(
+  userId: string,
+  leagueId: string,
+): Promise<AssignScorerResult> {
+  await requireAdmin();
+  const result = await revokeScorer(
+    { userId, leagueId },
+    prismaLeagueProvisioningStore,
+  );
+  if (result.ok) revalidatePath("/admin/leagues");
+  return result;
+}

@@ -6,8 +6,8 @@ test("manifest.json is served with the correct fields", async ({ request }) => {
   const res = await request.get("/manifest.json");
   expect(res.ok()).toBeTruthy();
   const manifest = await res.json();
-  expect(manifest.name).toBe("BSC Squash Ladder");
-  expect(manifest.short_name).toBe("Squash");
+  expect(manifest.name).toBe("Rungs");
+  expect(manifest.short_name).toBe("Rungs");
   expect(manifest.display).toBe("standalone");
   const sizes = manifest.icons.map((i: { sizes: string }) => i.sizes);
   expect(sizes).toContain("192x192");
@@ -17,7 +17,7 @@ test("manifest.json is served with the correct fields", async ({ request }) => {
 test("the ladder page links the manifest, apple touch icon and OG image", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/l/bsc-doubles-squash");
 
   await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
     "href",
@@ -31,4 +31,7 @@ test("the ladder page links the manifest, apple touch icon and OG image", async 
     "content",
     /og\.png/,
   );
+  // The league page title leads with the Rungs brand, then the league's own name
+  // (step 24): "Rungs - Doubles Squash @ BSC".
+  await expect(page).toHaveTitle("Rungs - Doubles Squash @ BSC");
 });

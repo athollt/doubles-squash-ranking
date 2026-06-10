@@ -4,7 +4,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { UsersClient } from "./users-client";
 
 export const metadata = {
-  title: "Users — Doubles Squash @ BSC",
+  title: "Users",
 };
 
 // User data is live and admin-only; never prerender or cache at build time.

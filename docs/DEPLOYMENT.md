@@ -10,12 +10,15 @@ the runbooks — don't repeat it here:
 
 ## What's deployed
 
-- **App**: `bsc-squash-ladder`, region `jnb`, always-on (single machine,
+- **App**: `rungs-app`, region `jnb`, always-on (single machine,
   `min_machines_running = 1`, `auto_stop_machines = "off"` — no cold starts).
-- **Database**: unmanaged Fly Postgres `bsc-squash-db` in `jnb`, attached →
+- **Database**: unmanaged Fly Postgres `rungs-db` in `jnb`, attached →
   `DATABASE_URL` secret (private `.flycast`, `sslmode=disable`).
-- **Domain/TLS**: `https://squash.tomlinson.co.za` (Route 53 CNAME →
-  `…bsc-squash-ladder.fly.dev`), Let's Encrypt cert auto-renewed by Fly.
+- **Domain/TLS**: `https://app.rungs.co.za` (Route 53 `CNAME app → rungs-app.fly.dev`),
+  Let's Encrypt cert auto-renewed by Fly.
+
+> Renamed off `bsc-squash-ladder` / `squash.tomlinson.co.za` at the Rungs cutover
+> (plan step 25). The old app + DB were retired once the new app was verified.
 - **Runtime config**: Fly secrets (`fly secrets list`), not a `.env` file —
   `DATABASE_URL`, `AUTH_URL`, `AUTH_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
 

@@ -5,6 +5,12 @@
 the Fly app, the Postgres database, the production secrets, and the custom domain/TLS —
 everything the running app needs *except* the first real `fly deploy` (that's 14.4).
 
+> **Rungs cutover (plan step 25):** the live app is now **`rungs-app`** + **`rungs-db`**
+> at **`https://app.rungs.co.za`** (`CNAME app → rungs-app.fly.dev`). The commands below
+> were originally run for `bsc-squash-ladder` / `bsc-squash-db` / `squash.tomlinson.co.za`;
+> the cutover re-ran the same steps with the new names against a **fresh DB** (re-seeded,
+> no data copy), then retired the old app + DB. Substitute the new names when reading.
+
 > **Why Fly (and the correction that led here):** the plan originally specified Hetzner
 > Cloud "Cape Town". That was a **wrong fact** — Hetzner has **no South Africa
 > datacenter** (only EU + US + Singapore), so it can't beat ~150–180ms to ZA users.

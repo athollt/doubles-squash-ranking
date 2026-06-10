@@ -1,5 +1,12 @@
 import { render, screen } from "@testing-library/react";
+import { vi } from "vitest";
 import { AdminMenu } from "./admin-menu";
+
+// AdminMenu reads the current path to scope its per-league links; stub it to a
+// league route so the menu has links to render.
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/l/bsc-doubles-squash/admin/players",
+}));
 
 describe("AdminMenu", () => {
   it("renders a hamburger trigger labelled for the menu", () => {

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Public pages (steps 01, 03 surface) — no auth required.
 test("ladder home page is public and renders the title", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/l/bsc-doubles-squash");
   await expect(
     page.getByRole("heading", { name: "Ladder" }),
   ).toBeVisible();

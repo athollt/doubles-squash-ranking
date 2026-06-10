@@ -1,4 +1,22 @@
-import { buildShareText } from "./share";
+import { buildShareText, ladderUrlForSlug } from "./share";
+
+describe("ladderUrlForSlug", () => {
+  it("builds the absolute /l/{slug} URL from AUTH_URL", () => {
+    const prev = process.env.AUTH_URL;
+    process.env.AUTH_URL = "https://rungs.example";
+    expect(ladderUrlForSlug("bsc-doubles-squash")).toBe(
+      "https://rungs.example/l/bsc-doubles-squash",
+    );
+    process.env.AUTH_URL = prev;
+  });
+
+  it("tolerates a trailing slash on the base URL", () => {
+    const prev = process.env.AUTH_URL;
+    process.env.AUTH_URL = "https://rungs.example/";
+    expect(ladderUrlForSlug("padel")).toBe("https://rungs.example/l/padel");
+    process.env.AUTH_URL = prev;
+  });
+});
 
 describe("buildShareText", () => {
   const roster = [

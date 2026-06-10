@@ -1,11 +1,11 @@
 {
-  "name": "BSC Squash Ladder",
-  "short_name": "Squash",
-  "description": "BSC Doubles Squash ladder — session results and player rankings",
+  "name": "Rungs",
+  "short_name": "Rungs",
+  "description": "Individual ranking ladders for doubles play — one ladder per club, any sport.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F4F6FB",
-  "theme_color": "#0B3D91",
+  "background_color": "#F8FAFC",
+  "theme_color": "#4F46E5",
   "icons": [
     {
       "src": "/icon-192.png",

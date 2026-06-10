@@ -1,51 +1,70 @@
 import { describe, it, expect } from "vitest";
-import { adminLinks, adminLinksFor, navLinksFor } from "@/lib/nav";
+import { adminLinksFor, navLinksFor, slugFromPathname } from "@/lib/nav";
 
-function hrefs(role: "ADMIN" | "SCORER" | undefined): string[] {
-  return navLinksFor(role).map((l) => l.href);
-}
+const SLUG = "bsc-doubles-squash";
 
-describe("navLinksFor", () => {
-  it("shows only public links when logged out", () => {
-    expect(hrefs(undefined)).toEqual(["/", "/sessions"]);
+describe("slugFromPathname", () => {
+  it("extracts the slug from a league path", () => {
+    expect(slugFromPathname("/l/bsc-doubles-squash")).toBe("bsc-doubles-squash");
+    expect(slugFromPathname("/l/bsc-doubles-squash/sessions")).toBe(
+      "bsc-doubles-squash",
+    );
+    expect(slugFromPathname("/l/padel/admin/players")).toBe("padel");
   });
 
-  it("adds Submit for a scorer but no admin link", () => {
-    expect(hrefs("SCORER")).toEqual(["/", "/sessions", "/submit"]);
-  });
-
-  it("does not include admin links in the primary nav for an admin", () => {
-    // Admin pages live in their own dropdown (adminLinks), not the main row.
-    expect(hrefs("ADMIN")).toEqual(["/", "/sessions", "/submit"]);
+  it("returns null off a league route", () => {
+    expect(slugFromPathname("/admin/users")).toBeNull();
+    expect(slugFromPathname("/signin")).toBeNull();
+    expect(slugFromPathname("/")).toBeNull();
   });
 });
 
-describe("adminLinks", () => {
-  it("lists every admin page", () => {
-    expect(adminLinks.map((l) => l.href)).toEqual([
-      "/admin/players",
-      "/admin/sessions",
-      "/admin/settings",
-      "/admin/users",
+function hrefs(role: "ADMIN" | "SCORER" | undefined): string[] {
+  return navLinksFor(role, SLUG).map((l) => l.href);
+}
+
+describe("navLinksFor", () => {
+  it("shows only public league links when logged out", () => {
+    expect(hrefs(undefined)).toEqual([
+      `/l/${SLUG}`,
+      `/l/${SLUG}/sessions`,
+    ]);
+  });
+
+  it("adds Submit for a scorer but no admin link", () => {
+    expect(hrefs("SCORER")).toEqual([
+      `/l/${SLUG}`,
+      `/l/${SLUG}/sessions`,
+      `/l/${SLUG}/submit`,
+    ]);
+  });
+
+  it("does not include admin links in the primary nav for an admin", () => {
+    expect(hrefs("ADMIN")).toEqual([
+      `/l/${SLUG}`,
+      `/l/${SLUG}/sessions`,
+      `/l/${SLUG}/submit`,
     ]);
   });
 });
 
 describe("adminLinksFor", () => {
-  it("gives an admin every admin page", () => {
-    expect(adminLinksFor("ADMIN").map((l) => l.href)).toEqual([
-      "/admin/players",
-      "/admin/sessions",
-      "/admin/settings",
+  it("gives an admin the per-league pages plus the global Leagues, Access requests + Users pages", () => {
+    expect(adminLinksFor("ADMIN", SLUG).map((l) => l.href)).toEqual([
+      `/l/${SLUG}/admin/players`,
+      `/l/${SLUG}/admin/sessions`,
+      `/l/${SLUG}/admin/settings`,
+      "/admin/leagues",
+      "/admin/access-requests",
       "/admin/users",
     ]);
   });
 
-  it("gives a scorer Players, Sessions and Ratings but not Users", () => {
-    expect(adminLinksFor("SCORER").map((l) => l.href)).toEqual([
-      "/admin/players",
-      "/admin/sessions",
-      "/admin/settings",
+  it("gives a scorer the per-league pages but not the global Users page", () => {
+    expect(adminLinksFor("SCORER", SLUG).map((l) => l.href)).toEqual([
+      `/l/${SLUG}/admin/players`,
+      `/l/${SLUG}/admin/sessions`,
+      `/l/${SLUG}/admin/settings`,
     ]);
   });
 });

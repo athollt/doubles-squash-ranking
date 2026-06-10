@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "No access — Doubles Squash @ BSC",
+  title: "No access",
 };
 
 export default function UnauthorisedPage() {

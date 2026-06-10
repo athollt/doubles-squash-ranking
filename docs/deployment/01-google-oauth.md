@@ -96,10 +96,12 @@ and the VPS `.env`:
 ### 3. Create the OAuth client
 1. **APIs & Services → Credentials → Create Credentials → OAuth client ID**.
 2. Application type: **Web application**. Name: `squash-web`.
-3. **Authorised redirect URIs** — add **both**:
+3. **Authorised redirect URIs** — add:
    - `http://localhost:3001/api/auth/callback/google`  ← local testing (note port 3001)
-   - `https://squash.tomlinson.co.za/api/auth/callback/google`  ← production
+   - `https://app.rungs.co.za/api/auth/callback/google`  ← production (Rungs cutover, step 25)
+   - also add the **JavaScript origin** `https://app.rungs.co.za`
    > The path is fixed by Auth.js: `/api/auth/callback/google`. It must match exactly.
+   > (Pre-cutover this was `https://squash.tomlinson.co.za/...`.)
 4. Create. Copy the **Client ID** and **Client secret** — store them securely (you'll
    paste them into the VPS `.env` and GitHub Secrets later).
 

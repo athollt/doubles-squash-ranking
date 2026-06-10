@@ -28,7 +28,21 @@ async function main() {
     );
   }
 
+  // The BSC League (created by the baseline seed / adoption migration) owns all
+  // sample data — there is one League in dev (step 19 / ADR-011).
+  const league = await prisma.league.findUnique({
+    where: { slug: "bsc-doubles-squash" },
+    select: { id: true },
+  });
+  if (!league) {
+    throw new Error(
+      "BSC League not found — run the baseline seed first (npx prisma db seed).",
+    );
+  }
+  const leagueId = league.id;
+
   const settingRows = await prisma.setting.findMany({
+    where: { leagueId },
     select: { key: true, value: true },
   });
   if (settingRows.length === 0) {
@@ -54,15 +68,15 @@ async function main() {
     });
     await prisma.player.deleteMany({ where: { id: { in: ids } } });
   }
-  // Derived tables are fully rebuilt by the replay, so clear them outright.
-  await prisma.ladderSnapshot.deleteMany({});
-  await prisma.ratingsLog.deleteMany({});
+  // Derived tables are fully rebuilt by the replay, so clear them (this League's).
+  await prisma.ladderSnapshot.deleteMany({ where: { leagueId } });
+  await prisma.ratingsLog.deleteMany({ where: { leagueId } });
 
   // 3. Roster.
   const players = await Promise.all(
     SAMPLE_CONFIG.roster.map((name) =>
       prisma.player.create({
-        data: { name, status: "ACTIVE", createdById: admin.id },
+        data: { name, status: "ACTIVE", createdById: admin.id, leagueId },
       }),
     ),
   );
@@ -76,6 +90,7 @@ async function main() {
       data: {
         timestamp: new Date(`${g.date}T18:00:00Z`),
         submittedById: admin.id,
+        leagueId,
         totalPlayerWins,
         inferredGames: totalPlayerWins / 2,
         playerCount: g.players.length,
@@ -132,7 +147,7 @@ async function main() {
       sessions: upTo,
       previousRankings: undefined,
     });
-    await prisma.ladderSnapshot.create({ data: { rankings: ladder } });
+    await prisma.ladderSnapshot.create({ data: { rankings: ladder, leagueId } });
   }
 
   // 6. Final full recalculation (all sessions) → the live RatingsLog the app reads.
@@ -146,7 +161,9 @@ async function main() {
     sessions: sessionInputs,
     previousRankings: undefined,
   });
-  await prisma.ratingsLog.createMany({ data: final.ratingsLog });
+  await prisma.ratingsLog.createMany({
+    data: final.ratingsLog.map((e) => ({ ...e, leagueId })),
+  });
 
   console.log(
     `Sample data: ${players.length} players, ${generated.length} sessions, ` +

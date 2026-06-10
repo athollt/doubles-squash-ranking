@@ -1666,3 +1666,611 @@ as the worked example.
   against the updated chip-based `addNewPlayer` helper (no regressions).
 
 ---
+
+## Step 18 — Tenancy schema: League + leagueId + per-league Settings
+
+**Date**: 2026-06-09
+
+First Rungs step (ADR-011). Schema-only — lands the multi-tenant columns with **no
+behaviour change**; step 19 back-fills + tightens them. Columns are **nullable** in
+this step so the migration applies cleanly to existing rows.
+
+### Delivered
+
+- **`League` model** — `id`, `name`, `displayName`, `slug` (unique), `createdAt`, with
+  back-relations to `Player`, `Session`, `Setting`, `RatingsLog`, `LadderSnapshot`.
+- **Nullable `leagueId` FK** added to `Player`, `Session`, `Setting`, `RatingsLog`,
+  `LadderSnapshot` (`onDelete: SetNull`). Nullable **pending step 19**, which seeds the
+  BSC League, back-fills, and flips them non-null.
+- **`Setting` uniqueness** changed from `@unique(key)` → `@@unique([leagueId, key])`
+  per the per-league-settings intent. With `leagueId` null on existing rows, Postgres
+  treats the NULLs as distinct, so the index applies without conflict.
+- **Migration** `20260609143700_add_league_tenancy` — applied to the local DB holding
+  existing-shaped rows without error (the `prisma migrate dev` interactive guard blocks
+  non-TTY runs, so the SQL was generated via `prisma migrate diff` and applied with
+  `prisma migrate deploy`; the SQL is byte-identical to what `migrate dev` would emit).
+- No application code reads `leagueId` — recalc, auth, routing, and pages are unchanged.
+
+### Forced mechanical fixes (consequence of dropping `Setting`'s key-unique)
+
+- `saveAndRecalculateAction` (`app/admin/settings/actions.ts`): `setting.update({ where:
+  { key } })` → `setting.updateMany({ where: { key } })` — `key` is no longer a
+  `WhereUniqueInput`. Identical runtime behaviour (settings stay global, one row per key).
+- `prisma/seed.ts`: keyed `upsert` → `findFirst`-or-`create`, keeping the seed idempotent
+  without the standalone key-unique. Re-running the seed leaves exactly 15 settings.
+
+### Tests
+
+- New DB-backed round-trip (`lib/league-tenancy.test.ts`, node env): creates a `League`,
+  creates a `Player` with `leagueId`, reads the `league` relation back. Self-cleans.
+- Existing pure-core suite (rating-engine, recalc, players, users, auth-rules, prisma
+  round-trip incl. the 15-settings assertion) passes **unchanged** — proving no behaviour
+  moved.
+
+### Validation
+
+- `npx prisma migrate deploy` ✅ (applied to existing data); `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — the dropped key-unique surfaced the two fixes
+  above). `npm run test`: **153/153 unit pass** (local Postgres up).
+- Seed re-run idempotent: **15 settings**, no duplicates.
+- **No routes changed → no E2E required.**
+
+---
+
+## Step 19 — BSC adoption migration + per-league recalc & read scoping
+
+**Date**: 2026-06-09
+
+Adopts all existing data into a single seed **BSC Doubles Squash** League (ADR-015),
+tightens `leagueId` to **non-null** everywhere, and makes recalculation + the public
+reads **league-scoped** (ADR-011) — with a no-drift guarantee on the migrated ratings.
+The rating engine is unchanged; only the data it is fed is now scoped to one League.
+
+### Delivered
+
+- **Adoption migration** `20260609150500_bsc_adoption` (SQL): creates the BSC League
+  (fixed id `bsc00000-…`, slug `bsc-doubles-squash`, displayName "Doubles Squash @ BSC"),
+  back-fills `leagueId` on every `Player`/`Session`/`Setting`/`RatingsLog`/`LadderSnapshot`,
+  splits the global `Setting` rows into that League, tightens all five `leagueId` columns
+  to `NOT NULL`, and swaps the FKs from `ON DELETE SET NULL` → `RESTRICT` (a tenant FK
+  must not null out on League delete). Applied locally over existing-shaped data (10
+  players, 84 sessions, 376 ratings-log, 558 snapshots, 15 settings) — every row adopted,
+  zero orphans. Schema vs DB: **no drift detected**.
+- **Schema**: the five `leagueId` relations are now required (non-optional).
+- **Per-League recalc**: `RecalcStore` methods + `runRecalculation` take a `leagueId`;
+  `prismaRecalcStore` filters every load by it and stamps `leagueId` on the RatingsLog it
+  replaces (scoped delete + insert) and the LadderSnapshot it creates. Recalc runs for one
+  League at a time (ADR-001 full-recalc, now per-League).
+- **Scoped public reads**: the ladder (`app/page.tsx`), session history
+  (`app/sessions/page.tsx`), and player trend (`app/players/[id]/page.tsx`) filter by
+  `leagueId`; the player page 404s a player from another League.
+- **Transitional resolver** `lib/league.ts` → `getDefaultLeagueId()`: there is exactly one
+  League until `/l/{slug}` routing (step 21), so pages/actions scope to it. Step 21
+  replaces callers with a slug→leagueId lookup off the route.
+- **Per-League player store**: `prismaPlayerStore` singleton → `makePrismaPlayerStore(leagueId)`
+  factory — name dedup is now per-League and new players carry `leagueId`. The pure
+  `createPlayer`/`resolvePlayerName` (and their tests) are unchanged.
+- **Writes stamp `leagueId`** (forced by the NOT-NULL columns): session submit + admin
+  player create scope to `getDefaultLeagueId()`; session edit/delete scope to the *edited
+  session's own* League; settings save scopes its `updateMany` + recalc to the League. The
+  baseline `seed.ts` now also creates the BSC League (so fresh dev/E2E DBs match the
+  migration); `seed-sample.ts` stamps all sample rows with it.
+
+### Spec note — staff grants deferred to step 20
+
+ADR-015 attaches current staff to the League via `LeagueScorer`, which **does not exist
+until step 20**, so no grant is back-filled here (per the step-19 spec's "do not block on
+it"). At prod-migration time, step 20 must attach the current admin (stays global ADMIN)
+and the current scorers. Local dev staff today: `atholl@tomlinson.co.za` (ADMIN),
+`atholl@different.co.za` (SCORER) — the real prod scorer list is captured at manual
+migration time.
+
+### Prod migration is manual + backup-gated
+
+This is the riskiest migration in the Rungs plan (touches every table + live prod data).
+It runs in prod via `prisma migrate deploy` only **after** a verified Fly volume snapshot
+(step 17 / ADR-008). It is idempotent-safe (league insert is `ON CONFLICT DO NOTHING`;
+back-fills guard on `IS NULL`).
+
+### Tests
+
+- **No drift** (`lib/bsc-adoption-no-drift.test.ts`): a fixture captured from the live
+  *pre-migration* ladder (raw settings/players/sessions + expected order + per-player
+  `ratingAfter`); recomputing from the same raw input reproduces the captured ladder order
+  and every rating **exactly** (`toBe`). Migration adds a column, moves no rating.
+- **Migration invariant** (`lib/bsc-adoption.test.ts`, node env): the BSC League exists
+  with its slug/name/displayName; every domain row is scoped to it (no orphans); settings
+  are unique within the League and `StartingRating` survived the split.
+- **Recalc scoped** (`lib/recalc.test.ts`): a fake store records its `leagueId` — recalc
+  for League A only ever loads League A's data.
+- **Cross-league isolation** (`lib/league-tenancy.test.ts`, node env): with two Leagues'
+  sessions present, `prismaRecalcStore.loadSessions(A)` returns only A's — at the real
+  Prisma query seam. Self-cleans.
+
+### Validation
+
+- `prisma migrate deploy` ✅ (adoption applied over existing data); schema vs DB **no
+  difference**; `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — the NOT-NULL columns surfaced every unscoped
+  write). `npm run test`: **159/159 unit pass** (local Postgres up).
+- `npm run test:e2e`: **45/45 pass** against the migrated single-League DB — all public
+  journeys (ladder, history, trend, submit, edit, settings, users) green, no regressions.
+- Seeds idempotent: re-seeding leaves one BSC League + 15 settings.
+
+---
+
+## Step 20 — Staff-only auth: LeagueScorer grants + league-scoped authz
+
+**Date**: 2026-06-09
+
+Replaces the single global role with **global Admin + per-League Scorer grants**
+(ADR-012), as **pure authz logic + the grant model** — before any routing consumes
+it. No routes change yet; the `/l/{slug}` wiring + its E2E land in step 21. The proxy
+is untouched this step.
+
+### Delivered
+
+- **`LeagueScorer(userId, leagueId)`** model — unique `(userId, leagueId)`, both FKs
+  `onDelete: Cascade`. Migration `20260609183000_add_league_scorer`. A SCORER's
+  authority comes entirely from these grants; a global ADMIN needs none.
+- **`canScoreLeague({ role, grants, leagueId })`** (pure, `lib/auth-rules.ts`):
+  `true` if `role === "ADMIN"` (bypass) or `grants` includes the league.
+- **`authorizeRoute`** gains an **optional `targetLeagueId`** and `grants` on
+  `RouteAuth`. With no `targetLeagueId` (today's global routes) behaviour is
+  **unchanged**; when step 21 resolves a slug→leagueId it passes it and the league
+  gate activates (scorer needs a grant, admin bypasses, public reads stay open). The
+  Users surface stays ADMIN-only even with a league grant.
+- **`canMutateSession`** gains optional `grants` + `sessionLeagueId`: a scorer may
+  mutate **their own** session only within a league they are granted (extends ADR-010's
+  ownership rule); admin mutates any; omitting the league inputs preserves the prior
+  own-session rule.
+- **Grant store** `lib/league-scorer-store.ts` (`prismaLeagueScorerStore`):
+  `leagueIdsFor` / `grant` (idempotent upsert) / `revoke`.
+- **Back-fill**: the migration grants every existing **SCORER** the seed BSC League
+  (`bsc-doubles-squash`); admins bypass. Verified: `atholl@different.co.za` (SCORER)
+  granted, the admin un-granted. The E2E fixture setup (`manage-test-users.ts`) grants
+  the test scorer the same league, so fresh dev/E2E DBs match (idempotent; the grant
+  cascade-deletes with the user on teardown).
+
+### Tests
+
+- `lib/league-authz.test.ts`: `canScoreLeague` (admin bypass / grant present / grant
+  absent); `authorizeRoute` league gate (no-grant → unauthorised, grant → allow, admin
+  bypass, public read open, unauthenticated → signin, Users still ADMIN-only).
+- `lib/session-authz.test.ts` (extended): own-session in granted vs non-granted league,
+  another scorer's session in a granted league, admin-any — alongside the unchanged
+  pre-multi-tenant cases.
+- `lib/league-scorer-store.test.ts` (node env): grant → list → revoke round-trip, and
+  grant idempotency on `(userId, leagueId)`. Self-cleans.
+
+### Validation
+
+- `prisma migrate deploy` ✅; schema vs DB **no difference**; `prisma generate` ✅.
+- `npm run build` ✅ (TypeScript clean — optional params kept existing callers valid).
+  `npm run test`: **175/175 unit pass** (local Postgres up).
+- **No routes change (logic only) → no E2E required.** The existing `authorizeRoute` +
+  `canMutateSession` tests pass unchanged (backward-compatible signatures), and the E2E
+  fixture setup runs idempotently with the new grant.
+
+---
+
+## Step 21 — Path-prefix routing: /l/{slug} + slug lifecycle
+
+**Date**: 2026-06-09
+
+The big routing move (ADR-013): every league-scoped page now lives under
+`/l/{slug}/...`, public league ladders stay login-free, and the slug lifecycle
+(suggest / validate / immutable) lands as pure helpers. **First visible front-end
+change** — URLs are now per-league. `/` is a placeholder redirect until step 22's
+real landing.
+
+### Routing move
+
+- Pages relocated under **`app/l/[slug]/`**: ladder (`/l/{slug}`), `sessions`,
+  `sessions/[id]`, `players/[id]` (public); `submit`, `sessions/[id]/edit` (scorer);
+  `admin/{players,sessions,settings}` (per-league). `git mv` preserved history.
+- **`/admin/users` stays top-level** — global account/role management, not
+  league-scoped (unchanged ADR-010 gate).
+- **`/` → redirect to `/l/bsc-doubles-squash`** (placeholder; step 22 replaces it
+  with the landing / league switcher). Preserves existing bookmarks to `/`.
+
+### Gate at the page boundary (not the proxy)
+
+- `proxy.ts` is **unchanged** — it gates on route *shape* only (DB-free, ADR-007's
+  lean proxy kept). `isPublicRoute` now recognises the `/l/{slug}` public shapes
+  (ladder / sessions / session-detail / player); scorer/admin shapes fall through to
+  the auth gate.
+- New `lib/league-access.ts`: `resolveLeagueOr404(slug)` (unknown slug → 404) and
+  `requireLeagueScorer(slug)` (resolve league, signin if logged out, **unauthorised if
+  no LeagueScorer grant** — ADR-012). Every league page calls one of these; the
+  scorer actions (submit/edit/admin-players) re-check server-side (defence in depth).
+- New `lib/league.ts` → `leagueBySlug(slug)`; `getDefaultLeagueId` retained for the
+  few non-slug callers.
+
+### Slug lifecycle (pure helpers, ADR-013)
+
+- `lib/slug.ts`: `suggestSlug(name)` (slugify; "BSC Doubles Squash" →
+  `bsc-doubles-squash`; drops apostrophes; collapses/trims separators),
+  `isValidSlug`, and `validateNewSlug(slug, {taken})` (format + uniqueness). **No
+  rename path** — slugs are immutable (the creation form is step 22).
+
+### Share / links / nav
+
+- `lib/share.ts` → `ladderUrlForSlug(slug)`: the absolute per-league ladder URL
+  (`AUTH_URL` + `/l/{slug}`) embedded in the WhatsApp share text (ADR-009) — slug
+  immutability is what keeps these links stable.
+- `SessionForm` gained `ladderHref` (post-submit "View ladder" + redirect go to the
+  league ladder, not `/`).
+- `lib/nav.ts`: `navLinksFor(role, slug)` / `adminLinksFor(role, slug)` build
+  league-relative hrefs; `slugFromPathname` lets the shared chrome (BottomNav,
+  AdminMenu — both client) scope their links to the current league and hide league
+  nav off a league route. `Users` is appended (admin) as the one global link.
+- All internal hrefs / `redirect` / `revalidatePath` rewired to `/l/{slug}/...`.
+
+### Tests
+
+- Unit (**194 pass**): `suggestSlug`/`isValidSlug`/`validateNewSlug`;
+  `authorizeRoute` over `/l/{slug}` shapes (public allow, scorer/admin → auth);
+  `slugFromPathname`; `ladderUrlForSlug`; nav builders slug-aware; BottomNav/AdminMenu
+  re-pointed. The `bsc-adoption` "no orphans" check was re-scoped to the BSC league's
+  own counts so it's robust to the new DB-backed tests' ephemeral leagues running
+  concurrently.
+- E2E (**48 pass**): all journeys re-pointed to `/l/{slug}`; a second ephemeral
+  league (`e2e-other-league`, no grant for the test scorer) added to global setup.
+  New cases — a granted scorer opens their league's submit page; a scorer **without a
+  grant is bounced to `/unauthorised`** from another league's submit; an **unknown
+  slug 404s**.
+
+### Validation
+
+- `npm run build` ✅ (TypeScript clean across the relocated tree). `npm run test`:
+  **194/194**. `npm run test:e2e`: **48/48** against the migrated single-League DB +
+  the ephemeral second league.
+
+> `/` is a placeholder redirect to the BSC ladder until **step 22** builds the real
+> landing + league switcher + creation form (which consumes `suggestSlug`/`validateNewSlug`).
+
+---
+
+## Step 22 — Landing, League switcher & admin provisioning
+
+**Date**: 2026-06-09
+
+`/` becomes a real **Rungs landing**: a list of leagues that doubles as the
+**switcher** (its contents vary by viewer), plus the global-Admin flows to **create
+a League** and **assign a Scorer**. Consumes step 20's grants/authz and step 21's
+slug helpers.
+
+### Delivered
+
+- **Landing `/`** (`app/page.tsx`): a short Rungs intro + a league list. The list IS
+  the switcher — an **admin** sees every league, a **scorer** only their granted
+  ones, a **signed-out** visitor every league (public ladders are browsable,
+  ADR-013). Each row links to `/l/{slug}`. Decided with the user: no prominent
+  sign-in (not a core action for most visitors); signed-out sees the public list, not
+  "none". An admin also gets a **Manage leagues** button.
+- **`visibleLeaguesFor(actor, allLeagues)`** (`lib/landing.ts`) — the pure rule
+  behind both the landing list and the switcher.
+- **Create League** (admin only) — `app/admin/leagues` (new global-admin route,
+  added to `isAdminOnly`). Form: name → display name + **slug auto-suggested**
+  (`suggestSlug`, editable until hand-edited), validated unique (`validateNewSlug`).
+  On create, the new league's **settings are seeded from the defaults** in one
+  transaction.
+- **Assign Scorer** (admin only) — by email: creates the `User` (allowlist, role
+  SCORER) if absent, then the `LeagueScorer` grant. This is the same flow step 23's
+  access-request approval will call.
+- **`lib/default-settings.ts`** — `DEFAULT_SETTINGS` extracted from `prisma/seed.ts`
+  (single source of truth); the seed now imports it, and create-League seeds from it,
+  so an in-app league starts with the same parameters as the seeded BSC league.
+- **AdminMenu** gains the global **Leagues** link (admins) alongside Users.
+
+### Pure-core / thin-shell
+
+- `lib/league-provisioning.ts`: `createLeague` / `assignScorer` pure orchestrators
+  over a `LeagueProvisioningStore` port (validation + sequencing, no Prisma).
+- `lib/league-provisioning-store.ts`: the Prisma adapter (transactional
+  league+settings create; find-or-create user; idempotent grant).
+- Server actions (`app/admin/leagues/actions.ts`) re-check `role === "ADMIN"` — the
+  forms are UI gating, the server is the real gate.
+
+### Tests
+
+- Unit (**206 pass**): `visibleLeaguesFor` (admin all / scorer granted / scorer none
+  / signed-out all); `createLeague` (valid creates + seeds, duplicate slug rejected,
+  blank name + malformed slug rejected); `assignScorer` (new email → create+grant,
+  existing → grant only, invalid email rejected); `authorizeRoute` denies a scorer
+  `/admin/leagues`, allows an admin; nav exposes the Leagues link.
+- E2E (**51 pass**): the landing lists leagues and links to `/l/{slug}`; an **admin
+  creates a league and assigns a scorer** (new league's public ladder reachable,
+  "Scorer assigned ✓"); a **granted scorer sees only their league** on `/` (not the
+  ungranted second league). A second ephemeral league + `[e2e]`-named leagues are
+  cleaned up in teardown (settings removed first — `Setting.leagueId` is
+  `onDelete:Restrict`). The app-shell menu specs now view a league page first (the
+  per-league menu links resolve against the current slug).
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **206/206**. `npm run test:e2e`: **51/51**
+  against the migrated single-League DB + ephemeral test leagues; teardown leaves
+  only the BSC league.
+
+> Scorers can now be **created and granted** in-app, but a non-staff person still has
+> no way to *request* access — that (the in-app `AccessRequest` + approval queue,
+> ADR-014) is **step 23**, which reuses this step's assign-scorer flow on approval.
+
+### Step 22 — refinements (UX feedback)
+
+Same-day follow-up after testing the landing + provisioning:
+
+- **Landing copy**: rewritten to be doubles-specific — names the sports (squash, padel,
+  tennis, pickleball), explains Rungs rates each *person* (partners change each session),
+  and that all you capture is each player's **Wins** per session.
+- **"Manage leagues" moved off the landing page** into the header **hamburger**
+  (admins only), available **everywhere** — including before a league is selected. New
+  `globalAdminLinks()` (Leagues + Users) is what the hamburger shows off a league route;
+  `adminLinksFor` appends it on a league page.
+- **Leagues page rebuilt on the Users pattern** (no reinvention): a **list of league
+  cards + Add League** dialog, and a per-row **Edit League** dialog. Edit changes name +
+  display name; the **slug is shown read-only** (immutable, ADR-013 — shared/bookmarked
+  `/l/{slug}` links must not break). New pure `updateLeague` + `updateLeagueAction`.
+- **Assign Scorer** now picks an **existing scorer from a dropdown** (+ league dropdown)
+  rather than free-text email. `assignScorer` takes a `userId` and just grants; creating
+  new accounts stays the Users page's job. (The store's user-create path was removed.)
+- Tests: `updateLeague` (valid / blank rejected) and `assignScorer` (grant by id /
+  missing rejected) added; E2E rewritten for the Add/Edit dialogs + scorer dropdown, plus
+  a new edit-league spec (display name changes, slug/URL stays). **207 unit / 52 E2E.**
+
+### Step 22 — refinements, round 2 (UX feedback)
+
+- **Slug label**: the Leagues list + Edit dialog now show the **bare slug**
+  (`bsc-doubles-squash`) instead of `/l/bsc-doubles-squash`. Cosmetic — routing /
+  URLs are unchanged (still `/l/{slug}`, ADR-013).
+- **Scorer management moved into the league Edit dialog.** The standalone "Assign a
+  scorer" card is gone. Edit now lists the league's **current scorers** (each with a
+  **Remove**), plus an **Add** control (dropdown of scorers not yet on this league) —
+  so an admin can assign **multiple** scorers and revoke any. New pure `revokeScorer` +
+  `revokeScorerAction`; the page loads each league's `scorerGrants` and the dialog
+  re-reads from refreshed props so add/remove update live without closing.
+- **Second seeded league** (`padel-tuesdays`, "Padel Tuesdays @ BSC") added to
+  `prisma/seed.ts` (refactored to a `seedLeague` helper) so dev + tests exercise the
+  multi-tenant paths with more than one league. `prisma.test.ts`'s settings assertion
+  was re-scoped to the BSC league (15 per league) since the DB now seeds two.
+- Tests: `revokeScorer` units; E2E rewritten — create a league then **add and remove a
+  scorer inside Edit**, asserting the granted scorer sees the league on `/` and the
+  removed scorer's row disappears. **209 unit / 52 E2E.**
+
+### Step 22 — refinements, round 3 (UX feedback)
+
+- **Add/Edit dialogs**: the Name vs Display name inputs were indistinguishable once
+  filled — added visible **field labels + a one-line hint** each (Name = internal,
+  Display name = shown to players, Slug = permanent URL). The Add form now **resets on
+  open/close** (the fields are real inputs, not placeholders — leftover text from a
+  closed-without-creating open looked like a default).
+- **Click-through**: each Leagues-page row's name/slug now **links to `/l/{slug}`** (like
+  the landing list); Edit/Delete are separate controls.
+- **Delete a league**: a **Delete** button per row opens a **confirmation modal** listing
+  exactly what will be destroyed — players, sessions, rating records + ladder history,
+  scorer assignments and settings — and that `/l/{slug}` will stop working. Confirming
+  calls `deleteLeagueAction`. New pure `deleteLeague` + `deleteLeagueWithData` store
+  method: since the `leagueId` FKs are `onDelete: Restrict` (step 19), it deletes the
+  children in dependency order inside one transaction — snapshots → ratingsLogs →
+  sessions (cascades SessionPlayer) → settings → players → league (LeagueScorer grants
+  cascade). The page loads each league's `_count` (players/sessions/ratings) for the
+  warning.
+- Fix: Remove buttons in Edit overflowed the modal (inline name span didn't shrink) —
+  `min-w-0 flex-1 truncate` name + `shrink-0` buttons; the add-scorer dropdown sits
+  **above** the current-scorer list.
+- Landing copy finalised; page heading is **"Rungs - Individual ladders for doubles
+  play"** with the sports list as the subtitle.
+- Tests: `deleteLeague` units; E2E adds **click-through to the ladder** and **create →
+  delete via the confirm modal** (row gone, ladder 404s). **211 unit / 54 E2E.**
+
+---
+
+## Step 23 — Non-staff bounce + access requests + approval queue
+
+**Date**: 2026-06-09
+
+Turns the dead-end for a non-staff sign-in into a self-service intake (ADR-014): a
+signed-in user with no scoring access lands on a bounce page, requests to help run a
+league (an existing one *or* a brand-new one), and a global admin approves or dismisses
+it in-app. **No email** — the logged-in admin sees the queue.
+
+### Delivered
+
+- **`AccessRequest` model** — `id`, `email`, `name`, nullable `leagueId` (null = a
+  request to set up a *new* league), `notes`, `status` (`PENDING`/`APPROVED`/`DISMISSED`),
+  `createdAt`. Migration `20260609220610_add_access_request` (FK `onDelete: Cascade`).
+- **Sign-in opens up for non-staff (ADR-012/014).** `resolveSignIn` now takes the
+  provider: a **Google** account with no users-table row is **allowed** (it gets a
+  role-less session); **Credentials** stays staff-only (a non-staff email is still
+  denied — defence-in-depth on top of `verifyCredentials`, which already needs a stored
+  hash). The `User` table stays staff-only; only *sessions* open up.
+- **Post-login bounce, once (not a gate).** `bounceTarget(actor)` (`lib/landing.ts`)
+  returns `/request-access` for a signed-in user who is neither admin nor holds any
+  grant, else null. The bounce fires via the **sign-in `callbackUrl`** (defaults to
+  `/request-access`; the header Google button + the credentials form both point there) —
+  so it happens once after login. The landing `/` **never** force-redirects, so a
+  grant-less user browses the public league list like any visitor. `/request-access`
+  redirects staff straight home.
+- **Bounce page `/request-access`** — "scorers & admins only", explains they can help
+  run a league or set one up; a league dropdown (existing leagues **+ "Set up a new
+  league…"**), an optional multi-line **Notes** field, and a **Request access** button.
+- **Approval queue `/admin/access-requests`** (global-admin only; added to
+  `isAdminOnly`, linked from the admin hamburger between Leagues and Users). Lists
+  pending requests with the requester, the target league *or* a "wants to set up a new
+  league" label, and their notes. **Approve** (existing league → create the `User` if
+  absent + `LeagueScorer` grant, reusing step 22's assign-Scorer sequence; **new-league
+  request** → just mark handled, the admin creates the league manually) and **Dismiss**.
+  Server actions re-check admin.
+
+### Pure-core / thin-shell
+
+- `lib/access-requests.ts`: `requestAccess` (rejects unknown league; no duplicate
+  pending per email+league; new-league request skips the league check; trims notes to
+  null), `approveAccessRequest` (find-or-create user + grant for an existing league,
+  mark-handled for a new-league request), `dismissAccessRequest` — all over an
+  `AccessRequestStore` port, unit-tested with fakes.
+- `lib/access-request-store.ts`: the Prisma adapter.
+
+### Decision captured in this step
+
+- **Allowlist relaxed for Google only** (with the user): stories #17/#18 require a
+  non-staff user to actually be *signed in* to reach the bounce + request flow, which
+  the old `signIn`-deny made impossible. `/unauthorised` is kept for genuinely-denied
+  cases (no email, or a non-staff credentials attempt).
+
+### Tests
+
+- Unit (**231 pass**, +20): `bounceTarget` (admin/granted/grant-less/signed-out);
+  `resolveSignIn` provider-aware (Google non-staff allowed, credentials non-staff
+  denied); `requestAccess` (scorer + new-league + notes-to-null + dup guard + unknown
+  league); `approve` (create+grant / existing-user grant / new-league mark-handled /
+  unknown); `dismiss`; `authorizeRoute` gates `/admin/access-requests` ADMIN-only; nav
+  exposes the Access-requests link.
+- E2E (**55 pass**, +1): a fixture **non-staff** user (SCORER role, no grant — the
+  credentials stand-in for a fresh Google sign-in) signs in → lands on the bounce page →
+  `/` does **not** re-redirect (issue: browse freely) → raises a **new-league** request
+  (dismissed) → an existing-league request (dismissed, scorer surface stays barred) →
+  a BSC request the admin **approves** → the user gains access (BSC on the landing,
+  submit reachable). Global setup creates the non-staff user grant-less + clears stale
+  grants/requests; teardown removes their access requests (they target the persistent
+  BSC league, so don't cascade).
+
+### Validation
+
+- `prisma db execute` (migration applied over existing data; nullable `leagueId`
+  + `notes` folded into the one migration); schema vs DB **no difference**;
+  `prisma generate` ✅.
+- `npm run build` ✅. `npm run test`: **233/233**. `npm run test:e2e`: **55/55**
+  against the migrated DB + ephemeral test leagues; teardown leaves only the seeded
+  leagues, zero access requests.
+
+### Refinements (manual testing feedback)
+
+- **New-league requests + notes.** The bounce form now offers "Set up a new
+  league…" (a request with `leagueId` null) alongside the existing-league picker,
+  plus an optional multi-line **Notes** field; the button is "Request access".
+  `AccessRequest.leagueId` is nullable; `requestAccess`/`approve` handle the
+  new-league branch (approve just marks it handled — the admin creates the league
+  manually). Wording is "help run a league", not "club".
+- **No homepage dead-end.** The landing only narrows to a scorer's leagues once
+  they actually hold a grant — a scorer **with no grants**, a role-less non-staff
+  user, and a signed-out visitor all browse the full public league list.
+  `visibleLeaguesFor` filters to grants only when `grants` is non-empty; the
+  "ask an admin" empty state is removed. (The bug: a SCORER-with-no-grants — the
+  state the approve flow leaves a new staff member in — was shown the dead end.)
+- **Bounce fires once, post-login only.** The redirect to `/request-access` rides
+  the sign-in `callbackUrl` (defaults there); `/` never force-redirects, so a
+  signed-in user browses freely after the first landing.
+- **Avatar fallback.** A broken/expired Google profile-image URL falls back to the
+  user's initial instead of a broken-image icon (`onError`).
+
+> **Plan update:** the old combined step 24 (rebrand + infra + docs) is **split** — step
+> 24 is now the locally-testable **Rungs rebrand & docs**, and step 25 is the
+> hard-to-reverse **infra rename & `rungs.co.za` cutover** (Fly app/DB, GitHub Actions,
+> OAuth redirect URIs, DNS/TLS). New domain is **rungs.co.za** (owner sets up the CNAME).
+
+---
+
+## Step 24 — Rungs rebrand & docs
+
+**Date**: 2026-06-10
+
+Re-skins the multi-tenant app as **Rungs** (ADR-013) and closes the documentation loop.
+Cosmetic + in-app only — no production infrastructure touched (the Fly/Postgres/domain
+rename is step 25). The product/PWA identity is "Rungs"; individual Leagues keep their own
+display names.
+
+### Branding
+
+- **"Climb" mark** — `public/icon.svg` / `logo.svg` / `og.svg` rebuilt as four rounded rungs
+  stepping up-and-right on a slate badge, top rung in coral (replaces the squash
+  racket+ball). Rasterised via `sharp` (same toolchain as step 13): `icon-192/512`,
+  `apple-touch-icon` (180), `favicon-16/32`, `og.png` (1200×630), and a 16+32 PNG-in-ICO
+  `app/favicon.ico`.
+- **Palette → slate / indigo / coral** (`app/globals.css`): primary indigo `#4F46E5`
+  (`#818CF8` dark), accent coral `#FB7185`, slate backgrounds — replacing the Court
+  royal/volt set. `--up`/`--down` trend colours unchanged (semantic, not brand).
+- **manifest.json** — name/short_name "Rungs", new description, `theme_color #4F46E5` /
+  `background_color #F8FAFC`. **layout.tsx** — `title.template` "%s — Rungs" (default
+  "Rungs"), description, appleWebApp title, OG, `viewport.themeColor` all Rungs.
+  `metadataBase` stays on the squash domain — the domain moves at step 25.
+- **Header wordmark** "Rungs"; offline page title "Offline".
+
+### Per-page titles (render the League, not a hard-coded brand)
+
+- New pure `leaguePageTitle(label, displayName)` (`lib/page-title.ts`). Every `/l/[slug]`
+  page swapped its static `metadata` for a `generateMetadata` that resolves the league and
+  returns `{ title: { absolute: "{page} — {displayName}" } }` — e.g.
+  "Ladder — Doubles Squash @ BSC". Shell pages set a bare label and the layout template
+  appends " — Rungs".
+
+### Docs (lifecycle close — `update-docs` Mode A)
+
+- `OVERVIEW.md`, `README.md`, `AGENT-NOTES.md` rewritten for Rungs: multi-tenant `League`
+  model, `/l/{slug}` routing, page-boundary per-League authz, staff-only auth + access
+  requests, the new `lib/` tenancy modules, two-League seed. Domain rename noted as pending
+  (step 25). All doc links verified against the current tree.
+- **ADR-011…015 promoted** `proposed → accepted (built)` in `DECISIONS.md` (this repo has no
+  central `architecture/ADR.md`; the `Promote: candidate` lines were dropped). ADR-013 notes
+  its domain/infra half is still pending step 25.
+
+### Tests
+
+- Unit (**235**, +2): `leaguePageTitle`; `manifest.test.ts` updated to Rungs + slate/indigo.
+- E2E (**55**): `pwa.spec` asserts manifest name "Rungs" + the league page title renders the
+  displayName; `app-shell.spec` asserts the header "Rungs" wordmark. No new routes.
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **235/235**. `npm run test:e2e`: **55/55**. `npm run
+  lint` ✅. All local — no infra cutover (that is step 25).
+
+---
+
+## Step 25 — Infra rename & app.rungs.co.za cutover
+
+**Date**: 2026-06-10
+
+The hard-to-reverse half of the rebrand: stood up new Fly infra under the Rungs name
+and moved the app to its own domain. Final step of the Rungs plan.
+
+### Decisions (with the user)
+
+- **Fresh database, no data copy.** The new DB is seeded from scratch (BSC + Padel
+  leagues + admin) — the live BSC history is **not** migrated. Removed the backup-gated
+  data-migration risk entirely; the old app keeps its data until retired.
+- **Domain = `app.rungs.co.za`** (subdomain → simple `CNAME`, no apex ALIAS needed).
+- **OAuth = a new client** dedicated to the new app (the live app keeps its own).
+- **Fly app name = `rungs-app`** (`rungs` is fine but `-app` is unambiguous).
+
+### Cutover (Phase 1 — new infra, live app + `main` untouched)
+
+- Created Fly app **`rungs-app`** + unmanaged Postgres **`rungs-db`** in `jnb`
+  (`shared-cpu-1x`, 1 GB, single node); attached → `DATABASE_URL` set automatically.
+- Secrets set by the owner (`fly secrets set`): `AUTH_URL=https://app.rungs.co.za`,
+  a fresh `AUTH_SECRET`, and the new `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- Deployed from `at-wip` with `fly deploy --app rungs-app` (overriding the still-old
+  committed `fly.toml`): release command `prisma migrate deploy` created the schema;
+  `prisma db seed` seeded the admin + two leagues. Scaled to **1 machine** (no HA).
+- DNS `CNAME app → rungs-app.fly.dev`; `fly certs add app.rungs.co.za` → **Issued**.
+  Verified: `https://app.rungs.co.za` serves **200 over valid TLS**, rebranded.
+
+### Code changes (Phase 2)
+
+- `fly.toml` `app = 'rungs-app'`; `app/layout.tsx` `metadataBase` + `lib/share.ts`
+  (WhatsApp share base) + `.env.example` comment fallbacks → `https://app.rungs.co.za`.
+- Docs updated: `DEPLOYMENT.md` (app/DB/domain), runbooks `02-fly.md` + `01-google-oauth.md`
+  (new names + redirect URI / JS origin).
+- Merging `at-wip → main` repoints CI (`fly-deploy.yml` reads `fly.toml`) at the
+  already-verified `rungs-app`, so the release deploy is low-risk.
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **235/235**. `npm run lint` ✅. New app verified
+  live (200 + TLS). Google sign-in is verified end-to-end by the owner on the real
+  domain (needs the Google account + propagated redirect URI).
+
+> **Rungs plan complete (steps 18–25).** Old infra (`bsc-squash-ladder`, `bsc-squash-db`,
+> old OAuth URIs) retired after the new app was confirmed working.

@@ -1,0 +1,2110 @@
+{
+  "now": "2026-06-09T00:00:00.000Z",
+  "input": {
+    "settings": {
+      "NewPlayerMultiplier": 2,
+      "NewPlayerSessions": 5,
+      "ReturningPlayerMultiplier": 2,
+      "ReturningPlayerSessions": 5,
+      "StartingRating": 1000,
+      "StrengthScale": 400,
+      "ActiveThresholdDays": 90,
+      "ActivityBonusCap": 30,
+      "ActivityBonusPerSession": 2,
+      "ActivityBonusWindowDays": 90,
+      "BaselineSessionGames": 10,
+      "KFactor": 160,
+      "LongAbsenceDays": 90,
+      "MaxSessionWeight": 1.25,
+      "MinSessionWeight": 0.6
+    },
+    "players": [
+      {
+        "id": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+        "name": "Allan L",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+        "name": "Norval C",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+        "name": "Philip T",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+        "name": "Mike P",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+        "name": "Mike T",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+        "name": "Dave L",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+        "name": "Grahame C",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+        "name": "Atholl T",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+        "name": "Dave G",
+        "status": "ACTIVE"
+      },
+      {
+        "id": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+        "name": "Gary W",
+        "status": "ACTIVE"
+      }
+    ],
+    "sessions": [
+      {
+        "id": "a2f63801-d1a6-4118-a7c9-ab71a84f27b6",
+        "timestamp": "2026-01-05T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 9
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 6
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "36d84137-bc0e-40d9-9202-637b9db795a8",
+        "timestamp": "2026-01-07T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 0
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 0
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "4810f74a-3f41-4f76-964e-3f886d11647b",
+        "timestamp": "2026-01-09T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 2
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          }
+        ]
+      },
+      {
+        "id": "2b68f8a2-d013-4ef5-8a1f-e6ef49bcb2df",
+        "timestamp": "2026-01-12T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "5fae21de-bee9-4489-81b8-9acc50e67cbe",
+        "timestamp": "2026-01-14T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 0
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 7
+          }
+        ]
+      },
+      {
+        "id": "6443d622-b4e9-401c-b9f7-5ce2d34a5a42",
+        "timestamp": "2026-01-16T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 5
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 4
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "ed5f1144-b3f3-435a-a85f-1d18a64e6905",
+        "timestamp": "2026-01-19T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 1
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 1
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 3
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 5
+          }
+        ]
+      },
+      {
+        "id": "6d27b3ba-989b-43fd-9678-303b6708f78b",
+        "timestamp": "2026-01-21T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 2
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "c4c64c42-0866-4cf3-a855-1d71b3ffead8",
+        "timestamp": "2026-01-23T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "64d59cb5-d8de-45e5-a5d9-418ce7d03a62",
+        "timestamp": "2026-01-25T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 4
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 5
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "60e32bbd-6ea0-444c-af3f-16e286d76be0",
+        "timestamp": "2026-01-26T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 6
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "a0309c37-cfdf-49f7-bb4e-38b7e809bf56",
+        "timestamp": "2026-01-28T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "f10aabe5-2826-4bd8-a68f-9c39923714f6",
+        "timestamp": "2026-01-30T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "ca04140c-c990-48f9-bd50-5f187473b73f",
+        "timestamp": "2026-02-02T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "3d897fce-318a-47a9-86dd-cbf638493a87",
+        "timestamp": "2026-02-04T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 7
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "8b3e553e-8759-4376-b1c7-c951e7a415b2",
+        "timestamp": "2026-02-06T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 4
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 1
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "e27945d5-93d2-4d1b-8722-fd7a855573cf",
+        "timestamp": "2026-02-08T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 7
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "13a53ab7-1f8a-4d86-9f6f-5720b883b493",
+        "timestamp": "2026-02-09T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 7
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "b6e00b16-fa20-4417-83e6-868ed6e3d01a",
+        "timestamp": "2026-02-11T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "9cd51236-bb26-4c9f-91ee-a87612c6c612",
+        "timestamp": "2026-02-13T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "627e44bc-2deb-4ed9-b498-0de6b76692cf",
+        "timestamp": "2026-02-16T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "63c43e3b-e696-4fd6-a6dc-71c85734f6eb",
+        "timestamp": "2026-02-18T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 1
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "f2d05a89-df4b-4bd4-bd60-f1039fd6a74c",
+        "timestamp": "2026-02-20T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "a8e82312-14ba-432b-9164-ecadeea625ed",
+        "timestamp": "2026-02-22T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "102022a4-0daa-41a5-a538-74eb1abb40dd",
+        "timestamp": "2026-02-23T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 5
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "2dc5d2c4-d846-4c95-91e7-9560038c048f",
+        "timestamp": "2026-02-25T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 0
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "af2e9d30-65a6-4ec2-9964-82934a3742aa",
+        "timestamp": "2026-02-27T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          }
+        ]
+      },
+      {
+        "id": "6ddc7b77-1dbe-4913-b6a0-90e3b9a69ba0",
+        "timestamp": "2026-03-02T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "0fc492bb-7a5d-4021-99c8-f06d8b995ba1",
+        "timestamp": "2026-03-04T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "5a0f0d72-7727-4962-b0d3-92aa0c329d08",
+        "timestamp": "2026-03-06T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "555bf4fc-0f82-48f0-bc62-205a23d9f73c",
+        "timestamp": "2026-03-08T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 6
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 6
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 6
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "48834086-edaf-469b-b31c-de5e1daeba31",
+        "timestamp": "2026-03-09T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 0
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "56ae1acd-7139-449b-b71c-2a8c4a468012",
+        "timestamp": "2026-03-11T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 5
+          }
+        ]
+      },
+      {
+        "id": "378a1a0d-7b1f-4d34-9bcd-1c73f3402465",
+        "timestamp": "2026-03-13T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "c795670e-a532-42ee-a664-154ca568fb76",
+        "timestamp": "2026-03-16T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 7
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "a71ce1d9-e0e8-4965-acad-9a4329ae29ba",
+        "timestamp": "2026-03-18T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 0
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "a189b581-e713-4ff8-9bf3-d6ea0ad315f0",
+        "timestamp": "2026-03-20T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "9a3e3cab-7cc7-49a0-8aa7-2e76804fea4e",
+        "timestamp": "2026-03-23T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "fb2f0917-aa01-4645-b23b-091cd2f3a886",
+        "timestamp": "2026-03-25T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          }
+        ]
+      },
+      {
+        "id": "87d72eb1-81dd-4211-978a-194b885e0e9f",
+        "timestamp": "2026-03-27T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "cd408de0-a0d7-41aa-b3fe-a2a221816494",
+        "timestamp": "2026-03-29T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "46a89abf-87cd-439a-810b-d44a6702f45c",
+        "timestamp": "2026-03-30T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 6
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 5
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "8f5cb235-edea-459b-8a7a-8caaefbf6715",
+        "timestamp": "2026-04-01T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 6
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "44c1f120-3505-4f2c-93f1-d9d5f268eddb",
+        "timestamp": "2026-04-03T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 5
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "70fdaf8e-4ede-4f4f-a7ba-e4d4fb310e63",
+        "timestamp": "2026-04-06T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "56fc7fe0-a41b-4143-b923-f30a2c827f71",
+        "timestamp": "2026-04-08T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 8
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "0d0614dd-e8e1-4da1-a995-70625de91e3c",
+        "timestamp": "2026-04-10T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "18a2d0cd-a32a-44cb-a291-24ba320ea328",
+        "timestamp": "2026-04-12T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "a6967fab-56cf-47c1-a4bc-11c73f11f250",
+        "timestamp": "2026-04-13T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 6
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "c6edaec3-11e0-4f78-9927-076f5b414732",
+        "timestamp": "2026-04-15T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 6
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "1bba9b60-384d-4ae3-b46f-9a21f4d33ec3",
+        "timestamp": "2026-04-17T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 0
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 7
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "02496814-062e-4289-88cb-806a306104e4",
+        "timestamp": "2026-04-20T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 5
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 0
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 0
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "d57b89e6-0d98-4bd8-a486-5b966fd56756",
+        "timestamp": "2026-04-22T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "9a0a1415-e334-4258-81a1-cca6db4b7327",
+        "timestamp": "2026-04-24T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 8
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "91b92101-571f-4357-9f47-390cd99bcee8",
+        "timestamp": "2026-04-27T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "1115c92d-13c3-4b41-80e8-7620a547d781",
+        "timestamp": "2026-04-29T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "edf8eadf-9d29-49c8-80d6-6eab860b8061",
+        "timestamp": "2026-05-01T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 3
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "29798cd9-d44c-47a0-923d-2db8a841a538",
+        "timestamp": "2026-05-03T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "e34955ea-a36b-44fb-bac3-7dc544462b0e",
+        "timestamp": "2026-05-04T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 5
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 7
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 11
+          }
+        ]
+      },
+      {
+        "id": "e9b24b78-47d1-46c5-b219-801fcd80e428",
+        "timestamp": "2026-05-06T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 0
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "9202404c-f6c9-4ea0-a803-131548b331f5",
+        "timestamp": "2026-05-08T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 5
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "107b4207-6598-4416-8126-453471730a7d",
+        "timestamp": "2026-05-11T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 6
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "1467280b-7eea-401c-9101-b01fe7162948",
+        "timestamp": "2026-05-13T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 5
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "8b15baa9-e06a-4c2f-8767-f05131ba4ca9",
+        "timestamp": "2026-05-15T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 6
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "542b37c8-a2d7-4542-8cbb-f051b214cbff",
+        "timestamp": "2026-05-17T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 6
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 0
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 6
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "ffe34f12-870d-4f47-9f44-58595b9dc392",
+        "timestamp": "2026-05-18T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 5
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "200429d8-57ce-4bd2-883b-79090dfcf615",
+        "timestamp": "2026-05-20T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 4
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 1
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "44425d5d-3a3a-407a-8b5c-1fe9eee400d1",
+        "timestamp": "2026-05-22T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "1f56f794-39b5-4eef-b5b5-b6ffb1f98571",
+        "timestamp": "2026-05-24T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 0
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 7
+          }
+        ]
+      },
+      {
+        "id": "02c96542-6511-4acb-8bfe-353fdfff8364",
+        "timestamp": "2026-05-25T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 1
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "6e18a5a7-afc8-44bb-b8e6-b145e9889473",
+        "timestamp": "2026-05-27T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 5
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 4
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "6a99c690-41ae-4388-8b9e-fbc01ee38798",
+        "timestamp": "2026-05-29T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 0
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 4
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 0
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "8de04e0c-c763-4941-b177-fdd802ab07a4",
+        "timestamp": "2026-05-31T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 1
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 5
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          }
+        ]
+      },
+      {
+        "id": "7a92df02-cde2-451a-9791-bfc43d5e1ec0",
+        "timestamp": "2026-06-01T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 4
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 4
+          }
+        ]
+      },
+      {
+        "id": "6cc6f431-006e-483c-bad8-60326931aa6a",
+        "timestamp": "2026-06-03T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 5
+          },
+          {
+            "playerId": "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d",
+            "wins": 2
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 6
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "167dc3ee-3312-4a65-9d86-677d25282832",
+        "timestamp": "2026-06-05T18:00:00.000Z",
+        "players": [
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 6
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 0
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 6
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "0ccd0318-383e-495b-a574-0ddbc767ad5c",
+        "timestamp": "2026-06-06T12:49:28.290Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 3
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 6
+          }
+        ]
+      },
+      {
+        "id": "d9a41043-1185-485a-853e-b64dd93fea14",
+        "timestamp": "2026-06-06T13:09:59.726Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 3
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+            "wins": 4
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "81ea9cbe-b3df-4468-8711-6b849d29f271",
+        "timestamp": "2026-06-07T09:50:40.669Z",
+        "players": [
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 2
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "bc72d3d9-b51a-479c-b00d-37ea39b133ee",
+        "timestamp": "2026-06-07T09:55:59.625Z",
+        "players": [
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 1
+          },
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 3
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "ff1e26ad-50af-4e2b-858f-c79f17da28aa",
+        "timestamp": "2026-06-07T10:04:16.722Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+            "wins": 1
+          },
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 1
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 1
+          }
+        ]
+      },
+      {
+        "id": "74a9c8db-74c9-48c1-b7fd-2a1dd499113d",
+        "timestamp": "2026-06-07T10:26:22.571Z",
+        "players": [
+          {
+            "playerId": "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+            "wins": 2
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 0
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 0
+          }
+        ]
+      },
+      {
+        "id": "35f3a8df-1031-4ca4-aabe-974e41fe9293",
+        "timestamp": "2026-06-07T10:39:19.838Z",
+        "players": [
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 1
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 1
+          },
+          {
+            "playerId": "1685bcc4-41ce-4b82-a536-9979f8a15627",
+            "wins": 2
+          },
+          {
+            "playerId": "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+            "wins": 2
+          }
+        ]
+      },
+      {
+        "id": "1a386c5e-9a14-4b9b-a8a2-692fddc38c69",
+        "timestamp": "2026-06-07T10:41:35.096Z",
+        "players": [
+          {
+            "playerId": "a993e109-be4c-43d2-8db4-e61fd85577f8",
+            "wins": 8
+          },
+          {
+            "playerId": "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+            "wins": 2
+          },
+          {
+            "playerId": "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+            "wins": 2
+          },
+          {
+            "playerId": "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+            "wins": 2
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "ladderOrder": [
+      "1f01ffca-5bdc-48c8-98fd-29005ed262ab",
+      "1685bcc4-41ce-4b82-a536-9979f8a15627",
+      "4080c91c-9d52-49ad-90ee-df59a074fbd2",
+      "9dfdbc11-a7e1-4f85-ac46-fadb97306e77",
+      "c6757e3e-4054-4f87-83b2-aad7b0c7e795",
+      "87e7a84e-424f-4e82-b5cc-01e76f4b14c9",
+      "a993e109-be4c-43d2-8db4-e61fd85577f8",
+      "eb11c901-6f37-43ae-bc98-3d3b823c4269",
+      "b95fada8-a319-4e47-83a8-1e49bb05a21c",
+      "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d"
+    ],
+    "ratingAfter": {
+      "1f01ffca-5bdc-48c8-98fd-29005ed262ab": 1075.3211720479142,
+      "1685bcc4-41ce-4b82-a536-9979f8a15627": 1070.170229736378,
+      "4080c91c-9d52-49ad-90ee-df59a074fbd2": 1027.1184927110635,
+      "9dfdbc11-a7e1-4f85-ac46-fadb97306e77": 1025.680842194769,
+      "c6757e3e-4054-4f87-83b2-aad7b0c7e795": 1021.3894511911891,
+      "87e7a84e-424f-4e82-b5cc-01e76f4b14c9": 1013.8195068996384,
+      "a993e109-be4c-43d2-8db4-e61fd85577f8": 1001.6268281252555,
+      "eb11c901-6f37-43ae-bc98-3d3b823c4269": 1015.2028393458821,
+      "b95fada8-a319-4e47-83a8-1e49bb05a21c": 902.1194398847283,
+      "df0b763e-1c4d-46fd-be3b-8d86b1cb4e0d": 848.1253369482143
+    }
+  }
+}

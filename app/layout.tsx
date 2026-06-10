@@ -24,18 +24,27 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const RUNGS_DESCRIPTION =
+  "Individual ranking ladders for doubles play — one ladder per club, any sport.";
+
 export const metadata: Metadata = {
   // Resolves relative OG/icon URLs to absolute. Uses the deploy URL (AUTH_URL is
-  // already set per-environment), falling back to the production domain.
+  // already set per-environment), falling back to the production domain. The
+  // domain rename to rungs.co.za lands at cutover (step 25), not here.
   metadataBase: new URL(
-    process.env.AUTH_URL ?? "https://squash.tomlinson.co.za",
+    process.env.AUTH_URL ?? "https://app.rungs.co.za",
   ),
-  title: "Doubles Squash @ BSC",
-  description: "BSC Doubles Squash ladder — session results and player rankings",
+  // Single shared PWA identity = "Rungs" (ADR-013). Page titles set just their
+  // own label; the template appends " — Rungs" (a bare shell page is "Rungs").
+  title: {
+    default: "Rungs",
+    template: "%s — Rungs",
+  },
+  description: RUNGS_DESCRIPTION,
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
-    title: "Squash",
+    title: "Rungs",
     statusBarStyle: "black-translucent",
   },
   icons: {
@@ -43,15 +52,14 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   openGraph: {
-    title: "Doubles Squash @ BSC",
-    description:
-      "BSC Doubles Squash ladder — session results and player rankings",
+    title: "Rungs",
+    description: RUNGS_DESCRIPTION,
     images: ["/og.png"],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0B3D91",
+  themeColor: "#4F46E5",
 };
 
 export default async function RootLayout({

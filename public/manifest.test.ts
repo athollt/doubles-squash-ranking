@@ -1,16 +1,17 @@
 import { describe, expect, it } from "vitest";
 import manifest from "./manifest.json";
 
-// Behaviour 1: the manifest declares the fields the spec (step 13) requires.
+// Behaviour 1: the manifest declares the fields the spec requires, now branded
+// as Rungs (step 24) — single shared PWA identity (ADR-013), slate/indigo palette.
 describe("manifest.json", () => {
   it("has the required PWA fields", () => {
-    expect(manifest.name).toBe("BSC Squash Ladder");
-    expect(manifest.short_name).toBe("Squash");
+    expect(manifest.name).toBe("Rungs");
+    expect(manifest.short_name).toBe("Rungs");
     expect(manifest.start_url).toBe("/");
     expect(manifest.display).toBe("standalone");
-    // Court palette (step 13.4): royal primary + mist background.
-    expect(manifest.theme_color).toBe("#0B3D91");
-    expect(manifest.background_color).toBe("#F4F6FB");
+    // Rungs palette (step 24): indigo primary + slate background.
+    expect(manifest.theme_color).toBe("#4F46E5");
+    expect(manifest.background_color).toBe("#F8FAFC");
   });
 
   it("declares the 192 and 512 PNG icons", () => {

@@ -47,7 +47,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    signIn: ({ user }) => resolveSignIn(user.email, lookupUser),
+    signIn: ({ user, account }) =>
+      resolveSignIn(user.email, account?.provider ?? "", lookupUser),
     jwt: ({ token, user }) => resolveJwt(token, user, lookupUser),
     session: ({ session, token }) => resolveSession(session, token),
   },

@@ -1,11 +1,14 @@
-# BSC Doubles Squash Ladder
+# Rungs
 
-A mobile-first PWA for the BSC doubles squash ladder. The public sees rankings, session
-history, and per-player rating trends; **scorers** log results, manage players, and view the
-rating settings, while **admins** also manage users and edit the settings — all via Google
-sign-in.
+A mobile-first PWA hosting **many ranking ladders** — one **League** per club, at its own URL
+`/l/{slug}`, for any doubles sport where you count each player's wins per session. Each
+League's ladder, session history, and per-player rating trends are public; signed-in
+**scorers** log results and manage players for the League(s) they're granted, while a global
+**admin** administers every League, creates Leagues, and assigns scorers. Login is staff-only
+(Google); a non-staff sign-in can request access in-app. (The repo name predates the rebrand.)
 
-**Live:** https://squash.tomlinson.co.za
+**Live:** https://squash.tomlinson.co.za — the domain rename to **rungs.co.za** is pending
+(plan step 25).
 
 Built with Next.js 16 (App Router), TypeScript, Prisma 7 / PostgreSQL, Auth.js v5, Tailwind
 v4, and Serwist (PWA).
@@ -25,7 +28,7 @@ v4, and Serwist (PWA).
 cp .env.example .env     # fill in AUTH_SECRET (openssl rand -base64 32) + Google OAuth creds
 npm install
 docker compose up -d postgres        # Postgres on localhost:5433
-npx prisma migrate dev               # apply migrations + seed (15 settings + admin)
+npx prisma migrate dev               # apply migrations + seed (BSC + Padel Leagues, 15 settings each, + admin)
 npm run dev                          # http://localhost:3001
 ```
 
@@ -83,5 +86,6 @@ guide (release migrations, first-admin seed, logs, rollback, backups):
 - [`docs/RATING-ALGORITHM.md`](docs/RATING-ALGORITHM.md) — how ratings, the ladder, and
   active/inactive status are computed (every setting explained).
 - [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — production runtime guide.
-- [`docs/plans/`](docs/plans/) — design documents: PRD, plan, decisions (ADRs), changelog,
-  and the original Google Sheets spec.
+- [`docs/plans/`](docs/plans/) — design documents: the Rungs PRD + plan (multi-tenant
+  rebuild, steps 18–25), the original ladder PRD/plan, decisions (ADRs), changelog, and the
+  original Google Sheets spec.

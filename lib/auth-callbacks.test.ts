@@ -7,16 +7,43 @@ import {
 } from "@/lib/auth-callbacks";
 
 describe("resolveSignIn", () => {
-  it("denies a Google account whose email is not in the users table", async () => {
+  // ADR-014: a non-staff Google account (no User row) is now ALLOWED in — it
+  // gets a role-less session and is bounced to /request-access by the landing
+  // (bounceTarget). The User table stays staff-only; only sessions open up.
+  it("allows a non-staff Google account (no users-table row)", async () => {
     const lookup = async () => null;
-    expect(await resolveSignIn("stranger@gmail.com", lookup)).toBe(
-      "/unauthorised",
+    expect(await resolveSignIn("stranger@gmail.com", "google", lookup)).toBe(
+      true,
     );
   });
 
   it("allows a Google account whose email is in the users table", async () => {
     const lookup = async () => ({ role: "SCORER" });
-    expect(await resolveSignIn("scorer@bsc.co.za", lookup)).toBe(true);
+    expect(await resolveSignIn("scorer@bsc.co.za", "google", lookup)).toBe(
+      true,
+    );
+  });
+
+  it("denies a Google sign-in with no email", async () => {
+    const lookup = async () => null;
+    expect(await resolveSignIn(null, "google", lookup)).toBe("/unauthorised");
+  });
+
+  // Credentials stays staff-only: a non-staff person must not get a session via
+  // the password path (defence-in-depth — verifyCredentials already requires a
+  // stored hash, which non-staff users never have).
+  it("denies a credentials sign-in for a non-staff email", async () => {
+    const lookup = async () => null;
+    expect(
+      await resolveSignIn("stranger@gmail.com", "credentials", lookup),
+    ).toBe("/unauthorised");
+  });
+
+  it("allows a credentials sign-in for a staff email", async () => {
+    const lookup = async () => ({ role: "ADMIN" });
+    expect(await resolveSignIn("admin@bsc.co.za", "credentials", lookup)).toBe(
+      true,
+    );
   });
 });
 

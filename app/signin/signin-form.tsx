@@ -8,7 +8,11 @@ import { Input } from "@/components/ui/input";
 
 export function SignInForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+  // With no explicit target (a plain sign-in, not a redirect from a gated page),
+  // land on /request-access: staff are bounced straight home from there, while a
+  // non-staff user sees the access-request form (ADR-014). This is the one-shot
+  // post-login bounce — `/` itself never redirects.
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/request-access";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

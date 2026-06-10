@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Offline — BSC Squash",
+  title: "Offline",
 };
 
 // Served by the service worker when a document navigation fails with no network.

@@ -4,7 +4,7 @@ import { TEST_SCORER } from "./fixtures";
 
 // An unknown player id returns 404 (behaviour 4).
 test("an unknown player id returns 404", async ({ page }) => {
-  const res = await page.goto("/players/does-not-exist");
+  const res = await page.goto("/l/bsc-doubles-squash/players/does-not-exist");
   expect(res?.status()).toBe(404);
 });
 
@@ -19,9 +19,9 @@ test("a player's page is public and shows their rating trend", async ({
   const wins = [3, 2, 2, 1];
 
   await signIn(page, TEST_SCORER.email, TEST_SCORER.password);
-  await page.goto("/submit");
+  await page.goto("/l/bsc-doubles-squash/submit");
   await submitNewSession(page, names, wins);
-  await expect(page).toHaveURL(/\/$/);
+  await expect(page).toHaveURL(/\/l\/bsc-doubles-squash$/);
 
   // Reach the player page by clicking their name on the ladder.
   const table = page.locator("table");
