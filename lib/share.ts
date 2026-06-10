@@ -5,7 +5,7 @@
 // (AUTH_URL) + the per-league /l/{slug} path. Embedded in the share text and the
 // slug's immutability is what keeps these links stable.
 export function ladderUrlForSlug(slug: string): string {
-  const base = (process.env.AUTH_URL ?? "https://squash.tomlinson.co.za").replace(
+  const base = (process.env.AUTH_URL ?? "https://app.rungs.co.za").replace(
     /\/+$/,
     "",
   );

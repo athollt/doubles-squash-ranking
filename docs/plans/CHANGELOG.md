@@ -2228,3 +2228,49 @@ display names.
   lint` ✅. All local — no infra cutover (that is step 25).
 
 ---
+
+## Step 25 — Infra rename & app.rungs.co.za cutover
+
+**Date**: 2026-06-10
+
+The hard-to-reverse half of the rebrand: stood up new Fly infra under the Rungs name
+and moved the app to its own domain. Final step of the Rungs plan.
+
+### Decisions (with the user)
+
+- **Fresh database, no data copy.** The new DB is seeded from scratch (BSC + Padel
+  leagues + admin) — the live BSC history is **not** migrated. Removed the backup-gated
+  data-migration risk entirely; the old app keeps its data until retired.
+- **Domain = `app.rungs.co.za`** (subdomain → simple `CNAME`, no apex ALIAS needed).
+- **OAuth = a new client** dedicated to the new app (the live app keeps its own).
+- **Fly app name = `rungs-app`** (`rungs` is fine but `-app` is unambiguous).
+
+### Cutover (Phase 1 — new infra, live app + `main` untouched)
+
+- Created Fly app **`rungs-app`** + unmanaged Postgres **`rungs-db`** in `jnb`
+  (`shared-cpu-1x`, 1 GB, single node); attached → `DATABASE_URL` set automatically.
+- Secrets set by the owner (`fly secrets set`): `AUTH_URL=https://app.rungs.co.za`,
+  a fresh `AUTH_SECRET`, and the new `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`.
+- Deployed from `at-wip` with `fly deploy --app rungs-app` (overriding the still-old
+  committed `fly.toml`): release command `prisma migrate deploy` created the schema;
+  `prisma db seed` seeded the admin + two leagues. Scaled to **1 machine** (no HA).
+- DNS `CNAME app → rungs-app.fly.dev`; `fly certs add app.rungs.co.za` → **Issued**.
+  Verified: `https://app.rungs.co.za` serves **200 over valid TLS**, rebranded.
+
+### Code changes (Phase 2)
+
+- `fly.toml` `app = 'rungs-app'`; `app/layout.tsx` `metadataBase` + `lib/share.ts`
+  (WhatsApp share base) + `.env.example` comment fallbacks → `https://app.rungs.co.za`.
+- Docs updated: `DEPLOYMENT.md` (app/DB/domain), runbooks `02-fly.md` + `01-google-oauth.md`
+  (new names + redirect URI / JS origin).
+- Merging `at-wip → main` repoints CI (`fly-deploy.yml` reads `fly.toml`) at the
+  already-verified `rungs-app`, so the release deploy is low-risk.
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **235/235**. `npm run lint` ✅. New app verified
+  live (200 + TLS). Google sign-in is verified end-to-end by the owner on the real
+  domain (needs the Google account + propagated redirect URI).
+
+> **Rungs plan complete (steps 18–25).** Old infra (`bsc-squash-ladder`, `bsc-squash-db`,
+> old OAuth URIs) retired after the new app was confirmed working.

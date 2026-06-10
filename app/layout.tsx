@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   // already set per-environment), falling back to the production domain. The
   // domain rename to rungs.co.za lands at cutover (step 25), not here.
   metadataBase: new URL(
-    process.env.AUTH_URL ?? "https://squash.tomlinson.co.za",
+    process.env.AUTH_URL ?? "https://app.rungs.co.za",
   ),
   // Single shared PWA identity = "Rungs" (ADR-013). Page titles set just their
   // own label; the template appends " — Rungs" (a bare shell page is "Rungs").

@@ -72,7 +72,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 22 | [Landing, League switcher & admin provisioning](steps/step-22-provisioning.md) | complete | 20, 21 |
 | 23 | [Non-staff bounce + access requests + approval queue](steps/step-23-access-requests.md) | complete | 22 |
 | 24 | [Rungs rebrand & docs](steps/step-24-rebrand-docs.md) | complete | 21, 22, 23 |
-| 25 | [Infra rename & rungs.co.za cutover](steps/step-25-infra-rename.md) | pending | 24 |
+| 25 | [Infra rename & rungs.co.za cutover](steps/step-25-infra-rename.md) | complete | 24 |
 
 > Risk isolation: **step 19** (data migration over live prod data) and **step 25**
 > (Fly app/DB + domain rename to `rungs.co.za` — hard to reverse, touches GitHub
