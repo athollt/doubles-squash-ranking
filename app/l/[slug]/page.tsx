@@ -22,7 +22,7 @@ import { PageShell } from "@/components/ui/page-shell";
 import { Badge } from "@/components/ui/badge";
 import { Trend } from "@/components/ui/trend";
 
-// Title renders the resolved league's name (step 24): "Ladder — {displayName}".
+// Title leads with the brand, then the league (step 24): "Rungs - {displayName}".
 export async function generateMetadata({
   params,
 }: {
@@ -31,7 +31,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const league = await leagueBySlug(slug);
   if (!league) return {};
-  return { title: { absolute: leaguePageTitle("Ladder", league.displayName) } };
+  return { title: { absolute: leaguePageTitle(league.displayName) } };
 }
 
 // Derives the live ladder on every request (ADR-002) — trivial at this scale.

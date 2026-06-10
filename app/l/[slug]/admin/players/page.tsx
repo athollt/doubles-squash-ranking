@@ -6,7 +6,7 @@ import { requireLeagueScorer } from "@/lib/league-access";
 import { PageShell } from "@/components/ui/page-shell";
 import { PlayersClient } from "./players-client";
 
-// Title renders the resolved league's name (step 24): "Players — {displayName}".
+// Title leads with the brand, then the league (step 24): "Rungs - {displayName}".
 export async function generateMetadata({
   params,
 }: {
@@ -15,7 +15,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const league = await leagueBySlug(slug);
   if (!league) return {};
-  return { title: { absolute: leaguePageTitle("Players", league.displayName) } };
+  return { title: { absolute: leaguePageTitle(league.displayName) } };
 }
 
 // Player data is live and staff-only; never prerender or cache at build time.

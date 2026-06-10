@@ -16,7 +16,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageShell } from "@/components/ui/page-shell";
 
-// Title renders the resolved league's name (step 24): "Sessions — {displayName}".
+// Title leads with the brand, then the league (step 24): "Rungs - {displayName}".
 export async function generateMetadata({
   params,
 }: {
@@ -25,7 +25,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const league = await leagueBySlug(slug);
   if (!league) return {};
-  return { title: { absolute: leaguePageTitle("Sessions", league.displayName) } };
+  return { title: { absolute: leaguePageTitle(league.displayName) } };
 }
 
 export const dynamic = "force-dynamic";

@@ -8,7 +8,7 @@ import { SessionForm, type FormSlot } from "@/components/session-form";
 import { PageShell } from "@/components/ui/page-shell";
 import { submitSessionAction } from "./actions";
 
-// Title renders the resolved league's name (step 24): "Submit a session — {displayName}".
+// Title leads with the brand, then the league (step 24): "Rungs - {displayName}".
 export async function generateMetadata({
   params,
 }: {
@@ -17,7 +17,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const league = await leagueBySlug(slug);
   if (!league) return {};
-  return { title: { absolute: leaguePageTitle("Submit a session", league.displayName) } };
+  return { title: { absolute: leaguePageTitle(league.displayName) } };
 }
 
 export const dynamic = "force-dynamic";

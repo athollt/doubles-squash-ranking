@@ -8,7 +8,7 @@ import { formatSessionDate } from "@/lib/session-history";
 import { PageShell } from "@/components/ui/page-shell";
 import { Card } from "@/components/ui/card";
 
-// Title renders the resolved league's name (step 24): "Session history — {displayName}".
+// Title leads with the brand, then the league (step 24): "Rungs - {displayName}".
 export async function generateMetadata({
   params,
 }: {
@@ -17,7 +17,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const league = await leagueBySlug(slug);
   if (!league) return {};
-  return { title: { absolute: leaguePageTitle("Session history", league.displayName) } };
+  return { title: { absolute: leaguePageTitle(league.displayName) } };
 }
 
 // Public, no auth (auth-rules allows /l/{slug}/sessions). Derived view, not cached.

@@ -2,15 +2,15 @@ import { describe, it, expect } from "vitest";
 import { leaguePageTitle } from "@/lib/page-title";
 
 describe("leaguePageTitle", () => {
-  it("renders the page label with the league's display name", () => {
-    expect(leaguePageTitle("Ladder", "Doubles Squash @ BSC")).toBe(
-      "Ladder — Doubles Squash @ BSC",
+  it("leads with the Rungs brand, then the league's display name", () => {
+    expect(leaguePageTitle("Doubles Squash @ BSC")).toBe(
+      "Rungs - Doubles Squash @ BSC",
     );
   });
 
-  it("uses whatever league name is supplied (not a hard-coded brand)", () => {
-    expect(leaguePageTitle("Session history", "Padel Tuesdays @ BSC")).toBe(
-      "Session history — Padel Tuesdays @ BSC",
+  it("uses whatever league name is supplied", () => {
+    expect(leaguePageTitle("Padel Tuesdays @ BSC")).toBe(
+      "Rungs - Padel Tuesdays @ BSC",
     );
   });
 });

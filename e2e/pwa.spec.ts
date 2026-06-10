@@ -31,7 +31,7 @@ test("the ladder page links the manifest, apple touch icon and OG image", async 
     "content",
     /og\.png/,
   );
-  // The league page title renders the league's own name, not a hard-coded brand
-  // (step 24): "Ladder — Doubles Squash @ BSC".
-  await expect(page).toHaveTitle("Ladder — Doubles Squash @ BSC");
+  // The league page title leads with the Rungs brand, then the league's own name
+  // (step 24): "Rungs - Doubles Squash @ BSC".
+  await expect(page).toHaveTitle("Rungs - Doubles Squash @ BSC");
 });

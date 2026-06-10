@@ -11,10 +11,16 @@ import { TEST_ADMIN, TEST_SCORER } from "./fixtures";
 test("logged-out shell shows public tabs and Sign in, not the account menu", async ({
   page,
 }) => {
-  await page.goto("/l/bsc-doubles-squash");
-  // The header carries the Rungs wordmark (step 24 rebrand).
+  // The landing header shows the Rungs brand; once a league is selected the
+  // header shows that league's name instead (step 24 rebrand + follow-up).
+  await page.goto("/");
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Rungs" }),
+  ).toBeVisible();
+
+  await page.goto("/l/bsc-doubles-squash");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Doubles Squash @ BSC" }),
   ).toBeVisible();
   const tabs = page.getByRole("navigation", { name: "Primary" });
   await expect(tabs.getByRole("link", { name: /ladder/i })).toBeVisible();
