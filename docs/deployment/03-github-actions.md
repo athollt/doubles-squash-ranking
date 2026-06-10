@@ -38,6 +38,15 @@ git remote -v
 > live in **Fly secrets** (runbook 02), not GitHub — the running app reads them from
 > Fly at runtime; the CI job only needs to authenticate `flyctl`.
 
+> **The token is app-scoped.** A `fly tokens create deploy --app <name>` token only
+> authorises *that* app. When the app was renamed `bsc-squash-ladder → rungs-app`
+> (step 25), the old token started failing CI with `Error: unauthorized` (then, after a
+> truncated copy, `missing third-party discharge token`). Fix: create a new token for the
+> current app and replace the secret value **whole** — copy without hand-selecting in the
+> terminal (truncation drops the discharge token), e.g.
+> `fly tokens create deploy --app rungs-app --json | jq -r .token | pbcopy`. Revoke the
+> stale token afterwards (`fly tokens revoke <id>`).
+
 ### 3. Confirm the deploy branch
 - The workflow triggers on **push to `main`** (step 14.4). Confirm `main` is the
   default/protected branch and that merges to it are intended to deploy.
