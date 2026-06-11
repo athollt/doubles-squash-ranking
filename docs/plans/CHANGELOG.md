@@ -2274,3 +2274,49 @@ and moved the app to its own domain. Final step of the Rungs plan.
 
 > **Rungs plan complete (steps 18–25).** Old infra (`bsc-squash-ladder`, `bsc-squash-db`,
 > old OAuth URIs) retired after the new app was confirmed working.
+
+---
+
+## Step 26 — GitHub repo rename → `rungs-app`
+
+**Date**: 2026-06-11
+
+The last name still carrying the old "squash" identity. Renamed the repo to mirror the
+live Fly app (`rungs-app`) so VCS and infra agree. GitHub-only — Fly, the deploy token,
+and the Actions workflow were intentionally untouched (the workflow runs inside the repo
+regardless of its name).
+
+### In-repo edits (live references only)
+
+- `AGENT-NOTES.md`: title + PR curl URL → `athollt/rungs-app`.
+- `OVERVIEW.md`: heading → `# OVERVIEW — rungs-app`.
+- `docs/deployment/03-github-actions.md`: prerequisite + `git remote -v` example → new slug.
+- `RUNGS-PLAN.md`: "Target repo" → `rungs-app` (rebrand complete); step 26 marked complete.
+- `package.json` `name` → `rungs-app`; `npm install` propagated `package-lock.json`'s
+  `name` (name-only diff, no dependency churn).
+- Workspace file: `git mv "Doubles @ BSC.code-workspace" → rungs-app.code-workspace`. A
+  redundant identical `doubles-squash-ranking.code-workspace` (not anticipated in the step,
+  introduced earlier) was `git rm`'d — repo now has exactly one workspace file. The local
+  checkout folder was already renamed to `rungs-app` by the owner.
+
+### Manual ops
+
+- **Local remote** repointed: `git remote set-url origin
+  https://github.com/athollt/rungs-app.git`. `git fetch` returns "Repository not found"
+  until the GitHub-side rename lands (expected).
+- **GitHub rename** (Settings → repository name → `rungs-app`) performed by the owner in
+  the UI, not via this agent. GitHub installs a redirect from the old URL automatically.
+
+### Deviations from spec
+
+- Step 4 (`package-lock.json` via `npm install`): the lockfile is `lockfileVersion: 1`, so
+  only the top-level `name` exists — one-line change, confirmed no other churn.
+- The agent did **not** run the GitHub rename API call (owner handles the UI rename) and so
+  could not verify the post-rename behaviours (clone of new URL, old-URL redirect, deploy
+  trigger, `/create-pr` against the new slug) — these are owner-verified after the rename.
+
+### Validation
+
+- `npm run build` ✅. `npm run test`: **235/235** ✅. No route change → no new E2E.
+- `AGENT-NOTES.md` line 9 still says the infra rename is "(pending)" — stale after step 25,
+  but outside this step's rename map; left untouched per AGENTS.md §4 (flagged, not fixed).

@@ -1,7 +1,7 @@
 # Rungs — Plan (multi-tenant club ladder)
 
 **Source**: [PRD-rungs.md](PRD-rungs.md)
-**Target repo**: `doubles-squash-ranking` (→ rebranded **Rungs**)
+**Target repo**: `rungs-app` (rebrand complete)
 **Execution model**: one step per prompt, CHANGELOG as ground truth
 
 > **Extends [PLAN.md](PLAN.md)** — it does not replace it. The BSC Doubles Squash
@@ -73,6 +73,7 @@ No writing all tests up front. No testing internal collaborators. Single commit 
 | 23 | [Non-staff bounce + access requests + approval queue](steps/step-23-access-requests.md) | complete | 22 |
 | 24 | [Rungs rebrand & docs](steps/step-24-rebrand-docs.md) | complete | 21, 22, 23 |
 | 25 | [Infra rename & rungs.co.za cutover](steps/step-25-infra-rename.md) | complete | 24 |
+| 26 | [GitHub repo rename → `rungs-app`](steps/step-26-repo-rename.md) | complete | 25 |
 
 > Risk isolation: **step 19** (data migration over live prod data) and **step 25**
 > (Fly app/DB + domain rename to `rungs.co.za` — hard to reverse, touches GitHub

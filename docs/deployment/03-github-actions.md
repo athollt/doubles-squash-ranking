@@ -13,7 +13,7 @@ This runbook only adds the secret it reads.
 
 ## Prerequisites
 
-- Repo on GitHub: **github.com/athollt/doubles-squash-ranking** (`origin`).
+- Repo on GitHub: **github.com/athollt/rungs-app** (`origin`).
 - `FLY_API_TOKEN` from [02-fly.md](02-fly.md) step 7 (`fly tokens create deploy …`).
 - Admin access to the repo's **Settings**.
 
@@ -24,7 +24,7 @@ This runbook only adds the secret it reads.
 ### 1. Confirm the remote
 ```bash
 git remote -v
-# origin  https://github.com/athollt/doubles-squash-ranking.git
+# origin  https://github.com/athollt/rungs-app.git
 ```
 
 ### 2. Add the deploy token secret
