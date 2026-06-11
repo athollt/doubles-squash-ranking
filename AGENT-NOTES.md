@@ -1,12 +1,12 @@
-# Agent Notes: doubles-squash-ranking
+# Agent Notes: rungs-app
 
 Project-specific information for the AI agent working on this repo.
 
 **What this is:** **Rungs** — a multi-tenant ranking-ladder PWA (the repo name predates the
 rebrand). Each club's ladder is a **League** at `/l/{slug}`; public ladders are login-free,
 login is staff-only (global Admin + per-League Scorer grants). See [`OVERVIEW.md`](OVERVIEW.md)
-for architecture. The Fly app/Postgres + domain still carry the old `squash` names — the
-infra rename to `rungs.co.za` is plan step 25 (pending).
+for architecture. Infra is on the Rungs names — Fly app `rungs-app`, Postgres `rungs-db`,
+domain `app.rungs.co.za` (plan steps 25–26 complete).
 
 ## Branch Protection Rules
 
@@ -23,7 +23,7 @@ The `gh` CLI is not installed. Use the GitHub API via `curl`:
 curl -X POST \
   -H "Authorization: token $GITHUB_TOKEN" \
   -H "Accept: application/vnd.github.v3+json" \
-  https://api.github.com/repos/athollt/doubles-squash-ranking/pulls \
+  https://api.github.com/repos/athollt/rungs-app/pulls \
   -d '{"title":"PR title","body":"## Description of change\n\n...\n\n## Testing Done\n\n...\n\n## Commit Message\n\n...","head":"at-wip","base":"main"}'
 ```
 

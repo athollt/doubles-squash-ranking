@@ -1,4 +1,4 @@
-# OVERVIEW — doubles-squash-ranking
+# OVERVIEW — rungs-app
 
 Architecture and internals of **Rungs** — a multi-tenant ranking-ladder platform (the repo
 name predates the rebrand). For *running* the app (setup, dev, tests, deploy) see
