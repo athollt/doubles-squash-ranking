@@ -5,8 +5,8 @@ Project-specific information for the AI agent working on this repo.
 **What this is:** **Rungs** — a multi-tenant ranking-ladder PWA (the repo name predates the
 rebrand). Each club's ladder is a **League** at `/l/{slug}`; public ladders are login-free,
 login is staff-only (global Admin + per-League Scorer grants). See [`OVERVIEW.md`](OVERVIEW.md)
-for architecture. The Fly app/Postgres + domain still carry the old `squash` names — the
-infra rename to `rungs.co.za` is plan step 25 (pending).
+for architecture. Infra is on the Rungs names — Fly app `rungs-app`, Postgres `rungs-db`,
+domain `app.rungs.co.za` (plan steps 25–26 complete).
 
 ## Branch Protection Rules
 
